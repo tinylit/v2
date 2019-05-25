@@ -1,0 +1,10 @@
+﻿<?xml version="1.0"?>
+<!-- 
+  Visual Studio global web project settings.
+-->
+<VisualWebDeveloper>
+
+  <Globals>
+    <UserProperties js_4v2_1js_1map__JsonSchema="http://json.schemastore.org/tsd"/>
+  </Globals>
+</VisualWebDeveloper>
