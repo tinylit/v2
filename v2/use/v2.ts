@@ -54,8 +54,6 @@
 
     /** 控件基类（可以继承） */
     interface V2ControlBase {
-        /** 基础 */
-        readonly base: V2ControlBase;
 		/**
          * 初始化控件（查询或 生产主元素）
          * @param tag 控件元素TAG，默认：div
@@ -84,18 +82,18 @@
          * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
          * @param callback 回调函数
          */
-        stack(callback: Function): Function;
+        lazy(callback: Function): Function;
         /**
          * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
          * @param loop 为真时返回回调函数，否则返回函数返回值或堆载队列。
          * @param callback 回调函数
          */
-        stack<T>(loop: boolean, callback: (...args: any[]) => T, ...args: any[]): (...args: any[]) => T | T | V2Stack;
+        lazy<T>(loop: boolean, callback: (...args: any[]) => T, ...args: any[]): (...args: any[]) => T | T | V2Stack;
 		/**
          * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
          * @param callback 回调函数
          */
-        stack<T>(callback: () => T, arg: any, ...args: any[]): (arg: any, ...args: any[]) => T;
+        lazy<T>(callback: () => T, arg: any, ...args: any[]): (arg: any, ...args: any[]) => T;
     }
 
     /** 控件（不可继承） */
@@ -106,12 +104,14 @@
         readonly tag: "*";
         /** 版本号 */
         readonly v2version: string;
+        /** 基础 */
+        readonly base: V2ControlBase | null;
         /**
          * 渲染子控件
          * @param tag TAG
          * @param options 配置信息
          */
-        constructor(tag: string, options?: V2ControlExtends): V2ControlExtends;
+        create(options: V2ControlExtends, tag?: string): V2ControlExtends;
         /** 插件准备 */
         ready(): any;
         /** 构建插件 */
@@ -161,7 +161,7 @@
 
     /** 通配符 */
     interface WildCard {
-        /** 支持的类型，同时支持多个时，以“|”分隔。 */
+        /** 支持的类型，同时支持多种类型时，以“|”分隔。 */
         type: "*" | "string" | "boolean" | "number" | "date" | "array" | "regexp" | "function" | "object";
         /** 执行的别名 */
         hooks?: string;
@@ -192,16 +192,22 @@
         $$: Element | null;
         /** 父级插件 */
         owner: V2Control | null;
+        /** 变量 */
+        variable: PlainObject<any>;
         /** 插件数据 */
         data: any;
+        /** 视图渲染 */
+        view: any;
+        /** 监控数据变化，数据变化时，调用指定方法 */
+        watch: PlainObject<Function> | null,
         /** 事件集合 */
-        events: PlainObject<PlainEvent>;
+        events: PlainObject<PlainEvent> | null;
         /** 方法集合 */
-        methods: PlainObject<PlainMethod>;
+        methods: PlainObject<PlainMethod> | null;
         /** 通配符 */
-        wildCards: PlainObject<WildCard>,
+        wildcards: PlainObject<WildCard> | null,
         /** 组件集合 */
-        components: Components;
+        components: Components | null;
         /** 使控件获取焦点 */
         focus(): any;
         /** 显示控件 */
@@ -522,6 +528,8 @@ declare namespace UG {
     }
 
     interface UseThen extends ArrayLike<UseObject> {
+        /** TAG */
+        readonly tag: string;
         /**
          * 添加始终需要的配置
          * @param option 配置
@@ -560,7 +568,7 @@ declare namespace UG {
          * @param tag TAG
          * @param option 配置
          */
-        use(tag: string, option: PlainObject);
+        use(tag: string, option: PlainObject): any;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
