@@ -190,6 +190,8 @@
         $: Element | null;
         /** 插件主元素的父元素 */
         $$: Element | null;
+        /** 最主要的元素 */
+        readonly $main: Element | null;
         /** 父级插件 */
         owner: V2Control | null;
         /** 变量 */

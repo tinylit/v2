@@ -39,6 +39,17 @@
             return "-" + letter.toLowerCase();
         };
 
+    var
+        runescape = /\\([\da-fA-F]{1,6}[\x20\t\r\n\f]?|.)/g,
+        funescape = function (_, letter) {
+            var high = "0x" + letter - 0x10000;
+            return high === high ?
+                high < 0 ?
+                    String.fromCharCode(high + 0x10000) :
+                    String.fromCharCode(high >> 10 | 0xD800, high & 0x3FF | 0xDC00) :
+                letter;
+        };
+
     var timestamp = +new Date(),
         class2type = {},
         coreCards = {},
@@ -212,18 +223,23 @@
     }
 
     function isArraylike(object) {
+        var len, type;
+
         if (object === null || object === undefined) return false;
-        var length = object.length,
-            type = v2.type(object);
+
+        type = v2.type(object);
 
         if (type === "function" || type === "string" || v2.isWindow(object)) {
             return false;
         }
-        if (object.nodeType === 1 && length) {
+
+        len = object.length;
+
+        if (object.nodeType === 1 && len) {
             return true;
         }
         try {
-            return type === "array" || length === 0 || length > 0 && typeof length === "number" && (length - 1) in object;
+            return type === "array" || len === 0 || len > 0 && typeof length === "number" && (len - 1) in object;
         } catch (_) {
             return false;
         }
@@ -235,7 +251,7 @@
         var item, config;
         if ((item = coreCards[key[0]])) {
             key = key.slice(1);
-            if (item.type === "*" || typeCache(type = type || v2.type(value))(item.type)) {
+            if (item.type === "*" || typeCache(type)(item.type)) {
                 config = {
                     type: type,
                     exec: item.exec
@@ -256,9 +272,8 @@
         return key;
     }
 
-    function computeWildcards(context, type) {
-        var not = type[0] === '!',
-            variable = context.variable,
+    function computeWildcards(context, type, not) {
+        var variable = context.variable,
             compute = function (wildcard, key) {
                 var value = wildcard.type === 'function' ? variable[key] : context[key];
 
@@ -274,10 +289,6 @@
                     context[key] = value;
                 }
             };
-
-        if (not) {
-            type = type.slice(1);
-        }
 
         v2.each(context.wildcards, function (wildcard, key) {
             if (not ? wildcard.type !== type : wildcard.type === type) {
@@ -358,43 +369,58 @@
     };
 
     v2.extension = function (callback, array) {
+        var isArray, key, deep, infer, option;
         if (arguments.length === 1) {
             array = callback;
             callback = undefined;
         }
-        var isArray, key, deep, option;
         var i = 1, len = array.length, target = array[0];
+
         if (typeof target === "boolean") {
             deep = target;
             target = array[i++];
         }
-        if (target && !(typeof target === 'object' || v2.isFunction(target))) {
+        if (!(typeof target === 'object' || v2.isFunction(target))) {
             target = null;
         }
         if (i === len) {
             i -= 1;
             target = this;
         }
-        var extension = function (value, option) {
+
+        infer = target === null || target === undefined;
+
+        for (; i < len; i++) {
+
+            option = array[i];
+
+            if (option === undefined || option === null)
+                continue;
+
+            if (typeof option === "boolean") {
+                deep = option;
+                continue;
+            }
+
+            if (infer) {
+                infer = false;
+                target = isArraylike(option) ? [] : {};
+            }
+
+            for (key in option) {
+                target[key] = done(target[key], option[key]);
+            }
+        }
+
+        return target;
+
+        function done(value, option) {
             if (value === option || !deep && value === undefined) return option;
             if (option && deep && ((isArray = isArraylike(option)) || v2.isPlainObject(option))) {
                 return v2.extension(callback, [deep, value || (isArray ? [] : {}), option]);
             }
             return callback ? callback(value, option) : option;
-        };
-        while ((option = array[i++]) !== null) {
-            if (typeof option === "boolean") {
-                deep = option;
-                continue;
-            }
-            if (target === null) {
-                target = isArraylike(option) ? [] : {};
-            }
-            for (key in option) {
-                target[key] = extension(target[key], option[key]);
-            }
         }
-        return target;
     };
 
     var improveCallbak = function (value, option) {
@@ -723,7 +749,7 @@
             }
             throw new Error('InvalidCastException:This conversion is not supported.');
         },
-        makeDescriptor = function (source, callback, beforeSetting, conversionType) {
+        makeDescriptor = function (source, callback, beforeSetting, conversionType, allowFirstSet) {
             var threadGet,
                 threadSet;
 
@@ -731,6 +757,7 @@
 
             if (callback.length === 0) {
                 return {
+                    configurable: true,
                     get: function () {
                         return changeType(callback.call(this), conversionType);
                     }
@@ -739,14 +766,27 @@
 
             if (callback.length === 1) {
                 return {
+                    configurable: true,
                     get: function () { return source; },
                     set: function (value) {
 
-                        if (value === source) return;
+                        if (allowFirstSet) {
 
-                        value = changeType(value, conversionType);
+                            allowFirstSet = false;
 
-                        if (value === source) return;
+                            if (source === undefined || source === null) {
+                                conversionType = v2.type(value);
+                            }
+
+                        } else {
+
+                            if (value === source) return;
+
+                            value = changeType(value, conversionType);
+
+                            if (value === source) return;
+
+                        }
 
                         source = value;
 
@@ -764,6 +804,7 @@
             }
             if (callback.length === 2) {
                 return {
+                    configurable: true,
                     get: function () {
 
                         if (threadGet)
@@ -779,11 +820,21 @@
                     },
                     set: function (value) {
 
-                        if (value === source) return;
+                        if (allowFirstSet) {
 
-                        value = changeType(value, conversionType);
+                            allowFirstSet = false;
 
-                        if (value === source) return;
+                            if (source === undefined || source === null) {
+                                conversionType = v2.type(value);
+                            }
+
+                        } else {
+                            if (value === source) return;
+
+                            value = changeType(value, conversionType);
+
+                            if (value === source) return;
+                        }
 
                         source = value;
 
@@ -1138,7 +1189,7 @@
         GLOBAL_VARIABLE_EVENT = 0,
         nodeCache = {};
 
-    v2.extend(Element.prototype, {
+    var eventMap = {
         on: function (type, selector, hanlde) {
             if (arguments.length < 3) {
                 hanlde = selector;
@@ -1146,7 +1197,7 @@
             }
 
             if (!selector && type.indexOf(".") === -1) {
-
+                debugger;
                 if (this.addEventListener) {
                     this.addEventListener(type, hanlde, false);
                 } else {
@@ -1180,7 +1231,7 @@
 
             var typeHandle = function (e) {
 
-                var node = e.target || (e.target = e.srcElement);
+                var value, node = e.target || (e.target = e.srcElement);
 
                 if (map("self") && self !== node) {
                     if (e.preventDefault) e.preventDefault();
@@ -1191,9 +1242,7 @@
                     return false;
                 }
 
-                var value = false;
-
-                if (!selector || matches.call(node, selector)) {
+                if (node.match(selector)) {
 
                     value = hanlde.call(this, e);
 
@@ -1218,9 +1267,9 @@
                         else
                             e.cancelBubble = true;
                     }
-                }
 
-                return value;
+                    return value;
+                }
             };
 
             var typeCache = cache[type] || (cache[type] = []);
@@ -1289,7 +1338,17 @@
                 }
             }
         }
+    };
+
+    v2.improve(Element.prototype, {
+        match: function (expr) {
+            return !expr || matches.call(this, expr);
+        }
     });
+
+    v2.improve(Element.prototype, eventMap);
+
+    v2.improve(Document.prototype, eventMap);
 
     function getStyles(elem) {
         var view = elem.ownerDocument.defaultView;
@@ -1469,6 +1528,33 @@
             }
 
             style[name] = value;
+        }
+    });
+
+    v2.improve(Element.prototype, {
+        empty: function () {
+            while (this.firstChild) {
+                this.removeChild(this.firstChild);
+            }
+            return this;
+        },
+        append: function () {
+            var docFrag = safeFragment.cloneNode();
+
+            v2.each(function (node) {
+                docFrag.appendChild(node.nodeType ? node : document.createTextNode(node));
+            });
+
+            this.appendChild(docFrag);
+        },
+        prepend: function () {
+            var docFrag = safeFragment.cloneNode();
+
+            v2.each(function (node) {
+                docFrag.appendChild(node.nodeType ? node : document.createTextNode(node));
+            });
+
+            this.insertBefore(docFrag, this.firstChild);
         }
     });
 
@@ -1663,7 +1749,7 @@
             match = rtagName.exec(value),
             wrap = match && wrapMap[match[1]] || wrapMap._default;
 
-        tmp.innerHTML = wrap[1] + elem.replace(rxhtmlTag, "<$1></$2>") + wrap[2];
+        tmp.innerHTML = wrap[1] + value.replace(rxhtmlTag, "<$1></$2>") + wrap[2];
 
         i = wrap[0];
 
@@ -1706,7 +1792,7 @@
         rchild = new RegExp("^" + whitespace + "*>"),
         rgroup = new RegExp("^" + whitespace + "*\\("),
         rcombinators = new RegExp("^" + combinator),
-        rreturn = new RegExp("^(" + whitespace + "*return" + whitespace + "+)"),
+        rreturn = new RegExp("\\breturn" + whitespace + "+"),
         rfixcombinators = new RegExp(combinator + '(' + combinator + ')+', 'gm'),
         rsingleTag = /area|br|col|embed|hr|img|input|link|meta|param/i,
         rboolean = /^(?:checked|selected|autofocus|autoplay|async|controls|defer|disabled|hidden|loop|multiple|open|readonly|required|scoped)$/i,
@@ -1725,10 +1811,7 @@
 
                 var value = callback($);
 
-                if (value === undefined || value === null)
-                    return '';
-
-                return value;
+                return value === undefined ? '' : value;
             };
         }),
         fhtmlSerializeCache = function (selector) {
@@ -1888,10 +1971,78 @@
         }
     });
 
-    v2.htmlSerialize = htmlSerialize;
-
     String.prototype.htmlCoding = function () {
         return htmlSerialize(this);
+    };
+
+    var formatCache = makeCache(function (i) {
+        return new RegExp("\\{" + (i - 1) + "\\}", "gm");
+    });
+
+    String.prototype.format = function () {
+        var string = this;
+        if (!string) return string;
+        if (arguments.length < 1) return string;
+
+        for (var i = 1, len = arguments.length; i < len; i++) {
+            string = string.replace(formatCache(i), arguments[i]);
+        }
+        return string;
+    };
+
+    var rcompile = /`\$\{(.*)?\}`/gm;
+    var word = '[_a-z][_a-z0-9]*',
+        rmainCode = new RegExp('\\.\\??(?=(\\.|\\[))', 'gm'),
+        rtryCode = new RegExp(word + '(\\??(\\.' + word + '|\\[.+?\\]))*', 'img'),
+        rtry = new RegExp('(' + word + '|\\])\\?(\\.|\\[)', 'i'),
+        rword = new RegExp('\\b' + word + '\\b', 'gi'),
+        rinject = new RegExp("^" + whitespace + "*(" + word + ")\\(((" + whitespace + "*" + word + whitespace + "*,)*" + whitespace + "*" + word + ")?" + whitespace + "*\\)" + whitespace + "*$", "i");
+
+    function tryCode(string) {
+        var match, results = [];
+        if (string.indexOf('?') === -1)
+            return string;
+        while ((match = rtry.exec(string))) {
+
+            results.push('(__v_ = ');
+            if (results.length > 1) {
+                results.push('__v_');
+            }
+            results.push(string.slice(0, match[1].length + match.index));
+            results.push(')');
+            results.push(' == null', ' ? ', '""', ' : ');
+
+            string = string.slice(match.index + match[0].length - match[2].length);
+        }
+
+        if (results.length === 0)
+            return string;
+
+        results.unshift('(');
+
+        results.push('__v_');
+        results.push(string);
+
+        results.push(')');
+
+        return results.join('');
+    }
+    var withCache = makeCache(function (value) {
+        if (!rreturn.test(value)) {
+            value = 'return ' + value;
+        }
+        var callback = new Function('json', 'var __v_; with(json){ ' + value.replace(rmainCode, 'json').replace(rtryCode, tryCode) + ' }');
+
+        return function (json) {
+            var value = callback(json);
+
+            return value === undefined ? '' : value;
+        };
+    });
+    String.prototype.withCb = function (json) {
+        return this.replace(rcompile, function (_, value) {
+            return withCache(value)(json);
+        });
     };
 
     function UseThen(tag) {
@@ -1915,7 +2066,7 @@
                 return this.add(option);
 
             if (v2.isString(when)) {
-                when = new Function("vm", "with(vm){ return " + when + ";}");
+                when = new Function("vm", "try{ with(vm){  if(option) with(option) { return " + when + "; } return " + when + ";} }catch(_){ return false; }");
             }
 
             this[this.length] = { filter: when, option: option };
@@ -1925,11 +2076,45 @@
         then: function (vm) {
             var i = 0, use;
             while ((use = this[i++])) {
-                if (use.filter(vm)) return use.option;
+                if (use.filter(vm))
+                    return use.option;
             }
             return null;
         }
     };
+
+    function dependencyInjection(context, key, inject, value) {
+        if (!inject) return value;
+        var callback, baseArgs, args = [], injections = inject.match(rword);
+        if (callback = context[key]) {
+            context[key] = function () {
+                return applyCallback(callback, baseArgs, context, true);
+            };
+            return function () {
+                for (key in injections) {
+                    args[key] = (key = injections[key]) in context.variable ? context.variable[key] : context[key];
+                }
+                baseArgs = core_slice.call(arguments);
+                return applyCallback(value, core_concat.call(args, baseArgs), context, true);
+            };
+        }
+        return function () {
+            for (key in injections) {
+                args[key] = (key = injections[key]) in context.variable ? context.variable[key] : context[key];
+            }
+            return applyCallback(value, args, context, true);
+        };
+    }
+
+    function dependencyInjectionFn(key, inject, value) {
+        if (!inject) return value;
+        return function () {
+            for (key in injections) {
+                args[key] = (key = injections[key]) in this.variable ? this.variable[key] : this[key];
+            }
+            return applyCallback(value, args, this, true);
+        };
+    }
 
     var use = namespaceCache(function (tag) {
         return new UseThen(tag);
@@ -1942,18 +2127,18 @@
     });
 
     var useConfig = function (option) {
-        var fn = v2.fn;
+        var type, match, fn = v2.fn;
 
         v2.each(option, function (value, name) {
 
-            var type = v2.type(value);
+            type = v2.type(value);
 
-            if (!(name in context)) {
+            if (!(name in fn)) {
                 name = analyzeWildcards(baseCards, name, type, true);
             }
 
-            if (type === 'function' && (match = rinject.exec(key))) {
-                value = dependencyInjection(context, key = match[1], match[2], value);
+            if (type === 'function' && (match = rinject.exec(name))) {
+                value = dependencyInjectionFn(match[1], match[2], value);
             }
 
             fn[name] = value;
@@ -2128,6 +2313,17 @@
         isControl = object.v2version === version;
         isArray = excludes && v2.isArray(excludes);
 
+        for (i in object) {
+
+            done(i, object[i]);
+
+            if (!(isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key])) {
+                object[i] = null;
+            }
+        }
+
+        return object[i] = null;
+
         function done(key, value) {
             if (!value || !deep || value === object || (isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key]))
                 return;
@@ -2150,18 +2346,6 @@
                 return destroyObject(object, excludes, true);
             }
         }
-
-
-        for (i in object) {
-
-            done(i, object[i]);
-
-            if (!(isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key])) {
-                object[i] = null;
-            }
-        }
-
-        return object[i] = null;
     }
 
     v2.fn = v2.prototype = {
@@ -2208,7 +2392,10 @@
         },
         $: null,
         $$: null,
+        core: null,
         owner: null,
+        width: null,
+        height: null,
         limit: false,
         access: false,
         skipOn: false,
@@ -2232,45 +2419,40 @@
             }
         },
         ready: function () {
-            var
-                render = function () {
-                    computeWildcards(this, 'function');
-                },
-                makeRender = function (render, callback) {
-                    return function () {
-                        var value = applyCallback(render, arguments, this);
-
-                        callback.call(this);
-
-                        return value;
-                    };
-                };
+            var load;
 
             this.events = {};
             this.methods = {};
             this.components = {};
 
-            this.wildCards = v2.extend(true, {}, baseCards);
+            this.enumState = this.enumState || {
+                pending: 0.5,
+                init: 1,
+                render: 2,
+                load: 4,
+                usb: 8,
+                resolve: 16,
+                commit: 32
+            };
+
+            this.wildcards = v2.extend(true, {}, baseCards);
 
             this.compile();
 
-            this.render = this.render ? makeRender(this.render, render) : render;
-
             if (this.ajax && this.access) {
-                this.render = makeRender(this.render, function () {
-                    this.sleep(this.ajax);
-                });
-            }
 
-            if (!this.enumState) {
-                this.enumState = {
-                    pending: 0.5,
-                    init: 1,
-                    render: 2,
-                    load: 4,
-                    usb: 8,
-                    resolve: 16,
-                    commit: 32
+                load = this.load;
+
+                this.load = load ? function () {
+
+                    var value = applyCallback(load, arguments, this);
+
+                    this.sleep(this.ajax);
+
+                    return value;
+
+                } : function () {
+                    this.sleep(this.ajax);
                 };
             }
 
@@ -2284,11 +2466,12 @@
                 core_namespace = "",
                 variable = {},
                 callbacks = [],
+                watchStack = [],
                 context = this,
                 excludes = {
                     identity: true
                 },
-                wildCards = this.wildCards,
+                wildcards = this.wildcards,
                 makeCallback = function (callback, key, namespace) {
 
                     if (callback.identity === context.identity)
@@ -2297,14 +2480,14 @@
                     var _callback = function () {
                         var base = context.base,
                             tmp_namespace = context.namespace,
-                            value = context.enumState[key];
+                            value = context.enumState[key] >>> 0;
 
                         context.base = base.base;
                         core_namespace = namespace;
 
-                        value = !value ?
+                        value = value <= 1 ?
                             applyCallback(callback, arguments, context) :
-                            (value <= 1 || value >= 32) ?
+                            value >= 32 ?
                                 callback.call(context) :
                                 value < 4 ?
                                     callback.call(context, context.variable) :
@@ -2339,7 +2522,7 @@
 
                     tag = option.tag;
 
-                    if (define) {
+                    if (define && !highest) {
                         if (core_namespace) {
                             core_namespace += '.' + tag;
                         } else {
@@ -2371,10 +2554,15 @@
 
                         if (key === tag || key === 'tag' || key === 'constructor' || value === undefined) return;
 
+                        if (key === 'enumState') {
+                            v2.log('Attribute enumState can only be injected by fn[v2.use({enumState:{}})].', 15);
+                            return;
+                        }
+
                         if (key in context) {
                             sourceValue = context[key];
                         } else {
-                            key = analyzeWildcards(wildCards, key, type, define);
+                            key = analyzeWildcards(wildcards, key, type, define);
 
                             if (key in context) {
                                 sourceValue = context[key];
@@ -2401,27 +2589,28 @@
 
                         if (type === 'function') {
 
-                            if (highest) {
-
-                                return context[key] = value;
-
-                            }
-
                             if (conversionType === "function") {
 
                                 context[key] = value;
+
+                                if (highest && highest[key] === sourceValue) {//? 多次定义时，以最后一次次的为准。
+                                    return;
+                                }
 
                                 return extendsCallback(context.base || (context.base = {}), key, sourceValue, core_namespace);
                             }
 
                             excludes[key] = true;
 
-                            return v2.define(context, key, makeDescriptor(sourceValue, value, null, conversionType));
+                            return v2.define(context, key, makeDescriptor(sourceValue, value, null, conversionType, true));
                         }
 
                         if (key in context.enumState) {
                             return v2.error("The enumerated state property value must be a function!");
                         }
+
+                        if (key in wildcards)
+                            return variable[key] = value;
 
                         value = changeType(value, conversionType, type);
 
@@ -2433,7 +2622,7 @@
                 };
 
             this.init = function (tag, tagName) {
-                var node, type, isValid;
+                var node, parentNode, type, isValid, option = this.option;
 
                 if (arguments.length === 0) {
                     tag = "*";
@@ -2480,35 +2669,34 @@
                 }
 
                 if (!option ||
-                    !(context = option.$$) ||
-                    !(context = this.take(context, this.master ? this.master.$ : document)) ||
-                    !(context = isArraylike(context) ? context[0] : context) ||
-                    !(context.nodeType === 1)) {
+                    !(parentNode = option.$$) ||
+                    !(parentNode = this.take(parentNode, this.master ? this.master.$ : document)) ||
+                    !(parentNode = isArraylike(parentNode) ? parentNode[0] : parentNode) ||
+                    !(parentNode.nodeType === 1)) {
 
-                    context = this.owner ? this.owner.$ : document.body;
+                    parentNode = this.owner ? this.owner.$ : document.body;
                 }
 
                 if (!option ||
                     !(node = option.$) ||
-                    !(node = this.take(node, context)) ||
+                    !(node = this.take(node, parentNode)) ||
                     !(node = isArraylike(node) ? node[0] : node) ||
                     !(node.nodeType === 1)) {
 
-                    return this.$$ = context, this.$ = this.$$.appendChild(node || document.createElement(tagName));
+                    return this.$$ = parentNode, this.$ = this.$$.appendChild(node || document.createElement(tagName));
                 }
 
                 if (node.parentNode) {
-                    context = node.parentNode;
+                    parentNode = node.parentNode;
                 } else {
-                    context.appendChild(node);
+                    parentNode.appendChild(node);
                 }
 
                 if (isValid(node))
-                    return this.$$ = context, this.$ = node;
+                    return this.$$ = parentNode, this.$ = node;
 
                 v2.error("Components do not support elements whose NodeName is “" + node.nodeName.toLowerCase() + "”.");
             };
-
             v2.each(v2.use(this.tag), function (then) {
                 var option = then.always(),
                     supper = then.then(context);
@@ -2517,7 +2705,7 @@
                     return initControls(option || supper, true);
                 }
                 initControls(option, true);
-                initControls(supper, true, true);
+                initControls(supper, true, option);
             });
 
             initControls(this.option);
@@ -2629,7 +2817,14 @@
                     }
                 }
 
-                this.isReady = isReady;
+                if ((this.isReady = isReady)) {
+
+                    computeWildcards(this, 'function');
+
+                    while (value = watchStack.shift()) {
+                        value();
+                    }
+                }
 
                 GLOBAL_VARIABLE_CURRENT_CONTROL = control;
             };
@@ -2637,13 +2832,24 @@
             this.define = function (prop, descriptor, elem) {
                 var isFunction;
 
-                elem = elem || this.$;
+                if (arguments.length === 2 && descriptor && descriptor.nodeType === 1) {
+
+                    elem = descriptor;
+
+                    descriptor = undefined;
+                }
 
                 if (v2.isPlainObject(prop)) {
+
+                    elem = descriptor || this.$main;
+
                     return v2.each(prop, function (attributes, name) {
                         done(name, attributes);
                     });
                 }
+
+
+                elem = elem || this.$main;
 
                 isFunction = v2.isFunction(descriptor);
 
@@ -2652,27 +2858,64 @@
                 });
 
                 function done(name, attributes) {
-                    var contains = name in elem,
-                        sourceValue = context[name];
+                    var contains = elem && (name in elem),
+                        sourceValue = context[name],
+                        conversionType,
+                        typeOnly;
+
+                    if (name in excludes) {
+                        return v2.log('Attributes cannot be repeatedly defined(' + name + ').', 15);
+                    }
 
                     excludes[name] = true;
 
                     if (contains && (sourceValue === null || sourceValue === undefined)) {
-                        sourceValue = node[name];
+                        typeOnly = true;
+                        sourceValue = elem[name];
                     }
 
                     if (isFunction || isFunction === undefined && v2.isFunction(attributes)) {
                         attributes = makeDescriptor(sourceValue, attributes, contains && function (value) {
-
                             elem[name] = value;
+                        }, null, true);
+                    }
 
-                        });
+                    if (attributes === undefined || attributes === null) {
+
+                        conversionType = v2.type(sourceValue);
+
+                        attributes = {
+                            configurable: true,
+                            get: contains ? function () {
+                                return elem[name];
+                            } : conversionType === 'boolean' ? function () {
+                                return elem.getAttribute(name) === name;
+                            } : function () {
+                                return elem.getAttribute(name);
+                            },
+                            set: contains ? function (value) {
+                                elem[name] = value;
+                            } : conversionType === 'boolean' ? function (value) {
+                                if (value) {
+                                    elem.setAttribute(name, name);
+                                } else {
+                                    elem.removeAttribute(name);
+                                }
+                            } : function (value) {
+                                elem.setAttribute(name, value);
+                            }
+                        };
                     }
 
                     v2.define(context, name, attributes);
 
+                    if (typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue)
+                        return;
+
                     if (attributes === true || "set" in attributes || attributes.writable === true) {
-                        context[name] = sourceValue;
+                        watchStack.push(function () {
+                            context[name] = sourceValue;
+                        });
                     }
                 }
             };
@@ -2698,14 +2941,17 @@
             };
 
             this.define({
+                $main: function () {
+                    return this['$' + this.tag] || this.$core || this.$;
+                },
                 tag: function () {
                     return core_namespace.split('.').pop();
                 },
                 namespace: function () {
                     return core_namespace;
                 },
-                wildCards: function () {
-                    return wildCards;
+                wildcards: function () {
+                    return wildcards;
                 },
                 variable: function () {
                     return variable;
@@ -2714,7 +2960,7 @@
 
             this.define({
                 controls: function () {
-                    return controls || (controls = new v2Control());
+                    return controls || (controls = new V2Controls());
                 },
                 firstChild: function () {
                     return this.controls.eq(0);
@@ -2730,7 +2976,7 @@
                 }
             });
 
-            computeWildcards(wildcards, '!function');
+            computeWildcards(wildcards, 'function', true);
         },
         lazy: function () {
             var i = 0,
@@ -2822,7 +3068,7 @@
             var visible = !!this.defaultVisible;
 
             this.define('disabled', function (value) {
-                this.$.classList.toggle('disabled', value);
+                this.$.classList[value ? "add" : "remove"]('disabled');
             });
 
             this.define({
@@ -2853,7 +3099,8 @@
                 }
             });
 
-            this.define(watch);
+            if (v2.isPlainObject(watch))
+                this.define(watch);
         },
         commit: function () {
             if (this.skipOn) return;
@@ -2862,13 +3109,26 @@
                 this.$.on(type, handle);
             }, this);
         },
-        focus: function () {
-            try {
-                this.$.focus();
-            } catch (_) { }
+        invoke: function (fn) {
+
+            if (!fn) return;
+
+            if (v2.isString(fn)) {
+                fn = this.methods[fn] || this.methods[v2.camelCase(fn)];
+            }
+            if (v2.isFunction(fn)) {
+                if (arguments.length > 1)
+                    return fn.apply(this, core_slice.call(arguments, 1));
+                return fn.call(this);
+            }
         },
         build: function (view) {
-            var type = v2.type(view);
+            var type;
+
+            if (view === null || view === undefined)
+                return;
+
+            type = v2.type(view);
 
             switch (type) {
                 case 'string':
@@ -2879,7 +3139,7 @@
                     if (view.nodeType) {
                         return this.$.appendChild(view);
                     }
-                    if (view.tag) {
+                    if ('tag' in view) {
                         return this.create(view);
                     }
                     return v2.each(view, this.lazy(this.create));
@@ -2918,6 +3178,16 @@
             this.$.styleCb('display', 'none');
         }
     });
+
+    v2.use({
+        '&focus': function () {
+            try {
+                this.$.focus();
+            } catch (_) { }
+        }
+    });
+
+    v2.fn.init.prototype = v2.fn;
 
     function noop() { }
 

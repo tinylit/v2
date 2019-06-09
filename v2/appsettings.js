@@ -3,10 +3,6 @@
     urlArgs: "r=" + (+new Date()),
     baseUrl: '/js',
     waitSeconds: 30000,
-    shim: {
-        "v2.rsm": ['v2'],
-        "v2.tool": ['v2']
-    },
     paths: {
         vue: 'lib/vue/vue',
         axios: 'lib/ajax/axios'

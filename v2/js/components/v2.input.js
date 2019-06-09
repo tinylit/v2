@@ -15,136 +15,192 @@
             } :
             factory(v2kit);
 }(function (v2) {
+
     var matchExpr = {
         number: /^[+-]?(0|[1-9][0-9]*)(?:\.([0-9]+))?$/,
         tel: /^(0[0-9]{2,3}-?)?(\+86\s+)?((1[3-9][0-9]{3}|[2-9])[0-9]{6,7})+(-[0-9]{1,4})?$/,
         email: /^\w[-\w.+]* @([A-Za-z0-9][-A-Za-z0-9]+\.)+[A-Za-z]{2,14}$/,
         url: /^(([a-z]+:\/\/)|~?\/|\.?\.\/)/i
     };
+
     var patternCache = v2.makeCache(function (pattern) {
-        if (pattern[0] != "^") pattern = "^" + pattern;
-        if (pattern[pattern.length - 1] != "$") pattern += "$";
         try {
             return new RegExp(pattern);
-        } catch (_) {
-            return /.*/;
-        }
+        } catch (_) { }
     });
-    function inputValidity(control) {
-        var pattern;
-        function ValidityState() {
-            this.valid = true;//是否有效
-            this.badInput = false;//无效内容
-            this.patternMismatch = false;//正则表达式验证失败
-            this.rangeOverflow = false;//输入值超过max的限定
-            this.rangeUnderflow = false;//输入值小于min的限定
-            this.tooLong = false;//输入的字符数超过maxlength
-            this.tooShort = false;//输入的字符数小于minlength
-            this.typeMismatch = false;//输入值不符合email、url的验证
-            this.valueMissing = false;//未输入值，违反了required要求
-            this.customError = false;//是否存在自定义错误
-        }
-        ValidityState.prototype = {
-            isValid: function (value) {
-                var type = control.type;
-                value = value == null ? control.value : value;
-                if (value) {
-                    if (type === "number") {
-                        this.rangeOverflow = ~~value > control.max;
-                        this.rangeUnderflow = ~~value < control.min;
-                    }
-                    if (type in matchExpr) {
-                        this.badInput = this.typeMismatch = !matchExpr[type].test(value);
-                    }
-                    this.tooLong = value.length > control.maxlength;
-                    this.tooShort = value.length < control.minlength;
-                    if ((pattern = control.pattern) && (pattern = patternCache(pattern))) {
-                        this.patternMismatch = !pattern.test(value);
-                    }
-                }
-                this.valueMissing = control.required && !value;
-                return this.valid = !(this.valueMissing || this.typeMismatch || this.badInput || this.patternMismatch || this.rangeOverflow || this.rangeUnderflow || this.tooLong || this.tooShort);
-            }
-        };
-        return new ValidityState();
-    };
-    function inputValidityError(control) {
-        var timer, validity = control.validity;
-        function ValidityStateError() { }
-        ValidityStateError.prototype = {
-            validError: function () {
-                if (validity.customError) {
-                    return control.ValidityError;
-                }
-                if (validity.valueMissing) {
-                    return control.title ? "请填写“" + control.title + "”字段。" : "请填写此字段。";
-                }
-                if (validity.patternMismatch) {
-                    return "请与所请求的格式保持一致。";
-                }
-                if (validity.badInput) {
-                    if (control.type === "number") {
-                        return "请输入一个数字。";
-                    }
-                    if (control.type === "tel") {
-                        return "请输入一个电话号码。";
-                    }
-                }
-                if (control.type === "number") {
-                    if (validity.rangeUnderflow) {
-                        return "值必须大于或等于{0}。".format(control.min);
-                    }
-                    if (validity.rangeOverflow) {
-                        return "值必须小于或等于{0}。".format(control.max);
-                    }
-                }
-                var value = control.value;
-                if (validity.typeMismatch) {
-                    if (control.type === "email") {
-                        var index = value.indexOf("@");
-                        return (index > -1 ? "请在“@”内容" + (index > 0 ? "后面" : "前面") + "输入内容。{0}内容不完整。" : "请在邮箱地址中包含“@”。{0}缺少“@”。").format(value);
-                    }
-                }
-                if (validity.tooShort) {
-                    return "值必须大于或等于{0}个字符。".format(control.minlength);
-                }
-                if (validity.tooLong) {
-                    return "值必须小于或等于{0}个字符。".format(control.maxlength);
-                }
-            },
-            reportValidity: function () {
-                if (control.checkValidity()) return true;
-                var massage = this.validError();
-                if (!this.isReady) {
-                    var node = control.prepend('<div class="input-validity"><div class="validity-status">!</div><span class="validity-massage"></span></div>').first();
-                    v2.on(document, function (e) {
-                        var elem = e.target || e.srcElement;
-                        if (v2.contains(control.$, elem) && v2.nodeName(elem, 'input')) {
-                            v2.addClass(node, 'hidden');
-                        }
-                    });
-                    this.isReady = true;
-                    this.$ = node;
-                }
-                //this.$.find(".validity-massage").text(massage);
-                //this.$.removeClass("hidden");
-                //if (timer) clearTimeout(timer);
-                //timer = setTimeout(function () {
-                //    vm.$.addClass("hidden");
-                //    timer = null;
-                //}, 3000);
-                return false;
-            }
-        };
-        return new ValidityStateError();
+
+    function ValidityState() {
+        /** 该元素的自定义有效性消息已经通过调用元素的setCustomValidity() 方法设置成为一个非空字符串. */
+        this.customError = false;
+
+        /** 该元素的值与指定的pattern属性不匹配. */
+        this.patternMismatch = false;
+
+        /** 该元素的值大于指定的 max属性. */
+        this.rangeOverflow = false;
+
+        /** 该元素的值小于指定的 min属性. */
+        this.rangeUnderflow = false;
+
+        /** 该元素的值不符合由step属性指定的规则. */
+        this.stepMismatch = false;
+
+        /** 该元素的值的长度超过了HTMLInputElement 或者 HTMLTextAreaElement 对象指定的maxlength属性中的值. */
+        this.tooLong = false;
+
+        /** 该元素的值不符合元素类型所要求的格式(当type 是 email 或者 url时). */
+        this.typeMismatch = false;
+
+        /** 其他的约束验证条件都不为true. */
+        this.valid = false;
+
+        /** 该元素有 required 属性,但却没有值. */
+        this.valueMissing = false;
     }
 
-    v2.use('input', {
-        components: {
-            datePicker: function (resolve) {
-                return require(['components/v2.datePicker'], resolve);
+    function usb() {
+        var validity, validationMessage;
+
+        this.base.usb();
+
+        this.define('name multiple pattern min max minlength maxlength required readonly placeholder');
+
+        this.define('autocomplete', {
+            get: function () {
+                return this.$main.autocomplete.toLowerCase() === 'on';
+            },
+            set: function (value) {
+                this.$main.autocomplete = value ? 'on' : 'off';
             }
-        },
+        });
+
+        this.define('value', function (value) {
+            if (this.checkValidity()) {
+                this.invoke('input-change', value);
+            }
+        });
+
+        if (this.$main.validity == null) {
+
+            validationMessage = "";
+            validity = new ValidityState();
+
+            this.define({
+                validity: function () {
+                    var type = this.type,
+                        value = this.value;
+                    if (value) {
+                        if (type === "number") {
+                            validity.rangeOverflow = ~~value > this.max;
+                            validity.rangeUnderflow = ~~value < this.min;
+                        }
+                        if (type in matchExpr) {
+                            validity.badInput = validity.typeMismatch = !matchExpr[type].test(value);
+                        }
+                        validity.tooLong = value.length > validity.maxlength;
+                        validity.tooShort = value.length < validity.minlength;
+                        if ((pattern = this.pattern) && (pattern = patternCache(pattern))) {
+
+                            validity.patternMismatch = true;
+
+                            if ((pattern = pattern.exec(value))) {
+                                validity.patternMismatch = pattern.length < value.length;
+                            }
+                        }
+                    }
+                    validity.valueMissing = validity.required && !value;
+                    validity.valid = !(validity.valueMissing || validity.typeMismatch || validity.badInput || validity.patternMismatch || validity.rangeOverflow || validity.rangeUnderflow || validity.tooLong || validity.tooShort);
+                    return validity;
+                },
+                validationMessage: function () {
+                    var type;
+                    if (validationMessage)
+                        return validationMessage;
+                    if (validity.valueMissing) {
+                        return this.title ? "请填写“" + this.title + "”字段。" : "请填写此字段。";
+                    }
+                    if (validity.patternMismatch) {
+                        return "请与所请求的格式保持一致。";
+                    }
+
+                    type = this.type;
+
+                    if (validity.badInput) {
+                        if (type === "number") {
+                            return "请输入一个数字。";
+                        }
+                        if (type === "tel") {
+                            return "请输入一个电话号码。";
+                        }
+                    }
+                    if (type === "number") {
+                        if (validity.rangeUnderflow) {
+                            return "值必须大于或等于{0}。".format(control.min);
+                        }
+                        if (validity.rangeOverflow) {
+                            return "值必须小于或等于{0}。".format(control.max);
+                        }
+                    }
+
+                    if (validity.typeMismatch) {
+                        if (type === "email") {
+                            var value = this.value,
+                                index = value.indexOf("@");
+                            return (index > -1 ? "请在“@”内容" + (index > 0 ? "后面" : "前面") + "输入内容。{0}内容不完整。" : "请在邮箱地址中包含“@”。{0}缺少“@”。").format(value);
+                        }
+                    }
+                    if (validity.tooShort) {
+                        return "值必须大于或等于{0}个字符。".format(this.minlength);
+                    }
+                    if (validity.tooLong) {
+                        return "值必须小于或等于{0}个字符。".format(this.maxlength);
+                    }
+                }
+            });
+
+            /** 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。 */
+            this.setCustomValidity = function (message) {
+                validationMessage = message;
+            };
+            /** 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。 */
+            this.checkValidity = function () {
+                return this.validity.valid;
+            };
+        } else {
+            this.define({
+                validity: function () {
+                    return this.$main.validity;
+                },
+                validationMessage: function () {
+                    return this.$main.validationMessage;
+                }
+            });
+            /** 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。 */
+            this.setCustomValidity = function (message) {
+                this.$main.setCustomValidity(message);
+            };
+            /** 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。 */
+            this.checkValidity = function () {
+                return this.$main.checkValidity();
+            };
+        }
+
+        if (v2.isFunction(this.$main.reportValidity)) {
+            this.reportValidity = function () {
+                return this.$main.reportValidity();
+            };
+        } else {
+            this.reportValidity = function () {
+                if (this.checkValidity())
+                    return true;
+                this.focus();
+                return false;
+            };
+        }
+    }
+
+    /** 所有类型 */
+    v2.use('input', {
         input: function () {
             /** 最小值 */
             this.min = -Infinity;
@@ -162,203 +218,119 @@
             this.pattern = '';
             /** 禁用 */
             this.disabled = false;
-            /** 多行（textarea|input） */
+            /** 返回/设置元素的自动完成属性，指示控件的值是否可以由浏览器自动完成。如果类型属性的值隐藏、复选框、单选、文件或按钮类型(按钮、提交、重置、图像)，则忽略该属性。可能的值是:“打开”:浏览器可以使用先前存储的值自动完成该值 */
+            this.autocomplete = true;
+
+            /** 返回/设置元素的autofocus属性，该属性指定窗体控件在加载页面时应该具有输入焦点，除非用户覆盖它，例如输入另一个控件。文档中只有一个表单元素可以具有autofocus属性。如果type属性被设置为hidden(也就是说，您不能自动将焦点设置为隐藏控件)，则无法应用该属性。 */
+            this.autofocus = false;
+
+            /** 返回/设置元素的多个属性，指示是否可能有多个值(例如，多个文件)。 */
             this.multiple = false;
 
-            /** 缓存记录 */
-            this.autocomplete = true;
-            /*选中状态*/
-            this.checked = false;//[redio|checkbox]
-
-            /** 标题 */
-            this.title = '';
-            /** 内容（仅checkbox和radio） */
-            this.text = '';
             /** 名称 */
             this.name = "";
             /** 按钮类型 */
             this.type = "text";//[text|number|tel|email|url|search|date|datetime|time|redio|checkbox]
             /** 按钮名称 */
             this.value = "";
+            /** 默认提示 */
+            this.placeholder = '';
+
             /** 超小输入框 */
             this.xs = false;
             /** 小输入框 */
             this.sm = false;
             /** 大输入框 */
             this.lg = false;
-            /** 默认提示 */
-            this.placeholder = '';
-            /** 验证实体 */
-            this.validity = null;
-            /** 验证错误 */
-            this.validityError = null;
+
+            /** 指示元素是否为约束验证的候选项。如果有条件阻止约束验证，则为false。 */
+            this.willValidate = "";
+
+            /** 返回一个本地化消息，该消息描述控件不满足的验证约束(如果有的话)。如果控件不是约束验证的候选项(willvalidate为false)，或者它满足约束，则该字符串为空。 */
+            this.validationMessage = "";
+        },
+        pending: function () {
+            this.defaultValue = this.value;
         },
         init: function () {
-            this.base.init(this.type === 'radio' || this.type === 'checkbox' ? 'label' : this.multiple ? 'textarea' : 'input');
+            this.base.init('input');
         },
-        checkValidity: function () {
-            return this.validitySurpport ? this.$core.checkValidity() : this.validity.isValid();
-        },
-        reportValidity: function () {
-            if (this.reportSurpport) {
-                return this.$core.reportValidity();
-            }
-            this.validityError = this.validityError || inputValidityError(this);
-            return this.validityError.reportValidity();
-        },
-        setCustomValidity: function (massage) {
-            if (this.validitySurpport) {
-                this.$core.setCustomValidity(message);
-            } else if (this.validity.customError = !!massage && v2.isString(massage)) {
-                this.ValidityError = massage;
-            }
-        },
-        render: function (variable) {
-            this.base.render();
-            switch (this.type) {
-                case 'button':
-                case 'reset':
-                case 'submit':
-                    this.addClass('btn');
-                    switch (this.type) {
-                        case 'submit':
-                            this.addClass('btn-primary');
-                            break;
-                        case 'reset':
-                            this.addClass('btn-warning');
-                            break;
-                        default:
-                            if (!variable.addClass) {
-                                this.addClass('btn-default');
-                            }
-                            break;
-                    }
-                    if (this.lg || this.sm || this.xs) {
-                        this.addClass(this.lg ? 'btn-lg' : this.sm ? 'btn-sm' : 'btn-xs');
-                    }
-                    break;
-                case 'radio':
-                case 'checkbox':
-                    this.addClass(this.type);
-                    this.$massage = this.append(v2.htmlSerialize('input[type="{type}"]+span'.withCb(this))).last();
-                    this.$core = this.$massage.previousSibling;
-                    break;
-                default:
-                    this.addClass('form-control');
-                    if (this.lg || this.sm || this.xs) {
-                        this.addClass(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
-                    }
-                    break;
+        render: function () {
+            this.$.classList.add('form-control');
+            if (this.lg || this.sm || this.xs) {
+                this.$.classList.add(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
             }
 
-            var node = this.$core || this.$;
-
-            var validity = node.validity;
-
-            this.validitySurpport = !!validity;
-            this.reportSurpport = v2.isFunction(node.reportValidity);
-
-            this.validity = validity || this.validity || inputValidity(this);
-
-            this.$core = node;
+            if (this.autofocus) {
+                this.focus();
+            }
         },
         usb: function () {
-            this.base.usb();
-            this.define('name pattern min max minlength maxlength placeholder validationMessage')
-                .define('type', true)
-                .define({
-                    value: function (value) {
-                        if (this.checkValidity()) {
-                            this.invoke('input-change', value);
-                        }
-                    },
-                    required: function (value) {
-                        this.toggleClass('required', !!value);
-                    },
-                    readonly: function (value) {
-                        this.toggleClass('readonly', !!value);
-                    },
-                    disabled: function (value) {
-                        this.toggleClass('disabled', !!value);
-                    }
-                }).define('autocomplete', {
-                    get: function () {
-                        var autocomplete = this.$core.autocomplete;
-                        return !autocomplete || autocomplete.toLowerCase() === 'on';
-                    },
-                    set: function (value) {
-                        this.$core.autocomplete = value ? 'on' : 'off';
-                    }
-                });
-            if (this.type === 'radio' || this.type === 'checkbox') {
-                this.define('checked', function (checked) {
-                    if (checked && this.type === 'radio') {
-                        var radioGroup = radioCache(this.name);
-                        radioGroup.checked(this);
-                    }
-                    this.toggleClass('checked', checked = !!checked);
-                    this.invoke('checked-change', checked);
-                }).define('text', function (text) {
-                    this.emptyAt(this.$massage)
-                        .appendAt(this.$massage, document.createTextNode(text));
-                }, true);
-            }
-        },
-        resolve: function () {
-            if (this.type === 'date' || this.type === 'time' || this.type === 'datetime' || this.type === 'datetime-local') {
-                this.$sharp = this.constructor('date-picker', {
-                    visible: false,
-                    touch: this,
-                    $$: document.body,
-                    min: this.invoke("date-min"),
-                    max: this.invoke("date-max"),
-                    format: this.type === 'date' ? 'yyyy-MM-dd' : this.type === 'time' ? 'HH:mm' : this.type === 'datetime' ? 'yyyy-MM-dd HH:mm:ss' : 'yyyy-MM-dd HH:mm'
-                });
-            }
-        },
-        commit: function () {
-            this.base.commit();
-            if (this.type === 'radio' || this.type === 'checkbox') {
-                if (this.type === 'radio' && this.name) {
-                    var radioGroup = radioCache(this.name);
-                    radioGroup.add(this);
-                }
-                return this.on('$click', function () {
-                    if (this.type === 'checkbox') {
-                        this.checked = !this.checked;
-                    } else {
-                        this.checked = true;
-                    }
-                    return false;
-                });
-            }
+            usb.call(this);
 
-            var isChinese,
-                vm = this,
-                value = vm.value,
-                fixCallbackChange = function () {
-                    if (isChinese || value === this.value) return;
-                    if (this.checkValidity()) {
-                        return vm.invoke('input-change', value = this.value);
-                    }
-                    return value = this.value;
-                };
-            this.on("compositionstart", function () {
-                isChinese = true;
-            }).on("compositionend", function () {
-                isChinese = false;
-            });
-            this.on("input propertychange", fixCallbackChange)
-                .on("keyup", function (e) {
-                    var code = e.keyCode || e.which;
-                    if (code === 13 || code === 108) {
-                        vm.invoke("keyboard-enter");
-                    }
-                    fixCallbackChange.call(this);
-                });
+            this.define('type');
         }
     });
-    return function (options) {
-        return v2('input', options);
-    };
+
+    v2.use('input', 'type === "checkbox" || type === "radio"', {
+        input: function () {
+
+            /** 对选项描述 */
+            this.text = "";
+
+            /*选中状态*/
+            this.checked = false;//[redio|checkbox]
+        },
+        pending: function () {
+            this.defaultValue = this.value;
+            this.defaultChecked = this.checked;
+        },
+        init: function () {
+            this.base.init('label');
+        },
+        load: function () {
+
+            this.$.appendChild(('input+span')
+                .htmlCoding()
+                .html());
+
+            this.$core = this.$.firstElementChild;
+            this.$txt = this.$.lastElementChild;
+        },
+        usb: function () {
+
+            usb.call(this);
+
+            this.define('checked', function (checked) {
+                this.$.classList.toggle('checked', checked = !!checked);
+                this.invoke('checked-change', checked);
+            });
+
+            this.define('text', function (text) {
+                this.$txt.empty()
+                    .append(text);
+            });
+
+            this.define('type', function (type) {
+                this.$core.setAttribute('type', type);
+
+                this.$.classList.remove('checkbox', 'redio');
+                this.$.classList.add(type);
+            });
+        },
+        commit: function () {
+            var vm = this;
+
+            this.base.commit();
+
+            this.$.on('click', function () {
+                vm.checked = vm.$core.checked;
+            });
+        }
+    });
+
+
+    return function (option) {
+        return v2('input', option);
+    }
 }));
