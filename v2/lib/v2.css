@@ -1,0 +1,373 @@
+﻿@import 'bootstrap/bootstrap.css';
+
+body {
+    font-size: 62.5%;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+/** -------------------------------------------------------------- input --------------------------------------------------------------*/
+
+input::-ms-expand {
+    background-color: transparent;
+    border: 0;
+}
+
+input:focus {
+    border-color: #66afe9;
+    outline: 0;
+    -webkit-box-shadow: inset 0 0.0625em 0.0625em rgba(0, 0, 0, .075), 0 0 0.5em rgba(102, 175, 233, 0.6);
+    box-shadow: inset 0 0.0625em 0.0625em rgba(0, 0, 0, .075), 0 0 0.5em rgba(102, 175, 233, 0.6);
+}
+
+input::-webkit-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::-moz-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input:-ms-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::-ms-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input[type=text],
+input[type=search],
+input[type="number"],
+input[type=password],
+input[type=tel],
+input[type=url],
+input[type=email],
+input[type=time],
+input[type=date],
+input[type=datetime],
+input[type=datetime-local] {
+    width: 100%;
+    padding: 0.375em 0.75em;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 0.0725em solid #ced4da;
+    border-radius: 0.25em;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+input[type=radio],
+input[type=checkbox] {
+    position: relative;
+    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+input[type=radio]::after,
+input[type=radio]::before,
+input[type=checkbox]::after,
+input[type=checkbox]::before {
+    position: absolute;
+    margin: auto;
+    content: '';
+    background-color: #fff;
+}
+
+input[type=radio]::before,
+input[type=checkbox]::before {
+    z-index: 10;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+input[type=radio]::after,
+input[type=checkbox]::after {
+    z-index: 11;
+    top: .325em;
+    right: .325em;
+    bottom: .325em;
+    left: .325em;
+    background-color: transparent;
+}
+
+input[type=radio]::before,
+input[type=checkbox]::before {
+    border: .085em solid #c1caca;
+    border-radius: .2em;
+    -webkit-box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+    box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+}
+
+input[type=radio]::before,
+input[type=checkbox]::before {
+    border: .085em solid #c1caca;
+    border-radius: .2em;
+    -webkit-box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+    box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+}
+
+input[type=radio]:checked::before,
+input[type=checkbox]:checked::before {
+    border: .085em solid rgb(255, 126, 80);
+    -webkit-box-shadow: inset 0 .125em .025em rgba(249, 136, 95, .25);
+    box-shadow: inset 0 .125em .025em rgba(249, 136, 95, .25);
+}
+
+input[type=radio]::after,
+input[type=radio]::before {
+    border-radius: 50%;
+}
+
+input[type=radio]:checked::after,
+input[type=checkbox]:checked::after {
+    background-color: rgb(255, 126, 80);
+}
+
+input[disabled],
+input[readonly],
+fieldset[disabled] input {
+    background-color: #eeeeee;
+    opacity: 1;
+}
+
+input[disabled],
+fieldset[disabled] input {
+    cursor: not-allowed;
+}
+
+/** -------------------------------------------------------------- input end -------------------------------------------------------------- */
+
+/** -------------------------------------------------------------- select & textarea -------------------------------------------------------------- */
+select,
+textarea {
+    width: 100%;
+    padding: 0.375em 0.75em;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 0.0725em solid #ced4da;
+    border-radius: 0.25em;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+select:focus,
+textarea:focus {
+    border-color: #66afe9;
+    outline: 0;
+    -webkit-box-shadow: inset 0 0.0625em 0.0625em rgba(0, 0, 0, .075), 0 0 0.5em rgba(102, 175, 233, 0.6);
+    box-shadow: inset 0 0.0625em 0.0625em rgba(0, 0, 0, .075), 0 0 0.5em rgba(102, 175, 233, 0.6);
+}
+
+select[disabled],
+fieldset[disabled] select,
+textarea[disabled],
+fieldset[disabled] textarea {
+    background-color: #eeeeee;
+    opacity: 1;
+}
+
+select[disabled],
+fieldset[disabled] select,
+textarea[disabled],
+fieldset[disabled] textarea {
+    cursor: not-allowed;
+}
+
+/** -------------------------------------------------------------- select & textarea end -------------------------------------------------------------- */
+
+
+/** -------------------------------------------------------------- button -------------------------------------------------------------- */
+button,
+[type=button],
+[type=reset],
+[type=submit] {
+    font-weight: normal;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    background-image: none;
+    border: 0.0725em solid transparent;
+    padding: 0.375em 0.75em;
+    border-radius: 0.25em;
+    line-height: 1.42857143;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+
+[type=button] {
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
+}
+
+[type=button]:focus,
+[type=button].focus {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #8c8c8c;
+}
+
+[type=button]:hover {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #adadad;
+}
+
+[type=button]:active,
+[type=button].active {
+    color: #333;
+    background-color: #e6e6e6;
+    background-image: none;
+    border-color: #adadad;
+}
+
+[type=button]:active:hover,
+[type=button].active:hover,
+[type=button]:active:focus,
+[type=button].active:focus,
+[type=button]:active.focus,
+[type=button].active.focus {
+    color: #333;
+    background-color: #d4d4d4;
+    border-color: #8c8c8c;
+}
+
+[type=button].disabled:hover,
+[type=button][disabled]:hover,
+fieldset[disabled] [type=button]:hover,
+[type=button].disabled:focus,
+[type=button][disabled]:focus,
+fieldset[disabled] [type=button]:focus,
+[type=button].disabled.focus,
+[type=button][disabled].focus,
+fieldset[disabled] [type=button].focus {
+    background-color: #fff;
+    border-color: #ccc;
+}
+
+[type=submit] {
+    color: #fff;
+    background-color: #337ab7;
+    border-color: #2e6da4;
+}
+
+[type=submit]:focus,
+[type=submit].focus {
+    color: #fff;
+    background-color: #286090;
+    border-color: #122b40;
+}
+
+[type=submit]:hover {
+    color: #fff;
+    background-color: #286090;
+    border-color: #204d74;
+}
+
+[type=submit]:active,
+[type=submit].active {
+    color: #fff;
+    background-color: #286090;
+    background-image: none;
+    border-color: #204d74;
+}
+
+[type=submit]:active:hover,
+[type=submit].active:hover,
+[type=submit]:active:focus,
+[type=submit].active:focus,
+[type=submit]:active.focus,
+[type=submit].active.focus {
+    color: #fff;
+    background-color: #204d74;
+    border-color: #122b40;
+}
+
+[type=submit].disabled:hover,
+[type=submit][disabled]:hover,
+fieldset[disabled] [type=submit]:hover,
+[type=submit].disabled:focus,
+[type=submit][disabled]:focus,
+fieldset[disabled] [type=submit]:focus,
+[type=submit].disabled.focus,
+[type=submit][disabled].focus,
+fieldset[disabled] [type=submit].focus {
+    background-color: #337ab7;
+    border-color: #2e6da4;
+}
+
+
+[type=reset] {
+    color: #fff;
+    background-color: #f0ad4e;
+    border-color: #eea236;
+}
+
+[type=reset]:focus,
+[type=reset].focus {
+    color: #fff;
+    background-color: #ec971f;
+    border-color: #985f0d;
+}
+
+[type=reset]:hover {
+    color: #fff;
+    background-color: #ec971f;
+    border-color: #d58512;
+}
+
+[type=reset]:active,
+[type=reset].active {
+    color: #fff;
+    background-color: #ec971f;
+    background-image: none;
+    border-color: #d58512;
+}
+
+[type=reset]:active:hover,
+[type=reset].active:hover,
+[type=reset]:active:focus,
+[type=reset].active:focus,
+[type=reset]:active.focus,
+[type=reset].active.focus {
+    color: #fff;
+    background-color: #d58512;
+    border-color: #985f0d;
+}
+
+[type=reset].disabled:hover,
+[type=reset][disabled]:hover,
+fieldset[disabled] [type=reset]:hover,
+[type=reset].disabled:focus,
+[type=reset][disabled]:focus,
+fieldset[disabled] [type=reset]:focus,
+[type=reset].disabled.focus,
+[type=reset][disabled].focus,
+fieldset[disabled] [type=reset].focus {
+    background-color: #f0ad4e;
+    border-color: #eea236;
+}
+
+/** -------------------------------------------------------------- button end -------------------------------------------------------------- */

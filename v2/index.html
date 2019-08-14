@@ -1,16 +1,74 @@
 ﻿<!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8" />
     <title>首页</title>
+    <link rel="stylesheet" href="lib/v2.css">
     <script data-main="/appsettings" src="/require.js" defer="defer" async></script>
 </head>
+
 <body>
-    <select id="my-select">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-    </select>
+    <div class="panel">
+        <div class="panel-title text-uppercase">
+            input
+        </div>
+        <div class="panel-body">
+            <input class="success" type="text">
+            <input type="search">
+            <input class="warning" type="number">
+            <input type="url">
+            <input class="danger" type="email">
+            <input type="tel">
+            <input type="password">
+            <input type="time" disabled>
+            <input type="date">
+            <input type="datetime" readonly>
+            <input type="datetime-local">
+            <input type="radio">
+            <input type="checkbox">
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-title text-uppercase">
+            select & textarea
+        </div>
+        <div class="panel-body">
+            <select name="" id="" disabled>
+                <option value="1">废铁</option>
+                <option value="2">青铜</option>
+                <option value="3">白银</option>
+                <option value="4">黄金</option>
+                <option value="5">钻石</option>
+                <option value="6">大师</option>
+                <option value="7">王者</option>
+            </select>
+            <select name="" id="">
+                <option value="1">废铁</option>
+                <option value="2">青铜</option>
+                <option value="3">白银</option>
+                <option value="4">黄金</option>
+                <option value="5">钻石</option>
+                <option value="6">大师</option>
+                <option value="7">王者</option>
+            </select>
+            <textarea name="" id="" cols="30" rows="10" disabled></textarea>
+            <textarea name="" id="" cols="30" rows="10"></textarea>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-title text-uppercase">
+            button
+        </div>
+        <div class="panel-body">
+            <input type="button" value="默认" />
+            <input type="reset" value="重置" />
+            <input type="submit" value="提交" />
+            <button>默认</button>
+            <button type="reset">重置</button>
+            <button type="submit">提交</button>
+        </div>
+    </div>
 </body>
+
 </html>

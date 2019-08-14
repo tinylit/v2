@@ -4,5 +4,9 @@
             type: 'radio',
             focus: true
         });
+        input({
+            type: 'checkbox',
+            focus: true
+        });
     });
 }

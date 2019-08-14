@@ -48,34 +48,19 @@
     });
     var
         doc = document,
-        docEl = doc.documentElement,
-        takeObj = {
-            $hour: '.date-hour',
-            $minute: '.date-minute',
-            $sec: '.date-sec',
-            $timePicker: '.date-picker-hms-c',
-            $clear: '.date-clear',
-            $now: '.date-now',
-            $ok: '.date-ok'
-        };
+        docEl = doc.documentElement;
+
     function zoreFill(a) {
         return (a = 0 | a) ? a > 9 ? a : '0' + a : '00';
     }
     var rinputTag = /textarea|input/i;
     v2.use("date-picker", {
         datePicker: function () {
-            /** 涉及到的控件 */
-            this.touch = null;
 
-            /** 最小值 */
-            this.minDf = "1900-01-01 00:00:00";
-            /** 最大值 */
-            this.maxDf = "2099-12-31 23:59:59";
-
-            /** 最小时间限制 */
-            this.min = '';
-            /** 最大时间限制 */
-            this.max = '';
+            /** 最小时间限制【1970年1月1日8点】 */
+            this.min = new Date(1970, 0, 1, 8);
+            /** 最大时间限制【2199年1月1日8点】 */
+            this.max = new Date(2199, 0, 1, 8);
 
             /** 时间名称 */
             this.timeExplain = "时间";
@@ -86,48 +71,50 @@
             /** 确定按钮名称 */
             this.okExplain = "确定";
 
+            /** 显示确定按钮 */
+            this.okBtn = true;
+
+            /** 显示今日按钮 */
+            this.todayBtn = true;
+
+            /** 显示清除按钮 */
+            this.clearBtn = true;
+
+            /** 自动关闭 */
+            this.autoClose = true;
+
+            /** 当前值 */
+            this.value = "";
+
+            /** 如果为真，突出显示当前日期。 */
+            this.todayHighlight = false;
+
+            /** 是否可以多选 */
+            this.multiple = false;
+
+            /** 如果为真，则在datepicker中选择当前活动日期将取消设置相应的日期。当使用multiple选项时，此选项总是正确的。 */
+            this.toggleActive = false;
+
             /** 对话框模式 */
             this.dialog = true;
 
-            /** 锁定显示 */
-            this.fixed = false;
-
             /** 星期 */
-            this.week = ["日", "一", "二", "三", "四", "五", "六"];
+            this.weeks = ["日", "一", "二", "三", "四", "五", "六"];
 
             /** 格式化字符串 */
             this.format = 'yyyy-MM-dd HH:mm:ss';
         },
+        components: {
+            'button.async': function (resolve) {
+                return require(['components/v2.button'], resolve);
+            }
+        },
         render: function () {
             this.base.render();
+
             this.$.classList.add('date-picker');
 
-            if (this.showYmd = /y|M|d/.test(this.format)) {
-                var ym = '(a.date-picker-choose.date-picker-chprev.date-picker-tab[{0}-switch=0]>cite)+input[readonly]+label+(a.date-picker-choose.date-picker-chnext.date-picker-tab[{0}-switch=1]>cite)';
-                this.append(v2.htmlSerialize('.date-picker-header>(.date-picker-y.date-picker-ym>' + ym.format('y') + '+.date-picker-yms.hidden>(a.date-picker-tab.date-picker-chtop[y-switch=2]>cite)+(ul.date-picker-ys>li[y]*14)+(a.date-picker-tab.date-picker-chdown[y-switch=3]>cite))+.date-picker-ym.date-picker-m>' + ym.format('m') + '+.date-picker-yms.hidden>span[m]{$=>{$>9?$:"0$"}}*12'))
-                    .append(v2.htmlSerialize('table.date-picker-container[aria-close]>(thead>tr>`${for(var item<index> in week){ if(index>0){ @"+th{{item}}" }else{ @"th{{item}}" }}}`)+tbody>(tr>td*7)*6'.forCb(this)));
-
-                this.$header = this.take('.date-picker-header');
-
-                this.$year = this.take('.date-picker-y>input', this.$header);
-
-                this.$month = this.take('.date-picker-m>input', this.$header);
-
-                this.$yearPicker = this.take('.date-picker-y>.date-picker-yms', this.$header);
-
-                this.$monthPicker = this.take('.date-picker-m>.date-picker-yms', this.$header);
-
-                this.$months = this.when(this.$monthPicker);
-
-                this.$years = this.when('ul.date-picker-ys', this.$header);
-
-                this.$container = this.take('.date-picker-container');
-
-                this.$days = this.when('tbody')
-                    .map(function (tr) {
-                        return tr.childNodes;
-                    });
-            }
+            this.showYmd = /y|M|d/.test(this.format);
 
             this.showHour = /H|h/.test(this.format);
 
@@ -136,14 +123,78 @@
             this.showSec = /s/.test(this.format);
 
             this.showHms = this.showHour && (this.showSec === this.showMinute || this.showMinute);
+        },
+        load: function () {
+            var hms, htmls;
+            if (this.showYmd) {
+                this.$header = this.$.appendChild('.header'
+                    .htmlCoding()
+                    .html());
 
-            this.append(v2.htmlSerialize('.date-picker-footer>(ul.date-picker-hms{showHms!".hidden"}>li.date-picker-sj{{timeExplain}}+(li{showHour!".hidden"}>input.date-hour[readonly])+(li{showMinute!".hidden"}>span{:}+input.date-minute[readonly])+(li{showSec!".hidden"}>span{:}+input.date-sec[readonly]))+.date-picker-hms-c.hidden+.date-picker-btn>a.date-clear{{clearExplain}}+a.date-now{{nowExplain}}+a.date-ok{{okExplain}}'.compileCb(this)));
+                this.$year = this.$header.appendChild('.ym.ym-year>(a.tab-prev[y-switch=0]>cite)+input[readonly]+label+(a.tab-next[y-switch=1]>cite)+.picker>(a.tab-up[y-switch=2]>cite)+(ul>li[y]*14)+a.tab-up[y-switch=3]>cite'
+                    .htmlCoding()
+                    .html());
 
-            for (var i in takeObj) {
-                this[i] = this.take(takeObj[i]);
+                this.$month = this.$header.appendChild('.ym.ym-month>(a.tab-prev[m-switch=0]>cite)+input[readonly]+label+(a.tab-next[m-switch=1]>cite)+.picker>ul>li[m]*12'
+                    .htmlCoding()
+                    .html());
+
+                v2.each(['year', 'month'], function (type) {
+                    this['$' + type + 'Txt'] = this.take('input', this['$' + type]);
+                    this['$' + type + 'Picker'] = this.take('.picker', this['$' + type]);
+                    this['$' + type + 's'] = v2.when(this.take('ul>li', this['$' + type + 'Picker'], true));
+                }, this);
+
+                this.$months.then(function (li, index) {
+                    li.append(zoreFill(index + 1));
+                });
+
+                this.$core = this.$header.appendChild('table.table-condensed>(thead>tr>`${for(var week in weeks){ return "+th{{{week}}}"; }}`)+tbody>(tr>td*7)*6'
+                    .withCb(this)
+                    .htmlCoding()
+                    .html());
+
+                this.$days = v2.when(this.take('td', this.$core, true));
             }
-            this.min = this.min || this.minDf;
-            this.max = this.max || this.maxDf;
+
+            this.$footer = this.$.appendChild('.footer'
+                .htmlCoding()
+                .html());
+
+            if (this.showHms) {
+                hms = ['ul.hms>li.hms-explain`${timeExplain}`'.withCb(this)];
+                if (this.showHour) {
+                    hms.push('(li.hms-hour>input[readonly])');
+                }
+                if (this.showMinute) {
+                    hms.push('(li.hms-minute>input[readonly])');
+                }
+                if (this.showSec) {
+                    hms.push('li.hms-sec>input[readonly]');
+                }
+                this.$hms = this.$footer.appendChild(hms
+                    .join('+')
+                    .htmlCoding()
+                    .html());
+
+                if (this.showHour) {
+                    this.$hour = this.take('.hms-hour>input', this.hms);
+                }
+                if (this.showMinute) {
+                    this.$minute = this.take('.hms-minute>input', this.hms);
+                }
+                if (this.showSec) {
+                    this.$sec = this.take('.hms-sec>input', this.hms);
+                }
+            }
+
+            if (this.clearBtn || this.todayBtn || this.okBtn) {
+                htmls = ['ul.btn'];
+            }
+
+            if (this.todayBtn) {
+
+            }
         },
         checkVoid: function (y, m, d) {
             var r;
@@ -444,16 +495,16 @@
             if (!this.dialog) return;
             var elem = this.touch.$ || this.touch;
             var xy = elem.getBoundingClientRect(),
-                l = xy.left + (this.fixed ? 0 : this.scroll(1)),
+                l = xy.left + this.scroll(1),
                 t = xy.bottom + elem.offsetHeight / 1.5 <= this.area() ?
                     xy.bottom - 1 :
                     xy.top > elem.offsetHeight / 1.5 ?
                         xy.top - elem.offsetHeight + 1 :
                         this.area() - elem.offsetHeight;
-            this.css('position', this.fixed ? 'fixed' : 'absolute')
+            this.css('position', 'absolute')
                 .css({
                     left: l,
-                    top: t + (this.fixed ? 0 : this.scroll())
+                    top: t + this.scroll()
                 });
         },
         commit: function () {

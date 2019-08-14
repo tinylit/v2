@@ -256,9 +256,9 @@
             this.base.init('input');
         },
         render: function () {
-            this.$.classList.add('form-control');
+            this.addClass('form-control');
             if (this.lg || this.sm || this.xs) {
-                this.$.classList.add(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
+                this.addClass(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
             }
 
             if (this.autofocus) {

@@ -58,6 +58,7 @@
         core_hasOwn = class2type.hasOwnProperty;
 
     var core_arr = [],
+        core_join = core_arr.join,
         core_slice = core_arr.slice,
         core_splice = core_arr.splice,
         core_concat = core_arr.concat,
@@ -266,7 +267,7 @@
             }
             wildCards[key] = config;
         } else if (config) {
-            v2.log("在定义组件时，不支持为非方法的属性定义通配符!", 15);
+            v2.log("When defining a component, it is only possible to define wildcards for a method's properties!", 15);
         }
 
         return key;
@@ -368,12 +369,8 @@
         return (object === null || object === undefined) ? String(object) : (typeof object === "object" || typeof object === "function") ? class2type[core_toString.call(object)] || "object" : typeof object;
     };
 
-    v2.extension = function (callback, array) {
-        var isArray, key, deep, infer, option;
-        if (arguments.length === 1) {
-            array = callback;
-            callback = undefined;
-        }
+    function extension(context, callback, array) {
+        var key, deep, value, infer, option, array = core_slice.slice(1);
         var i = 1, len = array.length, target = array[0];
 
         if (typeof target === "boolean") {
@@ -385,7 +382,7 @@
         }
         if (i === len) {
             i -= 1;
-            target = this;
+            target = context;
         }
 
         infer = target === null || target === undefined;
@@ -408,19 +405,26 @@
             }
 
             for (key in option) {
-                target[key] = done(target[key], option[key]);
+                if ((value = done(target[key], option[key], key)) !== undefined) {
+                    target[key] = value;
+                }
             }
         }
 
         return target;
 
-        function done(value, option) {
+        function done(value, option, key) {
+            var isArray;
             if (value === option || !deep && value === undefined) return option;
             if (option && deep && ((isArray = isArraylike(option)) || v2.isPlainObject(option))) {
-                return v2.extension(callback, [deep, value || (isArray ? [] : {}), option]);
+                return extension(context, callback, [deep, value || (isArray ? [] : {}), option]);
             }
-            return callback ? callback(value, option) : option;
+            return callback ? callback(value, option, key) : option;
         }
+    }
+
+    v2.extension = function (callback) {
+        return extension(this, callback, core_slice.call(arguments, 1));
     };
 
     var improveCallbak = function (value, option) {
@@ -428,11 +432,11 @@
     };
 
     v2.extend = function () {
-        return v2.extension.call(this, arguments);
+        return extension(this, null, arguments);
     };
 
     v2.improve = function () {
-        return v2.extension.call(this, improveCallbak, arguments);
+        return extension(this, improveCallbak, arguments);
     };
 
     v2.extend({
@@ -474,6 +478,23 @@
                 }
             }
             return object;
+        },
+        map: function (object, callback, context) {
+            var value, arr = [];
+            if (!object || !callback) return arr;
+            var i = 0;
+            if (isArraylike(object)) {
+                for (var len = object.length; i < len; i++) {
+                    value = callback.call(context || object, object[i], i, object);
+                    if (value != null) arr.push(value);
+                }
+            } else {
+                for (i in object) {
+                    value = callback.call(context || object, object[i], i, object);
+                    if (value != null) arr.push(value);
+                }
+            }
+            return core_concat.apply([], arr);
         },
         any: function (object, callback, context) {
             if (!object) return false;
@@ -850,7 +871,7 @@
                     }
                 };
             }
-            v2.error("Cannot analyze a callback function with a parameter length of " + callback.length + "”.");
+            v2.error("Cannot analyze a callback function with a parameter length of " + callback.length + ".");
         };
 
     v2.define = function (obj, prop, attributes) {
@@ -966,7 +987,7 @@
             }
     });
 
-    v2.each({
+    v2.improve(HTMLSelectElement.prototype, {
         remove: function (index) {
             if (arguments.length === 0) {
                 if (this.parentNode) {
@@ -980,22 +1001,19 @@
                 }
             }
         }
-    }, function (polyfill, name) {
-        if (name in HTMLSelectElement.prototype) return;
-
-        HTMLSelectElement.prototype[name] = polyfill;
     });
 
     v2.each({
         selectedOptions: function () {
-            return this.querySelectorAll("option");
+            return (new ArrayThen(this.children)).when(function (item) {
+                return item.selected;
+            });
         }
     }, function (polyfill, name) {
-        if (name in HTMLSelectElement.prototype) return;
-
-        Object.defineProperty(HTMLSelectElement.prototype, name, {
-            get: polyfill
-        });
+        if (!(name in HTMLSelectElement.prototype))
+            Object.defineProperty(HTMLSelectElement.prototype, name, {
+                get: polyfill
+            });
     });
 
     var rclass = /[\t\r\n]/g,
@@ -1003,6 +1021,7 @@
         classCache = makeCache(function (string) {
             return new RegExp("(^|" + whitespace + ")" + string + "(" + whitespace + "|$)");
         });
+
     function DOMClassList(node) {
 
         var i = 0, token, tokens = node.className.match(rnotwhite);
@@ -1131,16 +1150,12 @@
         }
     };
 
-    v2.each({
+    v2.improve(Element.prototype, {
         remove: function () {
             if (this.parentNode) {
                 this.parentNode.removeChild(this);
             }
         }
-    }, function (polyfill, name) {
-        if (name in Element.prototype) return;
-
-        Element.prototype[name] = polyfill;
     });
 
     v2.each({
@@ -1166,11 +1181,10 @@
             return v2.sibling(this.nextSibling, "nextSibling", true);
         }
     }, function (polyfill, name) {
-        if (name in Element.prototype) return;
-
-        Object.defineProperty(Element.prototype, name, {
-            get: polyfill
-        });
+        if (!(name in Element.prototype))
+            Object.defineProperty(Element.prototype, name, {
+                get: polyfill
+            });
     });
 
     var matches = docElem.matchesSelector ||
@@ -1197,7 +1211,6 @@
             }
 
             if (!selector && type.indexOf(".") === -1) {
-                debugger;
                 if (this.addEventListener) {
                     this.addEventListener(type, hanlde, false);
                 } else {
@@ -1782,7 +1795,6 @@
 
     var
         rbatch = /\$/g,
-        rlamda = /\$=>\{(.*?)\}/g,
         whitespace = "[\\x20\\t\\r\\n\\f]",
         characterEncoding = "(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+",
         identifier = characterEncoding.replace("w", "w#"),
@@ -1804,16 +1816,6 @@
             "MULTI": new RegExp("^" + whitespace + "*\\*([1-9][0-9]*)"),
             "TEXT": new RegExp("^\\{(.*?)\\}" + whitespace + "*(?=[+>]|\\*|$)")
         },
-        lamdaCache = makeCache(function (expression) {
-            var callback = new Function('$', rreturn.test(expression) ? expression : 'return ' + expression);
-
-            return function ($) {
-
-                var value = callback($);
-
-                return value === undefined ? '' : value;
-            };
-        }),
         fhtmlSerializeCache = function (selector) {
             var i, arr, charAt, counter, token, type, match, matched, groups = [], string = selector, serialize = htmlSerialize.serialize;
             while (string) {
@@ -1888,9 +1890,7 @@
             if (multi > 0) {
                 htmls = [];
                 while (multi--) {
-                    htmls.unshift(html.replace(rlamda, function (_all, expression) {
-                        return lamdaCache(expression)(multi + 1);
-                    }).replace(rbatch, multi + 1));
+                    htmls.unshift(html.replace(rbatch, multi + 1));
                 }
                 html = htmls.join('');
             }
@@ -1922,9 +1922,7 @@
             if (multi > 0) {
                 htmls = [];
                 while (multi--) {
-                    htmls.unshift(html.replace(rlamda, function (_all, expression) {
-                        return lamdaCache(expression)(multi + 1) || '';
-                    }).replace(rbatch, multi + 1));
+                    htmls.unshift(html.replace(rbatch, multi + 1));
                 }
                 html = htmls.join('');
             }
@@ -1992,13 +1990,16 @@
 
     var rcompile = /`\$\{(.*)?\}`/gm;
     var word = '[_a-z][_a-z0-9]*',
-        rmainCode = new RegExp('\\.\\??(?=(\\.|\\[))', 'gm'),
-        rtryCode = new RegExp(word + '(\\??(\\.' + word + '|\\[.+?\\]))*', 'img'),
-        rtry = new RegExp('(' + word + '|\\])\\?(\\.|\\[)', 'i'),
+        rquotes = new RegExp("(['\"])(?:\\\\.|[^\\\\])+\\1", 'gm'),
+        rbraceCode = new RegExp('\\{' + whitespace + '*\\{(.+?)\\}' + whitespace + "*\\}", "gm"),
+        tryCode = word + '(?:\\??(?:\\.' + word + '|\\[.+?\\]))*',
+        rtryCode = new RegExp(tryCode, 'img'),
+        rtry = new RegExp('(' + word + '|\\])\\?(?=(\\.|\\[))', 'i'),
+        rforin = new RegExp('for' + whitespace + '*\\(' + whitespace + '*(?:var' + whitespace + '+)?(' + word + ')(?:<(' + word + ')>)?' + whitespace + '+in' + whitespace + '+(' + tryCode + ')' + whitespace + '*\\)', 'ig'),
         rword = new RegExp('\\b' + word + '\\b', 'gi'),
         rinject = new RegExp("^" + whitespace + "*(" + word + ")\\(((" + whitespace + "*" + word + whitespace + "*,)*" + whitespace + "*" + word + ")?" + whitespace + "*\\)" + whitespace + "*$", "i");
 
-    function tryCode(string) {
+    var tryCode = makeCache(function (string) {
         var match, results = [];
         if (string.indexOf('?') === -1)
             return string;
@@ -2012,7 +2013,7 @@
             results.push(')');
             results.push(' == null', ' ? ', '""', ' : ');
 
-            string = string.slice(match.index + match[0].length - match[2].length);
+            string = string.slice(match.index + match[0].length);
         }
 
         if (results.length === 0)
@@ -2026,21 +2027,53 @@
         results.push(')');
 
         return results.join('');
+    });
+
+    function forCode(_, item, index, data, guid) {
+        var fn = 'for_done_' + guid,
+            results = ['return v2.map(', data, ',', fn, ');'];
+
+        results.push('function ', fn, '(', item);
+        if (index) {
+            results.push(',', index);
+        }
+        results.push(')');
+
+        return results.join('');
+    };
+    function joinCode(string, quote) {
+        return string.replace(rbraceCode, function (_, code) {
+            return quote + '+ (' + code + ') +' + quote;
+        });
     }
     var withCache = makeCache(function (value) {
-        if (!rreturn.test(value)) {
-            value = 'return ' + value;
+        var callback, body = value
+            .replace(rforin, forCode)
+            .replace(rquotes, joinCode)
+            .replace(rtryCode, tryCode);
+
+        try {
+            callback = new Function('__json_', 'var __v_; with(__json_){ ' + body + ' }');
+        } catch (_) {
+            v2.syntaxError(value + '=>' + callback);
         }
-        var callback = new Function('json', 'var __v_; with(json){ ' + value.replace(rmainCode, 'json').replace(rtryCode, tryCode) + ' }');
 
         return function (json) {
-            var value = callback(json);
+            var val;
 
-            return value === undefined ? '' : value;
+            if (json === null || json === undefined)
+                return '';
+
+            val = callback(json);
+
+            return val === undefined ? '' : isArraylike(val) ? core_join.call(val, '') : val;
         };
     });
     String.prototype.withCb = function (json) {
         return this.replace(rcompile, function (_, value) {
+            if (!rreturn.test(body)) {
+                value = 'return ' + value;
+            }
             return withCache(value)(json);
         });
     };
@@ -2390,10 +2423,6 @@
 
             return this.controls.add(control);
         },
-        $: null,
-        $$: null,
-        core: null,
-        owner: null,
         width: null,
         height: null,
         limit: false,
@@ -2402,9 +2431,16 @@
         visible: true,
         defaultVisible: true,
         init: function (tag, option) {
-
             this.tag = tag;
             this.option = option;
+
+            this.owner = null;
+
+            this.addClass = "";
+
+            this.$ = this.$$ = this.$main = null;
+
+            this.view = this.watch = this.data = null;
 
             var identity = ++GLOBAL_VARIABLE_IDENTITY;
 
@@ -2418,8 +2454,14 @@
                 this.ready();
             }
         },
+        render: function () {
+            var vm = this;
+            v2.each(this.addClass.match(rnotwhite), function (clazz) {
+                vm.$.classList.add(clazz);
+            });
+        },
         ready: function () {
-            var load;
+            var render;
 
             this.events = {};
             this.methods = {};
@@ -2441,18 +2483,15 @@
 
             if (this.ajax && this.access) {
 
-                load = this.load;
+                render = this.render;
 
-                this.load = load ? function () {
+                this.render = function () {
 
-                    var value = applyCallback(load, arguments, this);
+                    var value = applyCallback(render, arguments, this);
 
                     this.sleep(this.ajax);
 
                     return value;
-
-                } : function () {
-                    this.sleep(this.ajax);
                 };
             }
 
@@ -2465,6 +2504,7 @@
                 sleep = false,
                 core_namespace = "",
                 variable = {},
+                descriptors = {},
                 callbacks = [],
                 watchStack = [],
                 context = this,
@@ -2602,7 +2642,13 @@
 
                             excludes[key] = true;
 
-                            return v2.define(context, key, makeDescriptor(sourceValue, value, null, conversionType, true));
+                            return descriptors[key] = {
+                                value: sourceValue,
+                                callback: value,
+                                beforeSetting: null,
+                                conversionType: conversionType,
+                                allowFirstSet: true
+                            };
                         }
 
                         if (key in context.enumState) {
@@ -2697,6 +2743,7 @@
 
                 v2.error("Components do not support elements whose NodeName is “" + node.nodeName.toLowerCase() + "”.");
             };
+
             v2.each(v2.use(this.tag), function (then) {
                 var option = then.always(),
                     supper = then.then(context);
@@ -2713,6 +2760,18 @@
             v2.each(core_namespace.split('.'), function (name) {
                 if (rtag.test(name))
                     v2.GDir(name).add(context);
+            });
+
+            var namespaces = core_namespace.split('.');
+
+            this.isInstanceof = function () {
+                return v2.any(arguments, function (tag) {
+                    return namespaces.indexOf(v2.urlCase(tag)) > -1;
+                });
+            };
+
+            v2.each(descriptors, function (map, key) {
+                v2.define(context, key, makeDescriptor(map.value, map.callback, map.beforeSetting, map.conversionType, map.allowFirstSet));
             });
 
             this.sleep = function (extra) {
@@ -2767,6 +2826,8 @@
 
             this.switchCase = function (state, falseStop) {
                 var i, value, control, isReady = true;
+
+                if (this.isReady) return;
 
                 if (typeof state === "boolean") {
                     falseStop = state;
@@ -2866,7 +2927,9 @@
                     if (name in excludes) {
                         return v2.log('Attributes cannot be repeatedly defined(' + name + ').', 15);
                     }
-
+                    if (name in descriptors) {
+                        v2.log('Attributes is overridden by control definitions(' + name + ').', 7);
+                    }
                     excludes[name] = true;
 
                     if (contains && (sourceValue === null || sourceValue === undefined)) {
@@ -2931,13 +2994,15 @@
 
                 destroyObject(variable, true);
 
+                destroyObject(descriptors, true);
+
                 destroyObject(this.base, true);
 
                 destroyObject(this, deep || arguments.length === 0, excludes);
 
                 context = null;
                 core_namespace = null;
-                variable = wildcards = excludes = controls = callbacks = null;
+                variable = wildcards = excludes = controls = callbacks = descriptors = null;
             };
 
             this.define({
@@ -2976,6 +3041,40 @@
                 }
             });
 
+            var visible = !!this.defaultVisible;
+
+            this.define('visible', {
+                get: function () {
+                    return visible;
+                },
+                set: function (value) {
+                    if (visible === value) return;
+
+                    if ((visible = !!value)) {
+                        this.show();
+                    } else {
+                        this.hide();
+                    }
+                }
+            });
+
+            v2.each({
+                show: function (fn) {
+                    if (visible === false) {
+                        fn.call(this);
+                        visible = true;
+                    }
+                },
+                hide: function (fn) {
+                    if (visible === true) {
+                        fn.call(this);
+                        visible = false;
+                    }
+                }
+            }, function (callback, name) {
+                context[name] = callback(context[name]);
+            });
+
             computeWildcards(wildcards, 'function', true);
         },
         lazy: function () {
@@ -2997,7 +3096,7 @@
 
             if (!fn) return false;
 
-            if (loop || loop === undefined && arguments.length === 1 && fn.length > 0) {
+            if (loop) {
 
                 var group = ++GLOBAL_VARIABLE_LOOP_GROUP;
 
@@ -3037,6 +3136,47 @@
             context = context || this.$;
 
             return all ? context.querySelectorAll(selector) : context.querySelector(selector);
+        },
+        addClass: function () {
+            var classList = this.$.classList;
+            v2.each(arguments, function done(token) {
+                if (token === null || token === undefined || token.length === 0)
+                    return;
+
+                if (isArraylike(token)) {
+                    return v2.each(token, done);
+                }
+                var i = 0, classes = (token + "").match(rnotwhite) || [];
+
+                while ((token = classes[i++])) {
+                    classList.add(token);
+                }
+            });
+        },
+        toggleClass: function (token, toggle) {
+            var classList = this.$.classList;
+
+            if (arguments.length === 1) {
+                return classList.toggle(token);
+            }
+
+            return toggle ? classList.add(token) : classList.remove(token);
+        },
+        removeClass: function () {
+            var classList = this.$.classList;
+            v2.each(arguments, function done(token) {
+                if (token === null || token === undefined || token.length === 0)
+                    return;
+
+                if (isArraylike(token)) {
+                    return v2.each(token, done);
+                }
+                var i = 0, classes = (token + "").match(rnotwhite) || [];
+
+                while ((token = classes[i++])) {
+                    classList.remove(token);
+                }
+            });
         }
     };
 
@@ -3065,8 +3205,6 @@
 
     v2.extend(v2.fn, {
         usb: function (watch) {
-            var visible = !!this.defaultVisible;
-
             this.define('disabled', function (value) {
                 this.$.classList[value ? "add" : "remove"]('disabled');
             });
@@ -3082,21 +3220,6 @@
                 }, function (value) {
                     this.$.styleCb('height', value);
                 })
-            });
-
-            this.define('visible', {
-                get: function () {
-                    return visible;
-                },
-                set: function (value) {
-                    if (visible === value) return;
-
-                    if ((visible = !!value)) {
-                        this.show();
-                    } else {
-                        this.hide();
-                    }
-                }
             });
 
             if (v2.isPlainObject(watch))
@@ -3167,14 +3290,10 @@
                             rinlineTag.test(nodeName) ?
                                 'inline' :
                                 '';
-            this.visible = true;
 
             this.$.styleCb('display', display);
         },
         hide: function () {
-
-            this.visible = false;
-
             this.$.styleCb('display', 'none');
         }
     });
