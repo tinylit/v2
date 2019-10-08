@@ -370,7 +370,7 @@
     };
 
     function extension(context, callback, array) {
-        var key, deep, value, infer, option, array = core_slice.slice(1);
+        var key, deep, value, infer, option;
         var i = 1, len = array.length, target = array[0];
 
         if (typeof target === "boolean") {
@@ -629,14 +629,14 @@
         }
     });
     var datePart = {
-        Y: /(y+)/, //年
-        M: /(M+)/, //月份
-        D: /(d+)/, //日
-        H: /(H+)/, //小时（24小时制）
-        h: /(h+)/, //小时（12小时制）
-        m: /(m+)/, //分
-        s: /(s+)/, //秒
-        f: /(f+)/ //毫秒
+        Y: /(y+)/, //锟斤拷
+        M: /(M+)/, //锟铰凤拷
+        D: /(d+)/, //锟斤拷
+        H: /(H+)/, //小时锟斤拷24小时锟狡ｏ拷
+        h: /(h+)/, //小时锟斤拷12小时锟狡ｏ拷
+        m: /(m+)/, //锟斤拷
+        s: /(s+)/, //锟斤拷
+        f: /(f+)/ //锟斤拷锟斤拷
     };
     v2.extend(v2.date, {
         isLeapYear: function (year) {
@@ -1030,7 +1030,7 @@
 
             tokens = tokens.sort();
 
-            while ((token = tokens[i++])) { // 去重
+            while ((token = tokens[i++])) { // 去锟斤拷
                 while (token === tokens[i]) {
                     core_splice.call(tokens, i, 1);
                 }
@@ -2055,7 +2055,7 @@
         try {
             callback = new Function('__json_', 'var __v_; with(__json_){ ' + body + ' }');
         } catch (_) {
-            v2.syntaxError(value + '=>' + callback);
+            v2.syntaxError(value + '=>' + body);
         }
 
         return function (json) {
@@ -2071,7 +2071,7 @@
     });
     String.prototype.withCb = function (json) {
         return this.replace(rcompile, function (_, value) {
-            if (!rreturn.test(body)) {
+            if (!rreturn.test(value)) {
                 value = 'return ' + value;
             }
             return withCache(value)(json);
@@ -2633,7 +2633,7 @@
 
                                 context[key] = value;
 
-                                if (highest && highest[key] === sourceValue) {//? 多次定义时，以最后一次次的为准。
+                                if (highest && highest[key] === sourceValue) {
                                     return;
                                 }
 
@@ -2711,7 +2711,7 @@
                         };
                         break;
                     default:
-                        return v2.error("Validation of type “" + type + "” is not supported.");
+                        return v2.error("Validation of type " + type + " is not supported.");
                 }
 
                 if (!option ||
@@ -2741,7 +2741,7 @@
                 if (isValid(node))
                     return this.$$ = parentNode, this.$ = node;
 
-                v2.error("Components do not support elements whose NodeName is “" + node.nodeName.toLowerCase() + "”.");
+                v2.error("Components do not support elements whose NodeName is " + node.nodeName.toLowerCase() + ".");
             };
 
             v2.each(v2.use(this.tag), function (then) {
