@@ -8,7 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Debug",
-            "url": "http://g.cn",
+            "url": "http://local.server.cn/",
             "webRoot": "${workspaceFolder}"
         }
     ]

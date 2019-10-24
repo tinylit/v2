@@ -77,6 +77,7 @@
     function returnTrue() {
         return true;
     }
+
     function returnFalse() {
         return false;
     }
@@ -187,9 +188,9 @@
 
                 source = cached[tag] || initCallback(tag);
 
-                value = args.length > 0
-                    ? readyCallback.apply(null, core_concat.call([source, option], args))
-                    : readyCallback(source, option);
+                value = args.length > 0 ?
+                    readyCallback.apply(null, core_concat.call([source, option], args)) :
+                    readyCallback(source, option);
 
                 if (value) {
                     return cached[tag] = value;
@@ -328,7 +329,8 @@
             return index;
         },
         when: function (callback) {
-            var i = -1, item, results = [];
+            var i = -1,
+                item, results = [];
             while ((item = this[++i])) {
                 if (callback(item, i, this)) {
                     results.push(item);
@@ -336,8 +338,9 @@
             }
             return v2.merge(new ArrayThen(), results);
         },
-        map: function () {
-            var i = -1, item, results = new ArrayThen();
+        map: function (callback) {
+            var i = -1,
+                item, results = new ArrayThen();
             while ((item = this[++i])) {
                 results.add(callback(item, i, this));
             }
@@ -345,6 +348,12 @@
         },
         then: function (callback) {
             return v2.each(this, callback);
+        },
+        any: function (callback) {
+            return v2.any(this, callback);
+        },
+        all: function (callback) {
+            return v2.all(this, callback);
         },
         eq: function (index) {
             return this[index < 0 ? index + this.length : index] || null;
@@ -355,7 +364,7 @@
     };
 
     ArrayThen.prototype.nth = ArrayThen.prototype.eq;
-    ArrayThen.prototype.forEach = ArrayThen.prototype.then;
+    ArrayThen.prototype.forEach = ArrayThen.prototype.each = ArrayThen.prototype.then;
 
     function v2(tag, option) {
         if (arguments.length === 1 && v2.isPlainObject(tag)) {
@@ -371,7 +380,9 @@
 
     function extension(context, callback, array) {
         var key, deep, value, infer, option;
-        var i = 1, len = array.length, target = array[0];
+        var i = 1,
+            len = array.length,
+            target = array[0];
 
         if (typeof target === "boolean") {
             deep = target;
@@ -441,7 +452,11 @@
 
     v2.extend({
         when: function () {
-            return new ArrayThen(arguments);
+            var when = new ArrayThen();
+            if (arguments.length > 0) {
+                v2.each(arguments, when.add, when);
+            }
+            return when;
         },
         merge: function (results, arr) {
             results = results || [];
@@ -471,8 +486,7 @@
                 for (var len = object.length; i < len; i++) {
                     if (callback.call(context || object, object[i], i, object) === false) break;
                 }
-            }
-            else {
+            } else {
                 for (i in object) {
                     if (callback.call(context || object, object[i], i, object) === false) break;
                 }
@@ -496,16 +510,30 @@
             }
             return core_concat.apply([], arr);
         },
-        any: function (object, callback, context) {
-            if (!object) return false;
+        all: function (object, callback, context) {
+            if (!object || !callback) return false;
             var i = 0;
             if (isArraylike(object)) {
                 for (var len = object.length; i < len; i++) {
-                    if (callback === undefined || callback.call(context || object, object[i], i, object)) return true;
+                    if (!callback.call(context || object, object[i], i, object)) return false;
                 }
             } else {
                 for (i in object) {
-                    if (callback === undefined || callback.call(context || object, object[i], i, object)) return true;
+                    if (!callback.call(context || object, object[i], i, object)) return false;
+                }
+            }
+            return true;
+        },
+        any: function (object, callback, context) {
+            if (!object || !callback) return false;
+            var i = 0;
+            if (isArraylike(object)) {
+                for (var len = object.length; i < len; i++) {
+                    if (callback.call(context || object, object[i], i, object)) return true;
+                }
+            } else {
+                for (i in object) {
+                    if (callback.call(context || object, object[i], i, object)) return true;
                 }
             }
             return false;
@@ -629,14 +657,14 @@
         }
     });
     var datePart = {
-        Y: /(y+)/, //��
-        M: /(M+)/, //�·�
-        D: /(d+)/, //��
-        H: /(H+)/, //Сʱ��24Сʱ�ƣ�
-        h: /(h+)/, //Сʱ��12Сʱ�ƣ�
-        m: /(m+)/, //��
-        s: /(s+)/, //��
-        f: /(f+)/ //����
+        Y: /(y+)/,
+        M: /(M+)/,
+        D: /(d+)/,
+        H: /(H+)/,
+        h: /(h+)/,
+        m: /(m+)/,
+        s: /(s+)/,
+        f: /(f+)/
     };
     v2.extend(v2.date, {
         isLeapYear: function (year) {
@@ -788,7 +816,9 @@
             if (callback.length === 1) {
                 return {
                     configurable: true,
-                    get: function () { return source; },
+                    get: function () {
+                        return source;
+                    },
                     set: function (value) {
 
                         if (allowFirstSet) {
@@ -974,8 +1004,7 @@
                         adown.contains(bup) :
                         a.compareDocumentPosition && a.compareDocumentPosition(bup) & 16
                 ));
-            } :
-            function (a, b) {
+            } : function (a, b) {
                 if (b) {
                     while ((b = b.parentNode)) {
                         if (b === a) {
@@ -1005,7 +1034,7 @@
 
     v2.each({
         selectedOptions: function () {
-            return (new ArrayThen(this.children)).when(function (item) {
+            return v2.when(this.children).when(function (item) {
                 return item.selected;
             });
         }
@@ -1024,7 +1053,8 @@
 
     function DOMClassList(node) {
 
-        var i = 0, token, tokens = node.className.match(rnotwhite);
+        var i = 0,
+            token, tokens = node.className.match(rnotwhite);
 
         if (tokens) {
 
@@ -1205,12 +1235,13 @@
 
     var eventMap = {
         on: function (type, selector, hanlde) {
+            var guid, match, namespaces, map, cache, self, typeHandle, typeCache;
             if (arguments.length < 3) {
                 hanlde = selector;
                 selector = undefined;
             }
 
-            if (!selector && type.indexOf(".") === -1) {
+            if (!selector && type.indexOf('.') === -1) {
                 if (this.addEventListener) {
                     this.addEventListener(type, hanlde, false);
                 } else {
@@ -1222,30 +1253,27 @@
 
             type = type.split(".").sort().join(".");
 
-            var guid = this[timestamp] || (this[timestamp] = ++GLOBAL_VARIABLE_GUID);
+            guid = this[timestamp] || (this[timestamp] = ++GLOBAL_VARIABLE_GUID);
 
-            var cache = nodeCache[guid] || (nodeCache[guid] = {});
+            cache = nodeCache[guid] || (nodeCache[guid] = {});
 
-            var self = this,
-                match = rtypenamespace.exec(type);
+            self = this;
+            match = rtypenamespace.exec(type);
 
             type = match[1];
 
-            var namespaces = match[2] || "";
+            namespaces = match[2] || "";
 
             if (namespaces) {
                 namespaces = namespaces.split(".").sort();
             }
 
-            var map = namespaces ?
-                makeMap(namespaces.join(" "), true)
-                :
+            map = namespaces ?
+                makeMap(namespaces.join(" "), true) :
                 returnFalse;
 
-            var typeHandle = function (e) {
-
+            typeHandle = function (e) {
                 var value, node = e.target || (e.target = e.srcElement);
-
                 if (map("self") && self !== node) {
                     if (e.preventDefault) e.preventDefault();
                     if (e.stopPropagation)
@@ -1255,11 +1283,20 @@
                     return false;
                 }
 
-                if (node.match(selector)) {
+                if (!selector) {
+                    return done(this);
+                }
 
-                    value = hanlde.call(this, e);
+                if (node.nodeType && (!e.button || e.type !== "click")) {
+                    for (; node != this; node = node.parentNode) {
+                        if (node.match(selector))
+                            return done(node);
+                    }
+                }
+                function done(elem) {
+                    value = hanlde.call(elem, e);
 
-                    if (value === false && map("falseStop")) {
+                    if (value === false && map('abort')) {
                         if (e.preventDefault) e.preventDefault();
                         if (e.stopPropagation)
                             e.stopPropagation();
@@ -1285,11 +1322,11 @@
                 }
             };
 
-            var typeCache = cache[type] || (cache[type] = []);
+            typeCache = cache[type] || (cache[type] = []);
 
             typeCache.push({
                 guid: hanlde.guid || (hanlde.guid = ++GLOBAL_VARIABLE_EVENT),
-                namespace: namespaces.join("."),
+                namespace: namespaces && namespaces.join("."),
                 selector: selector,
                 hanlde: typeHandle
             });
@@ -1301,45 +1338,45 @@
             }
         },
         off: function (type, selector, hanlde) {
+            var guid, namespaces, cache, match, typeCache;
             if (arguments.length < 3) {
                 hanlde = selector;
                 selector = undefined;
             }
 
-            if (!selector && type.indexOf(".") === -1) {
-
+            if (!selector && type.indexOf('.') === -1) {
                 if (this.addEventListener) {
                     this.removeEventListener(type, hanlde, false);
                 } else {
                     this.detachEvent("on" + type, hanlde);
                 }
-
                 return;
             }
 
             if (!hanlde.guid) return;
 
-            var guid = this[timestamp];
+            guid = this[timestamp];
 
             if (!guid) return;
 
-            var cache = nodeCache[guid];
+            cache = nodeCache[guid];
 
             if (!cache) return;
 
-            var match = rtypenamespace.exec(type);
+            match = rtypenamespace.exec(type);
 
-            var typeCache = cache[type = match[1]];
+            typeCache = cache[type = match[1]];
 
             if (!typeCache) return;
 
-            var namespaces = match[2] || "";
+            namespaces = match[2] || "";
 
             if (namespaces) {
                 namespaces = namespaces.split(".").sort().join(".");
             }
 
-            var i = 0, obj;
+            var i = 0,
+                obj;
 
             while ((obj = typeCache[i++])) {
                 if (obj.guid === hanlde.guid && obj.namespace === namespaces && obj.selector === selector) {
@@ -1489,58 +1526,84 @@
 
     v2.extend(Element.prototype, {
         css: function (name, same) {
-            var value,
-                origName = v2.camelCase(name);
-
-            name = v2.cssProps[origName] || (v2.cssProps[origName] = vendorPropName(elem.style, origName));
-
-            value = curCSS(this, name);
-
-            if (value === "normal" && name in cssNormalTransform) {
-                value = cssNormalTransform[name];
+            var elem = this,
+                style = this.style;
+            if (v2.isArray(name)) {
+                var map = {};
+                v2.each(name, function (name) {
+                    map[name] = done(name);
+                });
+                return map;
             }
 
-            if (same) return value;
+            return done(name);
 
-            return parseFloat(value) || 0;
+            function done(name) {
+                var value,
+                    origName = v2.camelCase(name);
+
+                name = v2.cssProps[origName] || (v2.cssProps[origName] = vendorPropName(style, origName));
+
+                value = curCSS(elem, name);
+
+                if (value === "normal" && name in cssNormalTransform) {
+                    value = cssNormalTransform[name];
+                }
+
+                if (same) return value;
+
+                return parseFloat(value) || 0;
+            }
         },
         styleCb: function (name, value) {
             var match,
-                style = this.style,
+                origName,
+                elem = this,
+                style = this.style;
+
+            if (v2.isPlainObject(name)) {
+                return v2.each(name, done);
+            }
+
+            return done(value, name);
+
+            function done(value, name) {
+
                 origName = v2.camelCase(name);
 
-            name = v2.cssProps[name] || (v2.cssProps[name] = vendorPropName(style, name));
+                name = v2.cssProps[name] || (v2.cssProps[name] = vendorPropName(style, name));
 
-            if (value === undefined) return style[name];
+                if (value === undefined) return style[name];
 
-            var type = typeof value;
+                var type = typeof value;
 
-            if (type === "string") {
-                if ((match = rcssZoom.exec(value))) {
-                    adjustCSS(this, name, match);
-                } else if ((match = rcssMulti.exec(value))) {
+                if (type === "string") {
+                    if ((match = rcssZoom.exec(value))) {
+                        adjustCSS(this, name, match);
+                    } else if ((match = rcssMulti.exec(value))) {
 
-                    if (match[3]) match[2] /= 100;
+                        if (match[3]) match[2] /= 100;
 
-                    value = (new Function("source", "return source" + match[1] + match[2]))(this.css(name));
+                        value = (new Function("source", "return source" + match[1] + match[2]))(elem.css(name));
+                    }
+
+                    if (match) type = "number";
                 }
 
-                if (match) type = "number";
-            }
+                if (value === null || value === undefined || value !== value) {
+                    return;
+                }
 
-            if (value === null || value === undefined || value !== value) {
-                return;
-            }
+                if (type === "number" && !v2.cssNumber[origName]) {
+                    value += "px";
+                }
 
-            if (type === "number" && !v2.cssNumber[origName]) {
-                value += "px";
-            }
+                if (value === "" && name.indexOf("background") === 0) {
+                    value = "inherit";
+                }
 
-            if (value === "" && name.indexOf("background") === 0) {
-                value = "inherit";
+                style[name] = value;
             }
-
-            style[name] = value;
         }
     });
 
@@ -1554,7 +1617,7 @@
         append: function () {
             var docFrag = safeFragment.cloneNode();
 
-            v2.each(function (node) {
+            v2.each(arguments, function (node) {
                 docFrag.appendChild(node.nodeType ? node : document.createTextNode(node));
             });
 
@@ -1563,7 +1626,7 @@
         prepend: function () {
             var docFrag = safeFragment.cloneNode();
 
-            v2.each(function (node) {
+            v2.each(arguments, function (node) {
                 docFrag.appendChild(node.nodeType ? node : document.createTextNode(node));
             });
 
@@ -1644,7 +1707,10 @@
             });
         }
         if (v2.isFunction(value)) {
-            value = { type: '*', exec: value };
+            value = {
+                type: '*',
+                exec: value
+            };
         }
         if (letter in coreCards) {
             return coreCards[letter] = mergeCards(coreCards[letter], value);
@@ -1788,13 +1854,18 @@
             safe.appendChild(node);
         }
 
+        if (safe.childNodes.length == 1) {
+            safe = safe.firstChild;
+        }
+
         tmp = null;
 
         return safe;
     };
 
     var
-        rbatch = /\$/g,
+        rbatch = /\$+/g,
+        rbatchZore = /\^+/g,
         whitespace = "[\\x20\\t\\r\\n\\f]",
         characterEncoding = "(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+",
         identifier = characterEncoding.replace("w", "w#"),
@@ -1817,7 +1888,9 @@
             "TEXT": new RegExp("^\\{(.*?)\\}" + whitespace + "*(?=[+>]|\\*|$)")
         },
         fhtmlSerializeCache = function (selector) {
-            var i, arr, charAt, counter, token, type, match, matched, groups = [], string = selector, serialize = htmlSerialize.serialize;
+            var i, arr, charAt, counter, token, type, match, matched, groups = [],
+                string = selector,
+                serialize = htmlSerialize.serialize;
             while (string) {
                 if (!matched || (match = rcombinators.exec(string))) {
                     if (match && (token.TAG === 'a' || token.TAG === 'A') && !("ATTR" in token && v2.any(token['ATTR'], function (attr) {
@@ -1869,7 +1942,8 @@
         },
         htmlSerializeCache = makeCache(fhtmlSerializeCache),
         htmlDeserialize = function (groups) {
-            var i = 0, html, token, next;
+            var i = 0,
+                html, token, next;
             while ((token = groups[i++])) {
                 if (!html) {
                     html = token.groups ? htmlDeserializeGroup(token) : htmlDeserializeToken(token);
@@ -1921,9 +1995,24 @@
             html = html.join('');
             if (multi > 0) {
                 htmls = [];
-                while (multi--) {
-                    htmls.unshift(html.replace(rbatch, multi + 1));
-                }
+
+                do {
+                    htmls.unshift(html.replace(rbatch, function (v) {
+                        var value = multi + '';
+                        for (var i = value.length, len = v.length; i < len; i++) {
+                            value = '0' + value;
+                        }
+                        return value;
+                    }).replace(rbatchZore, function (v) {
+                        var value = (multi - 1) + '';
+                        for (var i = value.length, len = v.length; i < len; i++) {
+                            value = '0' + value;
+                        }
+                        return value;
+                    }));
+
+                } while ((--multi) > 0);
+
                 html = htmls.join('');
             }
             if (relative === "+") html += xhtml;
@@ -1941,7 +2030,7 @@
     Attr.prototype.toString = function () {
         return this.value ? this.name + '="' + this.value + '"' : this.name;
     };
-    v2.extend(htmlSerialize, {
+    v2.extend(v2.htmlSerialize = htmlSerialize, {
         serialize: {
             "CLASS": function (match) {
                 return match[0];
@@ -1974,7 +2063,7 @@
     };
 
     var formatCache = makeCache(function (i) {
-        return new RegExp("\\{" + (i - 1) + "\\}", "gm");
+        return new RegExp("\\{" + i + "\\}", "gm");
     });
 
     String.prototype.format = function () {
@@ -1982,21 +2071,25 @@
         if (!string) return string;
         if (arguments.length < 1) return string;
 
-        for (var i = 1, len = arguments.length; i < len; i++) {
+        for (var i = 0, len = arguments.length; i < len; i++) {
             string = string.replace(formatCache(i), arguments[i]);
         }
         return string;
     };
 
-    var rcompile = /`\$\{(.*)?\}`/gm;
+    var rcompile = new RegExp('(`\\$\\{(.+?)\\}`|\\{' + whitespace + '*\\{' + whitespace + '*([^\\{].+?)' + whitespace + '*\\}' + whitespace + '*\\})', 'gm'); // /`\$\{(.*)?\}`/gm;
     var word = '[_a-z][_a-z0-9]*',
         rquotes = new RegExp("(['\"])(?:\\\\.|[^\\\\])+\\1", 'gm'),
-        rbraceCode = new RegExp('\\{' + whitespace + '*\\{(.+?)\\}' + whitespace + "*\\}", "gm"),
+        rbraceCode = new RegExp('(\\{' + whitespace + '*)*\\{' + whitespace + '*\\{(.+?)\\}' + whitespace + '*\\}', 'gm'),
+        rternaryCode = new RegExp('^(((?:\\w+\\.)?\\w+(?:\\(.*?\\))?)' + whitespace + '*([?!])' + whitespace + '*(.+?))$'),
         tryCode = word + '(?:\\??(?:\\.' + word + '|\\[.+?\\]))*',
         rtryCode = new RegExp(tryCode, 'img'),
         rtry = new RegExp('(' + word + '|\\])\\?(?=(\\.|\\[))', 'i'),
-        rforin = new RegExp('for' + whitespace + '*\\(' + whitespace + '*(?:var' + whitespace + '+)?(' + word + ')(?:<(' + word + ')>)?' + whitespace + '+in' + whitespace + '+(' + tryCode + ')' + whitespace + '*\\)', 'ig'),
+        rforin = new RegExp('\\bfor' + whitespace + '*\\(' + whitespace + '*(?:var' + whitespace + '+)?(' + word + ')(?:<(' + word + ')>)?' + whitespace + '+in' + whitespace + '+(' + tryCode + ')' + whitespace + '*\\)', 'ig'),
         rword = new RegExp('\\b' + word + '\\b', 'gi'),
+        rkey = new RegExp('^' + word + '$', 'i'),
+        rif = new RegExp('\\bif' + whitespace + '*\\(.+?\\)' + whitespace + '*\\{' + whitespace + "*(.+)"),
+        relse = new RegExp('\\belse' + whitespace + '*\\{' + whitespace + "*(.+)"),
         rinject = new RegExp("^" + whitespace + "*(" + word + ")\\(((" + whitespace + "*" + word + whitespace + "*,)*" + whitespace + "*" + word + ")?" + whitespace + "*\\)" + whitespace + "*$", "i");
 
     var tryCode = makeCache(function (string) {
@@ -2041,16 +2134,34 @@
 
         return results.join('');
     };
+
+    function ifElseCode(all, code) {
+        if (!rreturn.test(code))
+            return all.slice(0, -code.length) + 'return ' + code;
+        return all;
+    }
+
     function joinCode(string, quote) {
-        return string.replace(rbraceCode, function (_, code) {
-            return quote + '+ (' + code + ') +' + quote;
+        return string.replace(rbraceCode, function (_, reserved, code) {
+            return (reserved || '') + quote + '+ (' + code + ') +' + quote;
         });
     }
-    var withCache = makeCache(function (value) {
-        var callback, body = value
-            .replace(rforin, forCode)
+    function ternaryCode(_, _2, left, symbol, right) {
+        if (symbol == '?') {
+            return left + '?' + right + ':""';
+        }
+        return left + '?"":' + right;
+    }
+    var compileCache = makeCache(function (value) {
+        var callback, body = value.replace(rforin, forCode)
+            .replace(rif, ifElseCode)
+            .replace(relse, ifElseCode)
             .replace(rquotes, joinCode)
             .replace(rtryCode, tryCode);
+
+        if (!rreturn.test(body)) {
+            body = 'return ' + body;
+        }
 
         try {
             callback = new Function('__json_', 'var __v_; with(__json_){ ' + body + ' }');
@@ -2069,12 +2180,49 @@
             return val === undefined ? '' : isArraylike(val) ? core_join.call(val, '') : val;
         };
     });
+
+    var simpleCache = makeCache(function (value) {
+        if (rkey.test(value)) {
+            return function (json) {
+                if (json === null || json === undefined)
+                    return '';
+
+                return json[value];
+            };
+        }
+        var callback, body = value
+            .replace(rternaryCode, ternaryCode)
+            .replace(rtryCode, tryCode);
+
+        if (!rreturn.test(body)) {
+            body = 'return ' + body;
+        }
+
+        try {
+            callback = new Function('__json_', 'var __v_; with(__json_){ ' + body + ' }');
+        } catch (_) {
+            v2.syntaxError(value + '=>' + body);
+        }
+
+        return function (json) {
+            var val;
+
+            if (json === null || json === undefined)
+                return '';
+
+            val = callback(json);
+
+            return val === undefined ? '' : isArraylike(val) ? core_join.call(val, '') : val;
+        };
+    });
+
     String.prototype.withCb = function (json) {
-        return this.replace(rcompile, function (_, value) {
-            if (!rreturn.test(value)) {
-                value = 'return ' + value;
-            }
-            return withCache(value)(json);
+        return this.replace(rcompile, function (_, _2, lamda, simple) {
+            var callback = lamda
+                ? compileCache(lamda)
+                : simpleCache(simple);
+
+            return callback(json);
         });
     };
 
@@ -2102,12 +2250,16 @@
                 when = new Function("vm", "try{ with(vm){  if(option) with(option) { return " + when + "; } return " + when + ";} }catch(_){ return false; }");
             }
 
-            this[this.length] = { filter: when, option: option };
+            this[this.length] = {
+                filter: when,
+                option: option
+            };
 
             this.length += 1;
         },
         then: function (vm) {
-            var i = 0, use;
+            var i = 0,
+                use;
             while ((use = this[i++])) {
                 if (use.filter(vm))
                     return use.option;
@@ -2118,7 +2270,8 @@
 
     function dependencyInjection(context, key, inject, value) {
         if (!inject) return value;
-        var callback, baseArgs, args = [], injections = inject.match(rword);
+        var callback, baseArgs, args = [],
+            injections = inject.match(rword);
         if (callback = context[key]) {
             context[key] = function () {
                 return applyCallback(callback, baseArgs, context, true);
@@ -2296,7 +2449,8 @@
         },
         destory: function () {
 
-            var i = 0, control;
+            var i = 0,
+                control;
 
             while ((control = this[i++])) {
                 control.destory();
@@ -2382,6 +2536,7 @@
     }
 
     v2.fn = v2.prototype = {
+        version: version,
         create: function (options, tag) {
 
             options = v2.extend(true, {}, options);
@@ -2825,7 +2980,7 @@
             };
 
             this.switchCase = function (state, falseStop) {
-                var i, value, control, isReady = true;
+                var i, value, control, prevValue, isReady = true;
 
                 if (this.isReady) return;
 
@@ -2844,7 +2999,7 @@
                     state = this.enumState[state];
                 }
 
-                state = state >>> 0;
+                prevValue = state = state >>> 0;
 
                 this.readyState = this.readyState >>> 0;
 
@@ -2859,6 +3014,17 @@
                     if (value <= state) continue;
 
                     if (!this[i]) continue;
+
+                    if (value > 8) {
+
+                        if (prevValue <= 8) {
+                            computeWildcards(this, 'function');
+                        }
+
+                        while (value = watchStack.shift()) {
+                            value();
+                        }
+                    }
 
                     value = (value <= 1 || value >= 32) ?
                         this[i]() :
@@ -2876,16 +3042,11 @@
                         isReady = false;
                         break;
                     }
+
+                    prevValue = value;
                 }
 
-                if ((this.isReady = isReady)) {
-
-                    computeWildcards(this, 'function');
-
-                    while (value = watchStack.shift()) {
-                        value();
-                    }
-                }
+                this.isReady = isReady;
 
                 GLOBAL_VARIABLE_CURRENT_CONTROL = control;
             };
@@ -2906,7 +3067,7 @@
 
                     return v2.each(prop, function (attributes, name) {
                         done(name, attributes);
-                    });
+                    }), this;
                 }
 
 
@@ -2916,7 +3077,7 @@
 
                 return v2.each(prop.match(rnotwhite), function (name) {
                     done(name, descriptor);
-                });
+                }), this;
 
                 function done(name, attributes) {
                     var contains = elem && (name in elem),
@@ -3058,23 +3219,6 @@
                 }
             });
 
-            v2.each({
-                show: function (fn) {
-                    if (visible === false) {
-                        fn.call(this);
-                        visible = true;
-                    }
-                },
-                hide: function (fn) {
-                    if (visible === true) {
-                        fn.call(this);
-                        visible = false;
-                    }
-                }
-            }, function (callback, name) {
-                context[name] = callback(context[name]);
-            });
-
             computeWildcards(wildcards, 'function', true);
         },
         lazy: function () {
@@ -3126,6 +3270,15 @@
 
             return applyCallback(fn, args, context, true);
         },
+        when: function (extra, context) {
+            if (v2.isString(extra) && (!context || context.nodeType == 1)) {
+                return v2.when(this.take(extra, context || this.$, true));
+            }
+            if (arguments.length > 1) {
+                return v2.when.apply(v2, core_slice.call(arguments, 0));
+            }
+            return v2.when(extra || this.$);
+        },
         take: function (selector, context, all) {
 
             if (arguments.length === 2 && typeof context === 'boolean') {
@@ -3146,7 +3299,8 @@
                 if (isArraylike(token)) {
                     return v2.each(token, done);
                 }
-                var i = 0, classes = (token + "").match(rnotwhite) || [];
+                var i = 0,
+                    classes = (token + "").match(rnotwhite) || [];
 
                 while ((token = classes[i++])) {
                     classList.add(token);
@@ -3171,7 +3325,8 @@
                 if (isArraylike(token)) {
                     return v2.each(token, done);
                 }
-                var i = 0, classes = (token + "").match(rnotwhite) || [];
+                var i = 0,
+                    classes = (token + "").match(rnotwhite) || [];
 
                 while ((token = classes[i++])) {
                     classList.remove(token);
@@ -3271,15 +3426,23 @@
                 default:
                     return v2.error('Unsupported exception:View types are not supported.');
             }
+        }
+    });
+
+    v2.use({
+        '&focus': function () {
+            try {
+                this.$.focus();
+            } catch (_) { }
         },
-        toggle: function (toggle) {
+        "?toggle": function (toggle) {
             if (arguments.length > 0) {
 
                 return this.visible = !!toggle;
             }
             return this.visible = !this.visible;
         },
-        show: function () {
+        "&show": function () {
             var nodeName = this.$.nodeName.toLowerCase(),
                 display = nodeName === 'table' ?
                     'table' :
@@ -3292,17 +3455,11 @@
                                 '';
 
             this.$.styleCb('display', display);
+            this.visible = true;
         },
-        hide: function () {
+        "&hide": function () {
             this.$.styleCb('display', 'none');
-        }
-    });
-
-    v2.use({
-        '&focus': function () {
-            try {
-                this.$.focus();
-            } catch (_) { }
+            this.visible = false;
         }
     });
 
@@ -3346,7 +3503,8 @@
             return applyCallback(xhr_open, arguments, this);
         },
         send: function (data) {
-            var xhr = this, xhr_id = xhr.xhrId;
+            var xhr = this,
+                xhr_id = xhr.xhrId;
             if (xhr_id && xhr_id > 0) {
                 setTimeout(function () {
                     if (xhr.readyState === 4) {
@@ -3378,9 +3536,10 @@
         }
     });
 
-
     if (typeof define === "function") {
-        define("v2", [], function () { return v2; });
+        define("v2", [], function () {
+            return v2;
+        });
     }
 
     window.v2Kit = window.v2 = v2;

@@ -6,91 +6,310 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>日期插件</title>
     <link rel="stylesheet" href="../lib/v2.css">
+    <script data-main="../appsettings" src="../require.js" defer="defer" async></script>
 </head>
 
 <body>
-    <div class="date-picker rise">
-        <header class="input-group">
-            <span class="input-group-addon">«</span>
-            <div class="years">
-                <input type="text" class="form-control" placeholder="年" value="2019" />
-                <ul class="dropdown-menu">
-                    <li><a href="#">2011</a></li>
-                    <li><a href="#">2012</a></li>
-                    <li><a href="#">2013</a></li>
-                    <li><a href="#">2014</a></li>
-                    <li><a href="#">2015</a></li>
-                    <li><a href="#">2016</a></li>
-                    <li><a href="#">2017</a></li>
-                    <li class="prev"><a href="#">2018</a></li>
-                    <li class="active"><a href="#">2019</a></li>
-                    <li class="next"><a href="#">2020</a></li>
-                    <li><a href="#">2021</a></li>
-                    <li><a href="#">2022</a></li>
-                </ul>
+    <div class="date-picker">
+        <div class="date-picker-header">
+            <div class="ym-y ym">
+                <div class="input-group">
+                    <span class="input-group-addon"><i class="glyphicon glyphicon-menu-left"></i></span>
+                    <div class="form-control">2019</div>
+                    <div class="dialog ymd hidden">
+                        <div class="ymd-addon"><i class="glyphicon glyphicon-menu-up"></i></div>
+                        <ul>
+                            <li><a href="#">2010</a></li>
+                            <li><a href="#">2011</a></li>
+                            <li><a href="#">2012</a></li>
+                            <li><a href="#">2013</a></li>
+                            <li><a href="#">2014</a></li>
+                            <li><a href="#">2015</a></li>
+                            <li><a href="#">2016</a></li>
+                            <li><a href="#">2017</a></li>
+                            <li><a href="#">2018</a></li>
+                            <li><a class="active" href="#">2019</a></li>
+                        </ul>
+                        <div class="ymd-addon"><i class="glyphicon glyphicon-menu-down"></i></div>
+                        <div class="clearfix"></div>
+                    </div>
+                    <span class="input-group-addon"><i class="glyphicon glyphicon-menu-right"></i></span>
+                </div>
             </div>
-            <div class="months">
-                <input type="text" class="form-control" placeholder="月" value="8" />
-                <ul class="dropdown-menu">
-                    <li><a href="#">1</a></li>
-                    <li><a href="#">2</a></li>
-                    <li><a href="#">3</a></li>
-                    <li><a href="#">4</a></li>
-                    <li><a href="#">5</a></li>
-                    <li><a href="#">6</a></li>
-                    <li class="prev"><a href="#">7</a></li>
-                    <li class="active"><a href="#">8</a></li>
-                    <li class="next"><a href="#">9</a></li>
-                    <li><a href="#">10</a></li>
-                    <li><a href="#">11</a></li>
-                    <li><a href="#">12</a></li>
-                </ul>
+            <div class="ym ym-m">
+                <div class="input-group">
+                    <span class="input-group-addon"><i class="glyphicon glyphicon-menu-left"></i></span>
+                    <div class="form-control">10</div>
+                    <div class="dialog ymd hidden">
+                        <ul>
+                            <li><a href="#">1</a></li>
+                            <li><a href="#">2</a></li>
+                            <li><a href="#">3</a></li>
+                            <li><a href="#">4</a></li>
+                            <li><a href="#">5</a></li>
+                            <li><a href="#">6</a></li>
+                            <li><a href="#">7</a></li>
+                            <li><a href="#">8</a></li>
+                            <li><a href="#">9</a></li>
+                            <li><a class="active" href="#">10</a></li>
+                            <li><a href="#">11</a></li>
+                            <li><a href="#">12</a></li>
+                        </ul>
+                        <div class="clearfix"></div>
+                    </div>
+                    <span class="input-group-addon"><i class="glyphicon glyphicon-menu-right"></i></span>
+                </div>
             </div>
-            <span class="input-group-addon">»</span>
-        </header>
-        <main>
-            <div class="days">
-                <ul class="dropdown-menu">
-                    <li><a href="#">1</a></li>
-                    <li><a href="#">2</a></li>
-                    <li><a href="#">3</a></li>
-                    <li><a href="#">4</a></li>
-                    <li><a href="#">5</a></li>
-                    <li><a href="#">6</a></li>
-                    <li><a href="#">7</a></li>
-                    <li><a href="#">8</a></li>
-                    <li><a href="#">9</a></li>
-                    <li><a href="#">10</a></li>
-                    <li><a href="#">11</a></li>
-                    <li><a href="#">12</a></li>
-                    <li><a href="#">13</a></li>
-                    <li><a href="#">14</a></li>
-                    <li><a href="#">15</a></li>
-                    <li><a href="#">16</a></li>
-                    <li><a href="#">17</a></li>
-                    <li><a href="#">18</a></li>
-                    <li class="prev"><a href="#">19</a></li>
-                    <li class="active"><a href="#">20</a></li>
-                    <li class="next"><a href="#">21</a></li>
-                    <li><a href="#">22</a></li>
-                    <li><a href="#">23</a></li>
-                    <li><a href="#">24</a></li>
-                    <li><a href="#">25</a></li>
-                    <li><a href="#">26</a></li>
-                    <li><a href="#">27</a></li>
-                    <li><a href="#">28</a></li>
-                    <li><a href="#">29</a></li>
-                    <li><a href="#">30</a></li>
-                    <li><a href="#">31</a></li>
-                    <li><a href="#">32</a></li>
-                    <li><a href="#">33</a></li>
-                    <li><a href="#">34</a></li>
-                    <li><a href="#">35</a></li>
-                </ul>
+            <div class="clearfix"></div>
+        </div>
+        <div class="date-picker-container">
+            <ul class="date-picker-week">
+                <li>日</li>
+                <li>一</li>
+                <li>二</li>
+                <li>三</li>
+                <li>四</li>
+                <li>五</li>
+                <li>六</li>
+            </ul>
+            <ul class="date-picker-days">
+                <li><a href="#">1</a></li>
+                <li><a href="#">2</a></li>
+                <li><a href="#">3</a></li>
+                <li><a href="#">4</a></li>
+                <li><a href="#">5</a></li>
+                <li><a href="#">6</a></li>
+                <li><a href="#">7</a></li>
+                <li><a href="#">8</a></li>
+                <li><a href="#">9</a></li>
+                <li><a href="#">10</a></li>
+                <li><a href="#">11</a></li>
+                <li><a href="#">12</a></li>
+                <li><a href="#">13</a></li>
+                <li><a href="#">14</a></li>
+                <li><a href="#">15</a></li>
+                <li><a href="#">16</a></li>
+                <li><a href="#">17</a></li>
+                <li><a href="#">18</a></li>
+                <li><a class="active" href="#">19</a></li>
+                <li><a href="#">20</a></li>
+                <li><a href="#">21</a></li>
+                <li><a href="#">22</a></li>
+                <li><a href="#">23</a></li>
+                <li><a href="#">24</a></li>
+                <li><a href="#">25</a></li>
+                <li><a href="#">26</a></li>
+                <li><a href="#">27</a></li>
+                <li><a href="#">28</a></li>
+                <li><a href="#">29</a></li>
+                <li><a href="#">30</a></li>
+                <li><a href="#">31</a></li>
+                <li><a href="#">32</a></li>
+                <li><a href="#">33</a></li>
+                <li><a href="#">34</a></li>
+                <li><a href="#">35</a></li>
+            </ul>
+            <div class="clearfix"></div>
+        </div>
+        <div class="date-picker-footer">
+            <div class="input-group">
+                <span class="input-group-addon">时、分、秒</span>
+                <div class="form-control"></div>
+                <div class="dialog hms hms-h panel panel-info hidden">
+                    <div class="panel-heading">
+                        <div class="text-center">时</div>
+                    </div>
+                    <div class="panel-body">
+                        <ul>
+                            <li><a href="#">0</a></li>
+                            <li><a href="#">1</a></li>
+                            <li><a href="#">2</a></li>
+                            <li><a href="#">3</a></li>
+                            <li><a href="#">4</a></li>
+                            <li><a href="#">5</a></li>
+                            <li><a href="#">6</a></li>
+                            <li><a href="#">7</a></li>
+                            <li><a href="#">8</a></li>
+                            <li><a href="#">9</a></li>
+                            <li><a href="#">10</a></li>
+                            <li><a href="#">11</a></li>
+                            <li><a href="#">12</a></li>
+                            <li><a href="#">13</a></li>
+                            <li><a href="#">14</a></li>
+                            <li><a href="#">15</a></li>
+                            <li><a href="#">16</a></li>
+                            <li><a href="#">17</a></li>
+                            <li><a href="#">18</a></li>
+                            <li><a href="#">19</a></li>
+                            <li><a href="#">20</a></li>
+                            <li><a href="#">21</a></li>
+                            <li><a href="#">22</a></li>
+                            <li><a href="#">23</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="form-control"></div>
+                <div class="dialog hms hms-m panel panel-info hidden">
+                    <div class="panel-heading">
+                        <div class="text-center">分</div>
+                    </div>
+                    <div class="panel-body">
+                        <ul>
+                            <li><a href="#">0</a></li>
+                            <li><a href="#">1</a></li>
+                            <li><a href="#">2</a></li>
+                            <li><a href="#">3</a></li>
+                            <li><a href="#">4</a></li>
+                            <li><a href="#">5</a></li>
+                            <li><a href="#">6</a></li>
+                            <li><a href="#">7</a></li>
+                            <li><a href="#">8</a></li>
+                            <li><a href="#">9</a></li>
+                            <li><a href="#">10</a></li>
+                            <li><a href="#">11</a></li>
+                            <li><a href="#">12</a></li>
+                            <li><a href="#">13</a></li>
+                            <li><a href="#">14</a></li>
+                            <li><a href="#">15</a></li>
+                            <li><a href="#">16</a></li>
+                            <li><a href="#">17</a></li>
+                            <li><a href="#">18</a></li>
+                            <li><a href="#">19</a></li>
+                            <li><a href="#">20</a></li>
+                            <li><a href="#">21</a></li>
+                            <li><a href="#">22</a></li>
+                            <li><a href="#">23</a></li>
+                            <li><a href="#">24</a></li>
+                            <li><a href="#">25</a></li>
+                            <li><a href="#">26</a></li>
+                            <li><a href="#">27</a></li>
+                            <li><a href="#">28</a></li>
+                            <li><a href="#">29</a></li>
+                            <li><a href="#">30</a></li>
+                            <li><a href="#">31</a></li>
+                            <li><a href="#">32</a></li>
+                            <li><a href="#">33</a></li>
+                            <li><a href="#">34</a></li>
+                            <li><a href="#">35</a></li>
+                            <li><a href="#">36</a></li>
+                            <li><a href="#">37</a></li>
+                            <li><a href="#">38</a></li>
+                            <li><a href="#">39</a></li>
+                            <li><a href="#">40</a></li>
+                            <li><a href="#">41</a></li>
+                            <li><a href="#">42</a></li>
+                            <li><a href="#">43</a></li>
+                            <li><a href="#">44</a></li>
+                            <li><a href="#">45</a></li>
+                            <li><a href="#">46</a></li>
+                            <li><a href="#">47</a></li>
+                            <li><a href="#">48</a></li>
+                            <li><a href="#">49</a></li>
+                            <li><a href="#">50</a></li>
+                            <li><a href="#">51</a></li>
+                            <li><a href="#">52</a></li>
+                            <li><a href="#">53</a></li>
+                            <li><a href="#">54</a></li>
+                            <li><a href="#">55</a></li>
+                            <li><a href="#">56</a></li>
+                            <li><a href="#">57</a></li>
+                            <li><a href="#">58</a></li>
+                            <li><a href="#">59</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="form-control"></div>
+                <div class="dialog hms hms-s panel panel-info hidden">
+                    <div class="panel-heading">
+                        <div class="text-center">秒</div>
+                    </div>
+                    <div class="panel-body">
+                        <ul>
+                            <li><a href="#">0</a></li>
+                            <li><a href="#">1</a></li>
+                            <li><a href="#">2</a></li>
+                            <li><a href="#">3</a></li>
+                            <li><a href="#">4</a></li>
+                            <li><a href="#">5</a></li>
+                            <li><a href="#">6</a></li>
+                            <li><a href="#">7</a></li>
+                            <li><a href="#">8</a></li>
+                            <li><a href="#">9</a></li>
+                            <li><a href="#">10</a></li>
+                            <li><a href="#">11</a></li>
+                            <li><a href="#">12</a></li>
+                            <li><a href="#">13</a></li>
+                            <li><a href="#">14</a></li>
+                            <li><a href="#">15</a></li>
+                            <li><a href="#">16</a></li>
+                            <li><a href="#">17</a></li>
+                            <li><a href="#">18</a></li>
+                            <li><a href="#">19</a></li>
+                            <li><a href="#">20</a></li>
+                            <li><a href="#">21</a></li>
+                            <li><a href="#">22</a></li>
+                            <li><a href="#">23</a></li>
+                            <li><a href="#">24</a></li>
+                            <li><a href="#">25</a></li>
+                            <li><a href="#">26</a></li>
+                            <li><a href="#">27</a></li>
+                            <li><a href="#">28</a></li>
+                            <li><a href="#">29</a></li>
+                            <li><a href="#">30</a></li>
+                            <li><a href="#">31</a></li>
+                            <li><a href="#">32</a></li>
+                            <li><a href="#">33</a></li>
+                            <li><a href="#">34</a></li>
+                            <li><a href="#">35</a></li>
+                            <li><a href="#">36</a></li>
+                            <li><a href="#">37</a></li>
+                            <li><a href="#">38</a></li>
+                            <li><a href="#">39</a></li>
+                            <li><a href="#">40</a></li>
+                            <li><a href="#">41</a></li>
+                            <li><a href="#">42</a></li>
+                            <li><a href="#">43</a></li>
+                            <li><a href="#">44</a></li>
+                            <li><a href="#">45</a></li>
+                            <li><a href="#">46</a></li>
+                            <li><a href="#">47</a></li>
+                            <li><a href="#">48</a></li>
+                            <li><a href="#">49</a></li>
+                            <li><a href="#">50</a></li>
+                            <li><a href="#">51</a></li>
+                            <li><a href="#">52</a></li>
+                            <li><a href="#">53</a></li>
+                            <li><a href="#">54</a></li>
+                            <li><a href="#">55</a></li>
+                            <li><a href="#">56</a></li>
+                            <li><a href="#">57</a></li>
+                            <li><a href="#">58</a></li>
+                            <li><a href="#">59</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-        </main>
-        <div class="clear-fix"></div>
+            <div class="clearfix"></div>
+        </div>
+        <div class="date-picker-btn">
+            <div class="btn-group pull-right">
+                <button type="button" class="btn btn-info">清除</button>
+                <button type="reset" class="btn btn-success">今天</button>
+                <button type="submit" class="btn btn-primary">确定</button>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+        <div class="dialog tip panel panel-warning hidden">
+            <div class="panel-heading">
+                <div class="text-center">提示</div>
+                <button aria-close>
+                    <i class="glyphicon glyphicon-remove"></i>
+                </button>
+            </div>
+            <div class="panel-body">
+                日期超过限制范围!
+            </div>
+        </div>
     </div>
 </body>
-
 </html>
