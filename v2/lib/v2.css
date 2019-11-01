@@ -6,6 +6,15 @@ body {
     line-height: 1.5;
 }
 
+.ignore {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 *::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
     border-radius: 3px;
@@ -24,10 +33,248 @@ body {
     background-color: #cfccccb4;
 }
 
+input::-ms-expand {
+    background-color: transparent;
+    border: 0;
+}
+
+input::-webkit-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::-moz-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input:-ms-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::-ms-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input[type=radio],
+input[type=checkbox] {
+    position: relative;
+    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+    input[type=radio]::after,
+    input[type=radio]::before,
+    input[type=checkbox]::after,
+    input[type=checkbox]::before {
+        position: absolute;
+        margin: auto;
+        content: '';
+        background-color: #fff;
+    }
+
+    input[type=radio]::before,
+    input[type=checkbox]::before {
+        z-index: 10;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    input[type=radio]::after,
+    input[type=checkbox]::after {
+        z-index: 11;
+        top: .325em;
+        right: .325em;
+        bottom: .325em;
+        left: .325em;
+        background-color: transparent;
+    }
+
+    input[type=radio]::before,
+    input[type=checkbox]::before {
+        border: .085em solid #c1caca;
+        border-radius: .2em;
+        -webkit-box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+        box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+    }
+
+    input[type=radio]::before,
+    input[type=checkbox]::before {
+        border: .085em solid #c1caca;
+        border-radius: .2em;
+        -webkit-box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+        box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+    }
+
+    input[type=radio]:checked::before,
+    input[type=checkbox]:checked::before {
+        border: .085em solid rgb(255, 126, 80);
+        -webkit-box-shadow: inset 0 .125em .025em rgba(249, 136, 95, .25);
+        box-shadow: inset 0 .125em .025em rgba(249, 136, 95, .25);
+    }
+
+    input[type=radio]::after,
+    input[type=radio]::before {
+        border-radius: 50%;
+    }
+
+    input[type=radio]:checked::after,
+    input[type=checkbox]:checked::after {
+        background-color: rgb(255, 126, 80);
+    }
+
+.radio label,
+.checkbox label,
+.radio-inline label,
+.checkbox-inline label {
+    padding-left: 0;
+}
+
+.radio-inline,
+.checkbox-inline {
+    padding-left: 0;
+}
+
+    .radio-inline + .checkbox-inline,
+    .checkbox-inline + .radio-inline {
+        margin-top: 0;
+        margin-left: 10px;
+    }
+
+    .checkbox input[type=checkbox],
+    .checkbox-inline input[type=checkbox],
+    .radio input[type=radio],
+    .radio-inline input[type=radio] {
+        position: relative;
+        margin-left: 0;
+    }
 /** -------------------------------------------------------------- date-picker -------------------------------------------------------------- */
 input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
     display: none;
 }
+
+input::-webkit-datetime-edit {
+    color: rgb(188,188,188);
+}
+
+input::-webkit-datetime-edit-fields-wrapper {
+    background-color: transparent;
+}
+
+input::-webkit-datetime-edit-ampm-field {
+    color: blue;
+    padding: 0 .3em;
+}
+
+input::-webkit-datetime-edit-year-field {
+    color: purple;
+    padding: 0 .3em;
+}
+
+input::-webkit-datetime-edit-month-field {
+    color: red;
+    padding: 0 .3em;
+}
+
+input::-webkit-datetime-edit-week-field {
+}
+
+input::-webkit-datetime-edit-day-field {
+    color: pink;
+    padding: 0 .3em;
+}
+
+input::-webkit-datetime-edit-hour-field {
+    color: purple;
+}
+
+input::-webkit-datetime-edit-minute-field {
+    color: red;
+}
+
+input::-webkit-datetime-edit-second-field {
+    color: pink;
+}
+
+input::-webkit-datetime-edit-millisecond-field {
+    color: pink;
+    font-size: 75%;
+}
+
+input::-webkit-datetime-edit-ampm-field:focus {
+}
+
+input::-webkit-datetime-edit-day-field:focus {
+}
+
+input::-webkit-datetime-edit-hour-field:focus {
+}
+
+input::-webkit-datetime-edit-millisecond-field:focus {
+}
+
+input::-webkit-datetime-edit-minute-field:focus {
+}
+
+input::-webkit-datetime-edit-month-field:focus {
+}
+
+input::-webkit-datetime-edit-second-field:focus {
+}
+
+input::-webkit-datetime-edit-week-field:focus {
+}
+
+input::-webkit-datetime-edit-year-field:focus {
+}
+
+input::-webkit-datetime-edit-year-field[disabled] {
+}
+
+input::-webkit-datetime-edit-month-field[disabled] {
+}
+
+input::-webkit-datetime-edit-week-field[disabled] {
+}
+
+input::-webkit-datetime-edit-day-field[disabled] {
+}
+
+input::-webkit-datetime-edit-ampm-field[disabled] {
+}
+
+input::-webkit-datetime-edit-hour-field[disabled] {
+}
+
+input::-webkit-datetime-edit-millisecond-field[disabled] {
+}
+
+input::-webkit-datetime-edit-minute-field[disabled] {
+}
+
+input::-webkit-datetime-edit-second-field[disabled] {
+}
+
+input::-webkit-datetime-edit-text {
+}
+
+input::-webkit-inner-spin-button {
+    visibility: hidden;
+}
+
+input::-webkit-clear-button {
+    display: none;
+}
+
 .date-picker {
     position: relative;
     display: inline-block;
@@ -36,10 +283,6 @@ input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
     padding: 35px 20px;
     border: 1px solid #efefef;
 }
-
-    .date-picker.dialog {
-        display: block;
-    }
 
     .date-picker.dialog,
     .date-picker .dialog {
@@ -51,6 +294,11 @@ input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
         background-color: #fff;
         border: 1px solid #efefef;
         box-shadow: 2px 2px 15px 2px #e3e3e3;
+    }
+
+    .date-picker.dialog {
+        margin: 0;
+        display: block;
     }
 
         .date-picker .dialog.panel > .panel-heading {
@@ -150,6 +398,10 @@ input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
         text-align: center;
     }
 
+        .date-picker .form-control[readonly] {
+            background-color: #fff;
+        }
+
     .date-picker .ym {
         float: left;
         position: relative;
@@ -198,8 +450,11 @@ input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
             border: 1px solid #ccc;
         }
 
-    .date-picker .date-picker-footer {
+    .date-picker .date-picker-container + .date-picker-footer {
         margin-top: 20px;
+    }
+
+    .date-picker .date-picker-footer {
         position: relative;
     }
 
@@ -207,8 +462,12 @@ input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
         margin-top: 20px;
     }
 
-    .date-picker .date-picker-footer .form-control {
+    .date-picker .date-picker-footer.hms-three .form-control {
         width: 33.3333%;
+    }
+
+    .date-picker .date-picker-footer.hms-two .form-control {
+        width: 50%;
     }
 
     .date-picker .hms {

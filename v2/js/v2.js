@@ -15,7 +15,7 @@
                 return factory(window);
             } :
         factory(global);
-})(this, function () {
+})(this, function (window) {
     'use strict';
 
     var
@@ -104,12 +104,14 @@
         var value, cache = {};
         return ignoreCase ? function (string) {
             value = cache[string.toLowerCase()];
-            if (value !== undefined) return value;
-            return cache[string.toLowerCase()] = callback(string);
+            if (value === undefined)
+                return cache[string.toLowerCase()] = callback(string);
+            return value;
         } : function (string) {
             value = cache[string];
-            if (value !== undefined) return value;
-            return cache[string] = callback(string);
+            if (value === undefined)
+                return cache[string] = callback(string);
+            return value;
         };
     }
 
@@ -791,7 +793,8 @@
                     if (type === 'string') return new RegExp(value);
                     break;
                 case 'date':
-                    if (type === 'number' || type === 'string') return v2.date(value);
+                    if (type === 'number' || type === 'string')
+                        return v2.date(value);
                     break;
                 case 'boolean':
                     return !!value;
@@ -837,6 +840,8 @@
 
                             if (value === source) return;
 
+                            if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
+                                return;
                         }
 
                         source = value;
@@ -885,6 +890,9 @@
                             value = changeType(value, conversionType);
 
                             if (value === source) return;
+
+                            if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
+                                return;
                         }
 
                         source = value;
@@ -1033,9 +1041,14 @@
     });
 
     v2.each({
+        options: function () {
+            return v2.when(this.children).when(function (item) {
+                return item.nodeName.toLowerCase() === 'option';
+            });
+        },
         selectedOptions: function () {
             return v2.when(this.children).when(function (item) {
-                return item.selected;
+                return item.selected && item.nodeName.toLowerCase() === 'option';
             });
         }
     }, function (polyfill, name) {
@@ -2124,7 +2137,7 @@
 
     function forCode(_, item, index, data, guid) {
         var fn = 'for_done_' + guid,
-            results = ['return v2.map(', data, ',', fn, ');'];
+            results = ['return window.v2.map(', data, ',', fn, ');'];
 
         results.push('function ', fn, '(', item);
         if (index) {
@@ -2243,8 +2256,8 @@
     UseThen.prototype = {
         length: 0,
         when: function (when, option) {
-            if (when === undefined)
-                return this.add(option);
+            if (arguments.length === 1)
+                return this.add(when || option);
 
             if (v2.isString(when)) {
                 when = new Function("vm", "try{ with(vm){  if(option) with(option) { return " + when + "; } return " + when + ";} }catch(_){ return false; }");
@@ -2305,7 +2318,11 @@
     var use = namespaceCache(function (tag) {
         return new UseThen(tag);
     }, function (source, option, when) {
-        source.when(when, option);
+        if (when === undefined) {
+            source.when(option);
+        } else {
+            source.when(when, option);
+        }
     }, function () {
         return [];
     }, function (results, option) {
@@ -2323,6 +2340,10 @@
                 name = analyzeWildcards(baseCards, name, type, true);
             }
 
+            if (name === 'enumState') {
+                return v2.log('Attribute enumState can only be injected by fn[v2.useMap(,{enumState:{}})].', 15);
+            }
+
             if (type === 'function' && (match = rinject.exec(name))) {
                 value = dependencyInjectionFn(match[1], match[2], value);
             }
@@ -2338,10 +2359,10 @@
                 when = undefined;
             }
             if (v2.isString(tag)) {
-
                 if (arguments.length === 1) {
                     return use(tag);
                 }
+
                 return v2.useMvc(tag, function () {
                     return use(tag, option, when);
                 });
@@ -2351,7 +2372,28 @@
                 return useConfig(tag);
             }
         },
-        useMvc: function (_tag, resolve) {
+        useMap: function (tag, enumState) {
+            switch (typeof tag) {
+                case 'string':
+                    tag = v2.kebabCase(tag.toLowerCase());
+                    return useMap.when(function (vm) {
+                        return v2.kebabCase(vm.tag) === tag;
+                    }, enumState);
+                case 'function':
+                    return useMap.when(tag, enumState);
+                case 'regex':
+                    return useMap.when(function (vm) {
+                        return tag.test(vm.tag);
+                    }, enumState);
+                case 'boolean':
+                    if (tag) {
+                        return useMap.when(returnTrue, enumState);
+                    }
+                default:
+                    return v2.error('Type is not supported(' + tag + ')!');
+            }
+        },
+        useMvc: function (_, resolve) {
             return resolve();
         }
     });
@@ -2480,7 +2522,7 @@
     var
         GLOBAL_VARIABLE_IDENTITY = 0,
         GLOBAL_VARIABLE_LOOP_GROUP = 0,
-        GLOBAL_VARIABLE_READY_COMPLETE = true,
+        GLOBAL_VARIABLE_STARTUP_COMPLETE = true,
         GLOBAL_VARIABLE_CURRENT_CONTROL = null;
 
     v2.GDir = makeCache(function (tag) {
@@ -2516,7 +2558,7 @@
                 return;
 
             if (value.v2version === version) {
-                if (isControl && object.owner === value)
+                if (isControl && object.host === value)
                     return value.controls.remove(object);
                 else
                     return value.destory && value.destory(true);
@@ -2535,17 +2577,31 @@
         }
     }
 
+    var useMap = new UseThen('*');
+
+    useMap.when({
+        design: 0.5, // 设计
+        init: 1, // 初始化
+        build: 2, // 构建
+        render: 4, // 渲染
+        usb: 8, // 监听
+        ready: 16, // 就绪
+        load: 32, // 加载数据
+        commit: 64 // 完成提交
+    });
+
     v2.fn = v2.prototype = {
         version: version,
-        create: function (options, tag) {
+        create: function (tag, options) {
 
-            options = v2.extend(true, {}, options);
-
-            if (arguments.length === 1) {
+            if (arguments.length === 1 && v2.isPlainObject(tag)) {
+                options = tag;
                 tag = options.tag;
             }
 
-            options.owner = this;
+            options = v2.extend(true, {}, options);
+
+            options.host = this;
             options.$$ = options.$$ || this.$;
 
             if (!this.components)
@@ -2553,26 +2609,26 @@
 
             var stack = stackCache[this.identity] || new V2Stack(this);
 
-            var component = this.components[tag = v2.camelCase(tag)];
+            var component = this.components[tag = v2.kebabCase(tag)];
 
-            GLOBAL_VARIABLE_READY_COMPLETE = false;
+            GLOBAL_VARIABLE_STARTUP_COMPLETE = false;
 
             var control = component ? v2.isFunction(component) ? component(tag, options) : v2(tag, v2.improve(options, component)) : v2(tag, options);
 
-            GLOBAL_VARIABLE_READY_COMPLETE = true;
+            GLOBAL_VARIABLE_STARTUP_COMPLETE = true;
 
             component = this.components[tag + ".async"];
 
             if (component) {
                 stack.waitSatck(tag, function () {
-                    control.ready();
+                    control.startup();
                 });
                 component(function () {
                     stack.complete(tag);
                 });
             } else {
                 stack.pushStack(function () {
-                    control.ready();
+                    control.startup();
                 });
             }
 
@@ -2589,11 +2645,13 @@
             this.tag = tag;
             this.option = option;
 
-            this.owner = null;
+            this.host = null;
 
-            this.addClass = "";
+            this.class = "";
 
-            this.$ = this.$$ = this.$main = null;
+            this.$ = this.$$ = null;
+
+            this.demand = this.request = this.response = null;
 
             this.view = this.watch = this.data = null;
 
@@ -2605,50 +2663,21 @@
                 }
             });
 
-            if (GLOBAL_VARIABLE_READY_COMPLETE) {
-                this.ready();
+            if (GLOBAL_VARIABLE_STARTUP_COMPLETE) {
+                this.startup();
             }
         },
-        render: function () {
-            var vm = this;
-            v2.each(this.addClass.match(rnotwhite), function (clazz) {
-                vm.$.classList.add(clazz);
-            });
-        },
-        ready: function () {
-            var render;
+        startup: function () {
 
             this.events = {};
             this.methods = {};
             this.components = {};
 
-            this.enumState = this.enumState || {
-                pending: 0.5,
-                init: 1,
-                render: 2,
-                load: 4,
-                usb: 8,
-                resolve: 16,
-                commit: 32
-            };
+            this.enumState = v2.extend({}, useMap.then(this) || useMap.always());
 
             this.wildcards = v2.extend(true, {}, baseCards);
 
             this.compile();
-
-            if (this.ajax && this.access) {
-
-                render = this.render;
-
-                this.render = function () {
-
-                    var value = applyCallback(render, arguments, this);
-
-                    this.sleep(this.ajax);
-
-                    return value;
-                };
-            }
 
             this.switchCase();
         },
@@ -2657,6 +2686,7 @@
                 timer,
                 controls,
                 sleep = false,
+                isReady = false,
                 core_namespace = "",
                 variable = {},
                 descriptors = {},
@@ -2682,17 +2712,19 @@
 
                         value = value <= 1 ?
                             applyCallback(callback, arguments, context) :
-                            value >= 32 ?
+                            value >= 64 ?
                                 callback.call(context) :
                                 value < 4 ?
-                                    callback.call(context, context.variable) :
+                                    callback.call(context, context.view) :
                                     value < 8 ?
-                                        callback.call(context, context.view) :
+                                        callback.call(context, context.variable) :
                                         value < 16 ?
                                             callback.call(context, context.watch) :
                                             value < 32 ?
-                                                callback.call(context, context.data) :
-                                                callback.call(context, context.view, context.data);
+                                                callback.call(context, context.variable, context.watch) :
+                                                value < 64 ?
+                                                    callback.call(context, context.data) :
+                                                    callback.call(context, context.view, context.data);
 
                         context.base = base;
                         core_namespace = tmp_namespace;
@@ -2750,8 +2782,7 @@
                         if (key === tag || key === 'tag' || key === 'constructor' || value === undefined) return;
 
                         if (key === 'enumState') {
-                            v2.log('Attribute enumState can only be injected by fn[v2.use({enumState:{}})].', 15);
-                            return;
+                            return v2.log('Attribute enumState can only be injected by fn[v2.use({enumState:{}})].', 15);
                         }
 
                         if (key in context) {
@@ -2774,10 +2805,13 @@
 
                             if (!define || type === 'function') {
 
-                                return context[key] = value;
+                                context[key] = value;
+
+                            } else {
+                                variable[key] = value;
                             }
 
-                            return variable[key] = value;
+                            return;
                         }
 
                         conversionType = v2.type(sourceValue);
@@ -2810,20 +2844,21 @@
                             return v2.error("The enumerated state property value must be a function!");
                         }
 
-                        if (key in wildcards)
-                            return variable[key] = value;
+                        if (key in wildcards) {
+                            variable[key] = value;
+                        } else {
+                            value = changeType(value, conversionType, type);
 
-                        value = changeType(value, conversionType, type);
+                            if (type === "object" || type === "array")
+                                return context[key] = v2.extend(define, sourceValue, value);
 
-                        if (type === "object" || type === "array")
-                            return context[key] = v2.extend(define, sourceValue, value);
-
-                        return context[key] = value;
+                            context[key] = value;
+                        }
                     }
                 };
 
             this.init = function (tag, tagName) {
-                var node, parentNode, type, isValid, option = this.option;
+                var node, parentNode, type;
 
                 if (arguments.length === 0) {
                     tag = "*";
@@ -2833,55 +2868,47 @@
                 type = v2.type(tag);
 
                 if (tagName === undefined) {
-                    if (type === "string")
-                        tagName = tag;
-                    else
-                        v2.error("The tag name provided ('" + tagName + "') is not a valid name.");
+                    if (type !== "string")
+                        return v2.error("The tag name provided ('" + tagName + "') is not a valid name.");
+
+                    tagName = tag === '*' ? 'div' : tag;
                 }
 
-                switch (type) {
-                    case "string":
-                        isValid = function (node) {
-                            return tag === '*' || node.nodeName.toLowerCase() === tag;
-                        };
-                        break;
-                    case "array":
-                        isValid = function (node) {
-                            return core_indexOf.call(tag, node.nodeName.toLowerCase()) > -1;
-                        };
-                        break;
-                    case "object":
-                        isValid = function (node) {
-                            return tag[node.nodeName.toLowerCase()];
-                        };
-                        break;
-                    case "function":
-                        isValid = function (node) {
-                            return tag(node.nodeName.toLowerCase());
-                        };
-                        break;
-                    case "regex":
-                        isValid = function (node) {
-                            return tag.test(node.nodeName.toLowerCase());
-                        };
-                        break;
-                    default:
-                        return v2.error("Validation of type " + type + " is not supported.");
+                if (!(!(node = this.demand) ||
+                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
+                    isArraylike(node) && !(node = node[0]) ||
+                    (node.version === version) && (node = node.$core) ||
+                    !(node.nodeType === 1))) {
+                    this.demand = node;
                 }
 
-                if (!option ||
-                    !(parentNode = option.$$) ||
-                    !(parentNode = this.take(parentNode, this.master ? this.master.$ : document)) ||
-                    !(parentNode = isArraylike(parentNode) ? parentNode[0] : parentNode) ||
+                if (!(!(node = this.request) ||
+                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
+                    isArraylike(node) && !(node = node[0]) ||
+                    (node.version === version) && (node = node.$core) ||
+                    !(node.nodeType === 1))) {
+                    this.request = node;
+                }
+
+                if (!(!(node = this.response) ||
+                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
+                    isArraylike(node) && !(node = node[0]) ||
+                    (node.version === version) && (node = node.$core) ||
+                    !(node.nodeType === 1))) {
+                    this.response = node;
+                }
+
+                if (!(parentNode = this.$$) ||
+                    v2.isString(parentNode) && !(parentNode = this.take(parentNode, this.host ? this.host.$ : document)) ||
+                    isArraylike(parentNode) && !(parentNode = parentNode[0]) ||
                     !(parentNode.nodeType === 1)) {
 
-                    parentNode = this.owner ? this.owner.$ : document.body;
+                    parentNode = this.host ? this.host.$ : document.body;
                 }
 
-                if (!option ||
-                    !(node = option.$) ||
-                    !(node = this.take(node, parentNode)) ||
-                    !(node = isArraylike(node) ? node[0] : node) ||
+                if (!(node = this.$) ||
+                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
+                    isArraylike(node) && !(node = node[0]) ||
                     !(node.nodeType === 1)) {
 
                     return this.$$ = parentNode, this.$ = this.$$.appendChild(node || document.createElement(tagName));
@@ -2893,8 +2920,30 @@
                     parentNode.appendChild(node);
                 }
 
-                if (isValid(node))
-                    return this.$$ = parentNode, this.$ = node;
+                switch (type) {
+                    case "string":
+                        if (tag === '*' || node.nodeName.toLowerCase() === tag)
+                            return this.$$ = parentNode, this.$ = node;
+                        break;
+                    case "array":
+                        if (core_indexOf.call(tag, node.nodeName.toLowerCase()) > -1)
+                            return this.$$ = parentNode, this.$ = node;
+                        break;
+                    case "object":
+                        if (tag[node.nodeName.toLowerCase()])
+                            return this.$$ = parentNode, this.$ = node;
+                        break;
+                    case "function":
+                        if (tag(node.nodeName.toLowerCase()))
+                            return this.$$ = parentNode, this.$ = node;
+                        break;
+                    case "regex":
+                        if (tag.test(node.nodeName.toLowerCase()))
+                            return this.$$ = parentNode, this.$ = node;
+                        break;
+                    default:
+                        return v2.error("Validation of type " + type + " is not supported.");
+                }
 
                 v2.error("Components do not support elements whose NodeName is " + node.nodeName.toLowerCase() + ".");
             };
@@ -2919,10 +2968,18 @@
 
             var namespaces = core_namespace.split('.');
 
-            this.isInstanceof = function () {
+            this.like = function () {
                 return v2.any(arguments, function (tag) {
-                    return namespaces.indexOf(v2.urlCase(tag)) > -1;
+                    if (v2.isFunction(tag)) {
+                        return tag(context);
+                    }
+                    return namespaces.indexOf(v2.kebabCase(tag + '')) > -1;
                 });
+            };
+            this.hostlike = function () {
+                if (this.host) {
+                    return applyCallback(this.host.like, arguments, this.host);
+                }
             };
 
             v2.each(descriptors, function (map, key) {
@@ -2933,7 +2990,7 @@
                 if (arguments.length === 0)
                     return sleep;
 
-                type = v2.type(extra);
+                var type = v2.type(extra);
 
                 if (type === "boolean") {
                     extra = ~~sleep + ~~extra;
@@ -2980,9 +3037,9 @@
             };
 
             this.switchCase = function (state, falseStop) {
-                var i, value, control, prevValue, isReady = true;
+                var i, value, control, prevValue, _isReady = true;
 
-                if (this.isReady) return;
+                if (isReady) return;
 
                 if (typeof state === "boolean") {
                     falseStop = state;
@@ -2999,13 +3056,13 @@
                     state = this.enumState[state];
                 }
 
-                prevValue = state = state >>> 0;
+                prevValue = state = +state || 0;
 
-                this.readyState = this.readyState >>> 0;
+                this.readyState = +this.readyState || 0;
 
                 for (i in this.enumState) {
 
-                    value = this.enumState[i] >>> 0;
+                    value = +this.enumState[i] || 0;
 
                     if (value <= this.readyState) continue;
 
@@ -3014,6 +3071,15 @@
                     if (value <= state) continue;
 
                     if (!this[i]) continue;
+
+                    if (this.access && prevValue < 32 && value <= 32) {
+                        if (falseStop && (this.ajax() === false || this.sleep())) {
+                            _isReady = false;
+                            break;
+                        }
+                    }
+
+                    prevValue = value;
 
                     if (value > 8) {
 
@@ -3024,46 +3090,71 @@
                         while (value = watchStack.shift()) {
                             value();
                         }
+
+                        value = prevValue;
                     }
 
-                    value = (value <= 1 || value >= 32) ?
+                    value = (value <= 1 || value >= 64) ?
                         this[i]() :
                         value < 4 ?
-                            this[i](this.variable) :
+                            this[i](this.view) :
                             value < 8 ?
-                                this[i](this.view) :
+                                this[i](this.variable) :
                                 value < 16 ?
                                     this[i](this.watch) :
                                     value < 32 ?
-                                        this[i](this.data) :
-                                        this[i](this.view, this.data);
+                                        this[i](this.variable, this.watch) :
+                                        value < 64 ?
+                                            this[i](this.data) :
+                                            this[i](this.view, this.data);
 
                     if (falseStop && (value === false || this.sleep())) {
-                        isReady = false;
+                        _isReady = false;
                         break;
                     }
-
-                    prevValue = value;
                 }
 
-                this.isReady = isReady;
+                if (isReady = _isReady) {
+
+                    this.define('visible', function (value) {
+                        if (value) {
+                            this.show();
+                        } else {
+                            this.hide();
+                        }
+                    }, this.visible == this.defaultVisible);
+
+                    watchStack = null;
+                }
 
                 GLOBAL_VARIABLE_CURRENT_CONTROL = control;
             };
 
-            this.define = function (prop, descriptor, elem) {
+            this.define = function (prop, descriptor, elem, defineOnly) {
                 var isFunction;
 
-                if (arguments.length === 2 && descriptor && descriptor.nodeType === 1) {
+                if (descriptor && descriptor.nodeType === 1) {
+
+                    defineOnly = arguments.length < 4 ? !!elem : defineOnly;
 
                     elem = descriptor;
 
                     descriptor = undefined;
+
+                } else if (typeof elem === 'boolean') {
+
+                    defineOnly = elem;
+                    elem = undefined;
+
+                } else if (typeof descriptor === 'boolean') {
+
+                    defineOnly = descriptor;
+                    descriptor = undefined;
                 }
 
-                if (v2.isPlainObject(prop)) {
 
-                    elem = descriptor || this.$main;
+                if (v2.isPlainObject(prop)) {
+                    elem = descriptor || this.$core;
 
                     return v2.each(prop, function (attributes, name) {
                         done(name, attributes);
@@ -3071,7 +3162,7 @@
                 }
 
 
-                elem = elem || this.$main;
+                elem = elem || this.$core;
 
                 isFunction = v2.isFunction(descriptor);
 
@@ -3133,13 +3224,24 @@
 
                     v2.define(context, name, attributes);
 
-                    if (typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue)
-                        return;
-
-                    if (attributes === true || "set" in attributes || attributes.writable === true) {
-                        watchStack.push(function () {
+                    if (defineOnly || typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue) {
+                        if (contains && (attributes === true || "set" in attributes || attributes.writable === true)) {
+                            if (isReady) {
+                                elem[name] = sourceValue;
+                            } else {
+                                watchStack.push(function () {
+                                    elem[name] = sourceValue;
+                                });
+                            }
+                        }
+                    } else if (attributes === true || "set" in attributes || attributes.writable === true) {
+                        if (isReady) {
                             context[name] = sourceValue;
-                        });
+                        } else {
+                            watchStack.push(function () {
+                                context[name] = sourceValue;
+                            });
+                        }
                     }
                 }
             };
@@ -3166,10 +3268,9 @@
                 variable = wildcards = excludes = controls = callbacks = descriptors = null;
             };
 
+            this.define('isReady', function () { return isReady; });
+
             this.define({
-                $main: function () {
-                    return this['$' + this.tag] || this.$core || this.$;
-                },
                 tag: function () {
                     return core_namespace.split('.').pop();
                 },
@@ -3184,6 +3285,21 @@
                 }
             });
 
+            this.define('class', function (value) {
+                if (value) {
+                    v2.each(value.match(rnotwhite), function (clazz) {
+                        context.$.classList.add(clazz);
+                    });
+                }
+            });
+
+            this.define('$core', function (value, iswite) {
+
+                if (iswite) return value;
+
+                return value || this['$' + this.tag] || this.$;
+            });
+
             this.define({
                 controls: function () {
                     return controls || (controls = new V2Controls());
@@ -3195,27 +3311,10 @@
                     return this.controls.eq(-1);
                 },
                 previousSibling: function () {
-                    return this.owner && this.owner.controls.offset(this, -1);
+                    return this.host && this.host.controls.offset(this, -1);
                 },
                 nextSibling: function () {
-                    return this.owner && this.owner.controls.offset(this, 1);
-                }
-            });
-
-            var visible = !!this.defaultVisible;
-
-            this.define('visible', {
-                get: function () {
-                    return visible;
-                },
-                set: function (value) {
-                    if (visible === value) return;
-
-                    if ((visible = !!value)) {
-                        this.show();
-                    } else {
-                        this.hide();
-                    }
+                    return this.host && this.host.controls.offset(this, 1);
                 }
             });
 
@@ -3262,7 +3361,7 @@
 
             args = core_slice.call(arguments, i);
 
-            if ((stack = stackCache[identity])) {
+            if (!!(stack = stackCache[identity])) {
                 return stack.pushStack(function () {
                     return applyCallback(fn, args, context, true);
                 });
@@ -3289,49 +3388,6 @@
             context = context || this.$;
 
             return all ? context.querySelectorAll(selector) : context.querySelector(selector);
-        },
-        addClass: function () {
-            var classList = this.$.classList;
-            v2.each(arguments, function done(token) {
-                if (token === null || token === undefined || token.length === 0)
-                    return;
-
-                if (isArraylike(token)) {
-                    return v2.each(token, done);
-                }
-                var i = 0,
-                    classes = (token + "").match(rnotwhite) || [];
-
-                while ((token = classes[i++])) {
-                    classList.add(token);
-                }
-            });
-        },
-        toggleClass: function (token, toggle) {
-            var classList = this.$.classList;
-
-            if (arguments.length === 1) {
-                return classList.toggle(token);
-            }
-
-            return toggle ? classList.add(token) : classList.remove(token);
-        },
-        removeClass: function () {
-            var classList = this.$.classList;
-            v2.each(arguments, function done(token) {
-                if (token === null || token === undefined || token.length === 0)
-                    return;
-
-                if (isArraylike(token)) {
-                    return v2.each(token, done);
-                }
-                var i = 0,
-                    classes = (token + "").match(rnotwhite) || [];
-
-                while ((token = classes[i++])) {
-                    classList.remove(token);
-                }
-            });
         }
     };
 
@@ -3412,15 +3468,15 @@
                 case 'string':
                     return this.$.appendChild(view.html());
                 case 'array':
-                    return v2.each(view, this.lazy(this.build));
+                    return v2.each(view, this.lazy(true, this.build));
                 case 'object':
                     if (view.nodeType) {
                         return this.$.appendChild(view);
                     }
                     if ('tag' in view) {
-                        return this.create(view);
+                        return this.lazy(this.create, view);
                     }
-                    return v2.each(view, this.lazy(this.create));
+                    return v2.each(view, this.lazy(true, this.create));
                 case 'function':
                     return view.call(this);
                 default:

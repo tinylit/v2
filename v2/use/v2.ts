@@ -1,4 +1,4 @@
-﻿declare namespace UG {
+﻿declare namespace CN {
     /** 普通对象 */
     interface PlainObject<T = any> {
         [key: string]: T;
@@ -112,8 +112,8 @@
          * @param options 配置信息
          */
         create(options: V2ControlExtends, tag?: string): V2ControlExtends;
-        /** 插件准备 */
-        ready(): any;
+        /** 启动 */
+        startup(): any;
         /** 构建插件 */
         build(): any;
         /** 编译控件（属性继承和方法继承） */
@@ -190,10 +190,16 @@
         $: Element | null;
         /** 插件主元素的父元素 */
         $$: Element | null;
-        /** 最主要的元素 */
-        readonly $main: Element | null;
-        /** 父级插件 */
-        owner: V2Control | null;
+        /** 需求、要求 */
+        demand: Element | null;
+        /** 请求元素 */
+        request: Element | null;
+        /** 响应元素 */
+        response: Element | null;
+        /** 宿主插件 */
+        host: V2Control | null;
+        /** 样式 */
+        class: String | null;
         /** 变量 */
         variable: PlainObject<any>;
         /** 插件数据 */
@@ -226,7 +232,7 @@
     }
 }
 
-declare namespace UG {
+declare namespace CN {
 
     /** 控件或基础方法 */
     interface V2kitStatic {

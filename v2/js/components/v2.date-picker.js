@@ -34,8 +34,6 @@
     var rinputTag = /textarea|input/i;
     v2.use("date-picker", {
         datePicker: function () {
-            /** 涉及到的控件 */
-            this.touch = null;
 
             /** 最小时间限制 */
             this.min = new Date(1900, 0, 1); //"1900-01-01 00:00:00";
@@ -48,20 +46,23 @@
             /** 锁定显示 */
             this.fixed = false;
 
-            // 显示按钮
+            /** 显示按钮 */
             this.showBtn = true;
 
-            // 显示取消按钮
+            /** 显示取消按钮 */
             this.showClearBtn = true;
 
-            // 显示今天按钮
+            /** 显示今天按钮 */
             this.showTodayBtn = true;
 
-            // 显示确定按钮
+            /** 显示确定按钮 */
             this.showOkBtn = true;
 
-            // 自动关闭
+            /** 自动关闭 */
             this.autoClose = false;
+
+            /** 自动指定需求 */
+            this.autoDemand = true;
 
             /** 星期 */
             this.week = ["日", "一", "二", "三", "四", "五", "六"];
@@ -69,15 +70,33 @@
             /** 格式化字符串 */
             this.format = 'yyyy-MM-dd HH:mm:ss';
         },
-        render: function () {
-            this.base.render();
-            this.$.classList.add('date-picker');
+        design: function () {
 
-            if (this.showYmd = /y|M|d/.test(this.format)) {
+            this.showYmd = /y|M|d/.test(this.format);
 
-                var y = '.ym.ym-y>.input-group>(span.input-group-addon[y-switch=0]>i.glyphicon.glyphicon-menu-left)+input.form-control+(.dialog.ymd.hidden>(.ymd-addon[y-switch=2]>i.glyphicon.glyphicon-menu-up)+(ul.years>li*10>a[y][href="#"])+(.ymd-addon[y-switch=3]>i.glyphicon.glyphicon-menu-down)+.clearfix)+(span.input-group-addon[y-switch=1]>i.glyphicon.glyphicon-menu-right)';
+            this.showHour = /H|h/.test(this.format);
 
-                var m = '.ym.ym-m>.input-group>(span.input-group-addon[m-switch=0]>i.glyphicon.glyphicon-menu-left)+input.form-control+(.dialog.ymd.hidden>(ul.months>li*12>a[m][href="#"]{$})+.clearfix)+(span.input-group-addon[m-switch=1]>i.glyphicon.glyphicon-menu-right)';
+            this.showMinute = /m/.test(this.format);
+
+            this.showSec = /s/.test(this.format);
+
+            this.showHms = this.showHour || this.showMinute || this.showSec;
+
+            if (!this.showBtn || !(this.showBtn = this.showClearBtn || this.showTodayBtn || this.showOkBtn)) {
+                this.showClearBtn = this.showTodayBtn = this.showOkBtn = false;
+            }
+
+            if (this.dialog) {
+                this.dialog = !!(this.request || this.host);
+            }
+        },
+        build: function () {
+
+            if (this.showYmd) {
+
+                var y = '.ym.ym-y>.input-group>(span.input-group-addon[y-switch=0]>i.glyphicon.glyphicon-menu-left)+input.form-control[readonly]+(.dialog.ymd.hidden>(.ymd-addon[y-switch=2]>i.glyphicon.glyphicon-menu-up)+(ul.years>li*10>a[y][href="#"])+(.ymd-addon[y-switch=3]>i.glyphicon.glyphicon-menu-down)+.clearfix)+(span.input-group-addon[y-switch=1]>i.glyphicon.glyphicon-menu-right)';
+
+                var m = '.ym.ym-m>.input-group>(span.input-group-addon[m-switch=0]>i.glyphicon.glyphicon-menu-left)+input.form-control[readonly]+(.dialog.ymd.hidden>(ul.months>li*12>a[m][href="#"]{$})+.clearfix)+(span.input-group-addon[m-switch=1]>i.glyphicon.glyphicon-menu-right)';
 
                 var header = v2.htmlSerialize('.date-picker-header>(' + y + ')+(' + m + ')+.clearfix');
 
@@ -106,30 +125,42 @@
                 this.$days = this.when('a', this.$container);
             }
 
-            this.showHour = /H|h/.test(this.format);
+            if (this.showHms) {
+                var hms = '(.dialog.hms.hms-{0}.panel.panel-info.hidden>(.panel-heading>.text-center{{1}}+button[aria-close]>i.glyphicon.glyphicon-remove)+.panel-body>ul>li*{2}>a[href="#"]{^^})+input.hms-txt-{0}.form-control[readonly]';
 
-            this.showMinute = /m/.test(this.format);
+                var names = ['时'];
+                var htmls = [hms.format('h', '时', 24)];
 
-            this.showSec = /s/.test(this.format);
+                if (this.showMinute) {
+                    names.push('分');
+                    htmls.push(hms.format('m', '时', 60));
+                }
 
-            if (this.showHms = this.showHour && (this.showSec === this.showMinute || this.showMinute)) {
-                var hms = 'input.{0}.form-control+(.dialog.hms.hms-{0}.panel.panel-info.hidden>(.panel-heading>.text-center{{1}}+button[aria-close]>i.glyphicon.glyphicon-remove)+.panel-body>ul>li*{2}>a[href="#"]{^^})';
-                var footer = v2.htmlSerialize('.date-picker-footer>(.input-group>span.input-group-addon{时、分、秒}+' + hms.format('h', '时', 24) + '+' + hms.format('m', '分', 60) + '+' + hms.format('s', '秒', 60) + ')+.clearfix');
+                if (this.showSec) {
+                    names.push('秒');
+                    htmls.push(hms.format('s', '秒', 60));
+                }
+
+                htmls.unshift('span.input-group-addon{{0}}'.format(names.join('、')));
+
+                var footer = v2.htmlSerialize('.date-picker-footer>(.input-group>' + htmls.join('+') + ')+.clearfix');
 
                 this.$footer = this.$.appendChild(footer.html());
 
                 v2.each({ 'hour': 'h', 'minute': 'm', 'sec': 's' }, function (type, name) {
-                    this['$' + name] = this.take('.' + type);
+                    this['$' + name] = this.take('.hms-txt-' + type);
                     this['$' + name + 's'] = this.when('a', this['$' + name + 'Picker'] = this.take('.hms-' + type));
                 }, this);
+
+                this.$footer.classList.add(names.length > 2 ? 'hms-three' : names.length > 1 ? 'hms-two' : 'hms-only');
             }
 
-            if (this.showBtn && (this.showBtn = this.showClearBtn || this.showTodayBtn || this.showOkBtn)) {
+            if (this.showBtn) {
 
                 var htmls = [];
 
                 if (this.showClearBtn) {
-                    htmls.push('button.btn.btn-info{取消}');
+                    htmls.push('button.btn.btn-info{清除}');
                 }
 
                 if (this.showTodayBtn) {
@@ -155,8 +186,6 @@
                 if (this.showOkBtn) {
                     this.$ok = this.take('.btn-primary', this.$btn);
                 }
-            } else {
-                this.showClearBtn = this.showTodayBtn = this.showOkBtn = false;
             }
 
             var tip = '.dialog.tip.panel.panel-warning.hidden>(.panel-heading>.text-center{提示})+.panel-body';
@@ -168,8 +197,11 @@
             this.$tipMsg = this.take('.panel-body', this.$tip);
 
             this.$dialogs = this.when('.dialog');
+        },
+        render: function () {
+            this.$.classList.add('date-picker');
 
-            if (this.dialog && (this.dialog = !!this.touch)) {
+            if (this.dialog) {
                 this.$.classList.add('dialog');
             }
         },
@@ -199,7 +231,7 @@
         isValid: function (ymd, hms) {
             ymd = ymd || this.ymd;
             if (arguments.length === 1) {
-                hms = ymd.slice(3);
+                hms = Array.prototype.slice.call(ymd, 3);
             }
             hms = hms || this.hms;
             return this.showYmd ?
@@ -207,16 +239,6 @@
                 (ymd[0] < this.maxs[0] || ymd[0] == this.maxs[0] && (ymd[1] < this.maxs[1] || (ymd[1] == this.maxs[1] && ymd[2] < this.maxs[2] || ymd[2] == this.maxs[2] && (!this.showHms || hms[0] < this.maxs[3] || hms[0] == this.maxs[3] && (!this.showMinute || hms[1] < this.maxs[4] || hms[1] == this.maxs[4] && (!this.showSec || hms[2] <= this.maxs[5])))))) :
                 (hms[0] > this.mins[3] || hms[0] == this.mins[3] && (!this.showMinute || hms[1] > this.mins[4] || hms[1] == this.mins[4] && (!this.showSec || hms[2] >= this.mins[5]))) &&
                 (hms[0] < this.maxs[3] || hms[0] == this.maxs[3] && (!this.showMinute || hms[1] < this.maxs[4] || hms[1] == this.maxs[4] && (!this.showSec || hms[2] <= this.maxs[5])));
-        },
-        dayRender: function () {
-            this.ymd = this.value.match(/\d+/g);
-            if (this.showHms) {
-                this.timeView(this.ymd[3], this.ymd[4], this.ymd[5]);
-            }
-            if (this.showYmd) {
-                this.dayView(this.ymd[0], this.ymd[1] - 1, this.ymd[2]);
-            }
-            this.hms = this.hms || [0, 0, 0];
         },
         tabMonth: function (type) {//0:左、1:右
             this.hidePicker();
@@ -237,9 +259,13 @@
             }
         },
         timeView: function (h, m, s) {
-            if (this.showHms) {
+            if (this.showHour) {
                 this.$hour.value = zoreFill(h);
+            }
+            if (this.showMinute) {
                 this.$minute.value = zoreFill(m);
+            }
+            if (this.showSec) {
                 this.$sec.value = zoreFill(s);
             }
 
@@ -401,16 +427,28 @@
         usb: function () {
             this.base.usb();
             var value, valueCall = function () {
-                if (!this.touch) return '';
+                var elem = this.request;
 
-                if ('value' in this.touch) {
-                    return this.touch.value;
+                if (elem) {
+                    return rinputTag.test(elem.tagName) ? elem.value : elem.innerHTML;
                 }
 
-                var elem = this.touch.$ || this.touch;
+                if (this.host) {
 
-                return rinputTag.test(elem.tagName) ? elem.value : elem.innerHTML;
+                    if ('value' in this.host) {
+                        return this.host.value;
+                    }
+
+                    elem = this.host.$core;
+
+                    if (rinputTag.test(elem.tagName)) {
+                        return elem.value;
+                    }
+                }
+
+                return '';
             };
+
             this.define('value', {
                 get: function () {
                     value = valueCall.call(this);
@@ -418,13 +456,37 @@
                         var date = new Date();
                         return '{0}-{1}-{2} {3}:{4}:{5}'.format(date.getFullYear(), date.getMonth() + 1, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds());
                     }
-                    if (this.showYmd && this.showHms) {
+
+                    if (this.showYmd && this.showHour && this.showMinute && this.showSec) {
                         return value;
                     }
-                    if (this.showYmd) {
-                        return value + ' 00:00:00';
-                    }
-                    return '1900-01-01 ' + value;
+
+                    var vm = this, ymd = value.match(/\d+/g);
+
+                    if (ymd.length === 6) return value;
+
+                    return 'yyyy-MM-dd HH:mm:ss'.replace(/yyyy|MM|dd|HH|mm|ss/g, function (pattern) {
+                        if ((pattern === 'yyyy' || pattern === 'MM' || pattern === 'dd') && vm.showYmd ||
+                            pattern === 'HH' && vm.showHour ||
+                            pattern === 'mm' && vm.showMinute ||
+                            pattern === 'ss' && vm.showSec) {
+                            return ymd.index = 0 | ++ymd.index, zoreFill(ymd[ymd.index]);
+                        }
+                        switch (pattern) {
+                            case 'yyyy':
+                                return vm.ymd[0];
+                            case 'MM':
+                                return vm.ymd[1];
+                            case 'dd':
+                                return vm.ymd[2];
+                            case 'HH':
+                                return vm.hms[0];
+                            case 'mm':
+                                return vm.hms[1];
+                            case 'ss':
+                                return vm.hms[2];
+                        }
+                    });
                 },
                 set: function (value) {
                     if (value) {
@@ -448,31 +510,42 @@
                             }
                         }
 
-                        value = this.format.replace(/yyyy|MM|dd|HH|mm|ss/g, function () {
-                            return ymd.index = 0 | ++ymd.index, zoreFill(ymd[ymd.index]);
-                        });
+                        value = v2.date.format(value, this.format);
                     }
 
-                    if (!this.touch) return value;
+                    var elem = this.response;
 
-                    if ('value' in this.touch) {
-                        return this.touch.value = value;
+                    if (elem) {
+                        return rinputTag.test(elem.tagName) ? elem.value = value : elem.innerHTML = value;
                     }
-                    var elem = this.touch.$ || this.touch;
 
-                    return rinputTag.test(elem.tagName) ? elem.value = value : elem.innerHTML = value;
+                    if (this.host) {
+                        if ('value' in this.host) {
+                            return this.host.value = value;
+                        }
+
+                        elem = this.host.$core;
+
+                        if (rinputTag.test(elem.tagName)) {
+                            return elem.value = value;
+                        }
+                    }
+
+                    return value;
                 }
-            }).define({
+            });
+
+            this.define({
                 min: function (value) {
                     this.mins = toArray(value);
                     if (this.isReady) {
-                        this.resolve();
+                        this.load();
                     }
                 },
                 max: function (value) {
                     this.maxs = toArray(value);
                     if (this.isReady) {
-                        this.resolve();
+                        this.load();
                     }
                     if (this.showTodayBtn) {
                         this.$now.classList[value > new Date() ? 'remove' : 'add']('disabled');
@@ -483,8 +556,33 @@
         show: function () {
             if (this.visible)
                 return;
+
             this.base.show();
-            this.resolve();
+
+            if (!this.dialog)
+                return;
+
+            this.load();
+
+            var elem = this.request || this.host && this.host.$ || document.body,
+                x = (this.fixed ? this.scroll(1) : 0) + this.area(1),
+                y = (this.fixed ? this.scroll() : 0) + this.area(),
+                xy = {
+                    top: elem.offsetTop,
+                    right: elem.offsetLeft + elem.offsetWidth,
+                    bottom: elem.offsetTop + elem.offsetHeight,
+                    left: elem.offsetLeft
+                },
+                width = this.$.offsetWidth,
+                height = this.$.offsetHeight,
+                l = (xy.left + width) > x ? xy.right - width : xy.left,
+                t = xy.bottom + height > y ? xy.top - height : xy.bottom;
+
+            this.$.styleCb({
+                position: this.fixed ? 'fixed' : 'absolute',
+                left: l,
+                top: t
+            });
         },
         scroll: function (a) {
             return a = a ? "scrollLeft" : "scrollTop",
@@ -514,22 +612,15 @@
                 vm.$tip.classList.add('hidden');
             }, 1200);
         },
-        resolve: function () {
-            this.dayRender();
-            if (!this.dialog) return;
-            var elem = this.touch ? this.touch.$ || this.touch : document.body;
-            var xy = elem.getBoundingClientRect(),
-                l = xy.left + (this.fixed ? 0 : this.scroll(1)),
-                t = xy.bottom + elem.offsetHeight / 1.5 <= this.area() ?
-                    xy.bottom - 1 :
-                    xy.top > elem.offsetHeight / 1.5 ?
-                        xy.top - elem.offsetHeight + 1 :
-                        this.area() - elem.offsetHeight;
-            this.$.styleCb({
-                position: this.fixed ? 'fixed' : 'absolute',
-                left: l,
-                top: t + (this.fixed ? 0 : this.scroll())
-            });
+        load: function (value) {
+            this.ymd = (value || this.value).match(/\d+/g);
+            if (this.showHms) {
+                this.timeView(this.ymd[3], this.ymd[4], this.ymd[5]);
+            }
+            if (this.showYmd) {
+                this.dayView(this.ymd[0], this.ymd[1] - 1, this.ymd[2]);
+            }
+            this.hms = this.hms || [0, 0, 0];
         },
         commit: function () {
             var vm = this, valueSet = function (y, M, d, h, m, s) {
@@ -542,13 +633,30 @@
                     vm.hide();
                 }
             };
+
             if (this.showYmd) {
                 this.$year.on('stop.click', function () {
-                    vm.yearPicker(+this.value);
+                    if (vm.$yearPicker
+                        .classList
+                        .contains('hidden')) {
+                        vm.yearPicker(+this.value);
+                    } else {
+                        vm.$yearPicker
+                            .classList
+                            .add('hidden');
+                    }
                 });
 
                 this.$month.on('stop.click', function () {
-                    vm.monthPicker(+this.value - 1);
+                    if (vm.$monthPicker
+                        .classList
+                        .contains('hidden')) {
+                        vm.monthPicker(+this.value - 1);
+                    } else {
+                        vm.$monthPicker
+                            .classList
+                            .add('hidden');
+                    }
                 });
 
                 this.$header.on('stop.click', '[y-switch]', function () {
@@ -579,6 +687,7 @@
                     }
                 });
             }
+
             if (this.showHms) {
                 var hmsCallback = function (elem, hms) {
                     vm.hidePicker();
@@ -591,27 +700,33 @@
                     }
                 };
 
-                this.$hour.on('stop.click', function () {
-                    return vm.timePicker(0);
-                });
+                if (this.showHour) {
+                    this.$hour.on('stop.click', function () {
+                        return vm.timePicker(0);
+                    });
+                    this.$hourPicker.on('stop.click', 'a:not(.disabled)', function () {
+                        return hmsCallback(this, 0);
+                    });
+                }
 
-                this.$minute.on('stop.click', function () {
-                    return vm.timePicker(1);
-                });
+                if (this.showMinute) {
+                    this.$minute.on('stop.click', function () {
+                        return vm.timePicker(1);
+                    });
 
-                this.$sec.on('stop.click', function () {
-                    return vm.timePicker(2);
-                });
+                    this.$minutePicker.on('stop.click', 'a:not(.disabled)', function () {
+                        return hmsCallback(this, 1);
+                    });
+                }
 
-                this.$hourPicker.on('stop.click', 'a:not(.disabled)', function () {
-                    return hmsCallback(this, 0);
-                });
-                this.$minutePicker.on('stop.click', 'a:not(.disabled)', function () {
-                    return hmsCallback(this, 1);
-                });
-                this.$secPicker.on('stop.click', 'a:not(.disabled)', function () {
-                    return hmsCallback(this, 2);
-                });
+                if (this.showSec) {
+                    this.$sec.on('stop.click', function () {
+                        return vm.timePicker(2);
+                    });
+                    this.$secPicker.on('stop.click', 'a:not(.disabled)', function () {
+                        return hmsCallback(this, 2);
+                    });
+                }
             }
 
             if (this.showBtn) {
@@ -628,12 +743,20 @@
                 if (this.showTodayBtn) {
                     this.$now.on('stop.click', function () {
                         valueSet(toArray(new Date()));
+
+                        if (vm.dialog) {
+                            vm.hide();
+                        }
                     });
                 }
 
                 if (this.showOkBtn) {
                     this.$ok.on('stop.click', function () {
                         valueSet(vm.ymd[0], vm.ymd[1], vm.ymd[2], vm.hms[0], vm.hms[1], vm.hms[2]);
+
+                        if (vm.dialog) {
+                            vm.hide();
+                        }
                     });
                 }
             }
@@ -655,28 +778,44 @@
                 vm.hidePicker();
             });
 
-            if (this.touch && this.touch.version == v2.version) {
-                this.touch.$.on('click', function () {
-                    vm.min = vm.touch.invoke("date-min");
-                    vm.max = vm.touch.invoke("date-max")
+            if (this.demand) {
+                this.demand.on('click', this.host ? function () {
+                    vm.min = vm.host.invoke("date-min");
+                    vm.max = vm.host.invoke("date-max")
+                    vm.show();
+                } : function () {
+                    vm.show();
+                    });
+
+            } else if (this.autoDemand && this.host) {
+                this.host.$core.on('click', function () {
+                    vm.min = vm.host.invoke("date-min");
+                    vm.max = vm.host.invoke("date-max")
                     vm.show();
                 });
             }
         }
     });
 
-    document.body.on('click', function (e) {
+    function click(e) {
         var elem = e.target || e.srcElement;
         v2.each(v2.GDir('date-picker'), function (vm) {
-            var touch = vm.touch && vm.touch.$ || vm.touch;
+            var touch = vm.request || vm.host && vm.host.$;
 
-            if (!touch || !vm.dialog) return;
+            if (!vm.visible) return;
 
-            if (elem === touch || v2.contains(touch, elem)) {
+            if (!touch || !vm.dialog || elem === touch || v2.contains(touch, elem)) {
+                vm.hidePicker();
+            } else {
                 vm.hide();
             }
         });
-    });
+    }
+    if (document.addEventListener) {
+        document.addEventListener('click', click, false);
+    } else {
+        document.attachEvent('onclick', click);
+    }
 
     return function (options) {
         return v2('date-picker', options);

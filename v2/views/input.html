@@ -2,32 +2,35 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>输入框控件</title>
     <link href="../lib/v2.css" rel="stylesheet" />
     <script data-main="../appsettings" src="../require.js" defer="defer" async></script>
 </head>
 <body>
-    <div class="panel">
+    <div class="panel hidden">
         <div class="panel-title text-uppercase">
             input
         </div>
         <div class="panel-body">
-            <input class="success" type="text">
-            <input type="search">
-            <input class="warning" type="number">
-            <input type="url">
-            <input class="danger" type="email">
-            <input type="tel">
-            <input type="password">
-            <input type="time" disabled>
-            <input type="date">
-            <input type="datetime" readonly>
-            <input type="datetime-local">
+            <input class="form-control" type="text">
+            <input class="form-control" type="search">
+            <input class="form-control" type="number">
+            <input class="form-control" type="url">
+            <input class="form-control" type="email">
+            <input class="form-control" type="tel">
+            <input class="form-control" type="password">
+            <input class="form-control" type="time" disabled>
+            <input class="form-control" type="date">
+            <input class="form-control" type="datetime" readonly>
+            <input class="form-control" type="datetime-local">
             <input type="radio">
             <input type="checkbox">
-            <textarea name="" id="" cols="30" rows="10" disabled></textarea>
-            <textarea name="" id="" cols="30" rows="10"></textarea>
+            <input type="range" />
+            <input type="color" />
+            <textarea class="form-control" name="" id="" cols="30" rows="10" disabled></textarea>
+            <textarea class="form-control" name="" id="" cols="30" rows="10"></textarea>
         </div>
     </div>
+    <input type="button" value="确定" />
 </body>
 </html>

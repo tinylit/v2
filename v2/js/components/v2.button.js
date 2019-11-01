@@ -35,22 +35,21 @@
             this.base.init('button');
         },
         render: function () {
-            this.addClass('btn');
+
+            this.$.classList.add('btn');
 
             if (this.lg || this.sm || this.xs) {
-                this.addClass(this.lg ? 'btn-lg' : this.sm ? 'btn-sm' : 'btn-xs');
+                this.$.classList.add(this.lg ? 'btn-lg' : this.sm ? 'btn-sm' : 'btn-xs');
             }
 
-            if (this.owner) {
-                if (this.owner.isInstanceOf('navbar')) {
-                    this.addClass('navbar-btn');
-                }
+            if (this.host && this.host.isInstanceOf('navbar')) {
+                this.$.classList.add('navbar-btn');
             }
 
             if (this.type === 'submit') {
-                this.addClass('btn-primary');
+                this.$.classList.add('btn-primary');
             } else if (this.type === 'reset') {
-                this.addClass('btn-warning');
+                this.$.classList.add('btn-warning');
             }
         },
         usb: function () {

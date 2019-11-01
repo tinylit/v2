@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <title>选择器</title>
-    <link rel="stylesheet" href="../lib/v2.css">
+    <link href="../lib/v2.css" rel="stylesheet" />
+    <script data-main="../appsettings" src="../require.js" defer="defer" async></script>
 </head>
 <body>
     <div class="panel">
@@ -11,7 +12,7 @@
             select
         </div>
         <div class="panel-body">
-            <select disabled>
+            <select class="form-control" disabled>
                 <option value="1">废铁</option>
                 <option value="2">青铜</option>
                 <option value="3">白银</option>
@@ -21,7 +22,17 @@
                 <option value="7">大师</option>
                 <option value="8">王者</option>
             </select>
-            <select id="my-select">
+            <select class="form-control" id="my-select">
+                <option value="1">废铁</option>
+                <option value="2">青铜</option>
+                <option value="3">白银</option>
+                <option value="4">黄金</option>
+                <option value="5">铂金</option>
+                <option value="6">钻石</option>
+                <option value="7">大师</option>
+                <option value="8">王者</option>
+            </select>
+            <select class="form-control" multiple="multiple">
                 <option value="1">废铁</option>
                 <option value="2">青铜</option>
                 <option value="3">白银</option>

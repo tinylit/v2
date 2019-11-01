@@ -8,5 +8,40 @@
             type: 'checkbox',
             focus: true
         });
+
+        input({
+            type: 'datetime',
+            focus: true
+        });
+
+        input({
+            type: 'datetime-local',
+            showIcon: false
+        });
+
+        input({
+            type: 'date',
+            focus: true
+        });
+
+        input({
+            type: 'time',
+            focus: true
+        });
+
+        input({
+            type: 'select',
+            selectedIndex: 1,
+            template: '<option value="{{ value }}">{{ text }}</option>',
+            view: [{ value: 1, text: "男" }, { value: 2, text: "女" }]
+        });
+
+        input({
+            type: 'select',
+            multiple: true,
+            selectedIndex: 1,
+            template: '<option value="{{ value }}">{{ text }}</option>',
+            view: [{ value: 1, text: "男" }, { value: 2, text: "女" }]
+        });
     });
 }
