@@ -13,7 +13,7 @@
                 return factory(v2kit);
             } :
             factory(v2kit);
-}(function (v2) {
+}(function (/** @type CN.V2kitStatic */v2) {
     var
         doc = document,
         docEl = doc.documentElement;
@@ -32,6 +32,7 @@
         return [date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()];
     }
     var rinputTag = /textarea|input/i;
+
     v2.use("date-picker", {
         datePicker: function () {
 
@@ -91,7 +92,7 @@
             }
         },
         build: function () {
-
+            var htmls;
             if (this.showYmd) {
 
                 var y = '.ym.ym-y>.input-group>(span.input-group-addon[y-switch=0]>i.glyphicon.glyphicon-menu-left)+input.form-control[readonly]+(.dialog.ymd.hidden>(.ymd-addon[y-switch=2]>i.glyphicon.glyphicon-menu-up)+(ul.years>li*10>a[y][href="#"])+(.ymd-addon[y-switch=3]>i.glyphicon.glyphicon-menu-down)+.clearfix)+(span.input-group-addon[y-switch=1]>i.glyphicon.glyphicon-menu-right)';
@@ -129,7 +130,7 @@
                 var hms = '(.dialog.hms.hms-{0}.panel.panel-info.hidden>(.panel-heading>.text-center{{1}}+button[aria-close]>i.glyphicon.glyphicon-remove)+.panel-body>ul>li*{2}>a[href="#"]{^^})+input.hms-txt-{0}.form-control[readonly]';
 
                 var names = ['时'];
-                var htmls = [hms.format('h', '时', 24)];
+                htmls = [hms.format('h', '时', 24)];
 
                 if (this.showMinute) {
                     names.push('分');
@@ -157,7 +158,7 @@
 
             if (this.showBtn) {
 
-                var htmls = [];
+                htmls = [];
 
                 if (this.showClearBtn) {
                     htmls.push('button.btn.btn-info{清除}');
@@ -205,7 +206,7 @@
                 this.$.classList.add('dialog');
             }
         },
-        checkVoid: function (y, m, d) {
+        dateVoid: function (y, m, d) {
             var r;
             return y = 0 | y, m = (0 | m) - 1, d = 0 | d,
                 y < this.mins[0] ? r = 'y' :
@@ -228,7 +229,7 @@
                 (hms > 0 && this.hms[0] < this.mins[3] || (hms < 1 || this.hms[0] == this.mins[3]) && (hms > 1 ? (this.hms[1] < this.mins[4] || this.hms[1] == this.mins[4] && this.mins[3 + hms] > value) : this.mins[3 + hms] > value)) ||
                 (hms > 0 && this.hms[0] > this.maxs[3] || (hms < 1 || this.hms[0] == this.maxs[3]) && (hms > 1 ? (this.hms[1] > this.maxs[4] || this.hms[1] == this.maxs[4] && this.maxs[3 + hms] < value) : this.maxs[3 + hms] < value));
         },
-        isValid: function (ymd, hms) {
+        checkVoid: function (ymd, hms) {
             ymd = ymd || this.ymd;
             if (arguments.length === 1) {
                 hms = Array.prototype.slice.call(ymd, 3);
@@ -272,7 +273,7 @@
             this.hms = [0 | h, 0 | m, 0 | s];
 
             if (this.showOkBtn) {
-                this.$ok.classList[(this.valid = this.isValid()) ? "remove" : "add"]('disabled');
+                this.$ok.classList[(this.valid = this.checkVoid()) ? "remove" : "add"]('disabled');
             }
         },
         dayView: function (y, m, d) {
@@ -320,7 +321,7 @@
                         m += 1;
                     }
                 }
-                if (vm.checkVoid(y, m, d)) {
+                if (vm.dateVoid(y, m, d)) {
                     if ((+vm.ymd[1] + 1) === m && d === +vm.ymd[2]) {
                         vm.valid = false;
                     }
@@ -334,7 +335,7 @@
             this.$year.value = this.year = 0 | y;
             this.$month.value = +m + 1;
 
-            this.valid = this.valid && this.isValid();
+            this.valid = this.valid && this.checkVoid();
 
             if (this.showOkBtn) {
                 this.$ok.classList[this.valid ? "remove" : "add"]('disabled');
@@ -395,7 +396,7 @@
 
             m = 0 | m;
             this.$months.then(function (a, i) {
-                if (vm.checkVoid(vm.ymd[0], i + 1)) {
+                if (vm.dateVoid(vm.ymd[0], i + 1)) {
                     a.className = 'disabled';
                 } else {
                     a.className = i == m ? 'active' : '';
@@ -472,27 +473,14 @@
                             pattern === 'ss' && vm.showSec) {
                             return ymd.index = 0 | ++ymd.index, zoreFill(ymd[ymd.index]);
                         }
-                        switch (pattern) {
-                            case 'yyyy':
-                                return vm.ymd[0];
-                            case 'MM':
-                                return vm.ymd[1];
-                            case 'dd':
-                                return vm.ymd[2];
-                            case 'HH':
-                                return vm.hms[0];
-                            case 'mm':
-                                return vm.hms[1];
-                            case 'ss':
-                                return vm.hms[2];
-                        }
+                        return '0';
                     });
                 },
                 set: function (value) {
                     if (value) {
                         var ymd = value.match(/\d+/g);
 
-                        if (!((ymd.length > 3 || this.showYmd) ? this.isValid([0 | ymd[0], (0 | ymd[1]) - 1, 0 | ymd[2]], [0 | ymd[3], 0 | ymd[4], 0 | ymd[5]]) : this.isValid(null, ymd))) {
+                        if (!((ymd.length > 3 || this.showYmd) ? this.checkVoid([0 | ymd[0], (0 | ymd[1]) - 1, 0 | ymd[2]], [0 | ymd[3], 0 | ymd[4], 0 | ymd[5]]) : this.checkVoid(null, ymd))) {
                             return this.tip('日期超出限制范围!');
                         }
 
@@ -554,7 +542,8 @@
             });
         },
         show: function () {
-            if (this.visible)
+
+            if (!this.dialog && this.visible)
                 return;
 
             this.base.show();
@@ -564,32 +553,25 @@
 
             this.load();
 
-            var elem = this.request || this.host && this.host.$ || document.body,
-                x = (this.fixed ? this.scroll(1) : 0) + this.area(1),
-                y = (this.fixed ? this.scroll() : 0) + this.area(),
-                xy = {
-                    top: elem.offsetTop,
-                    right: elem.offsetLeft + elem.offsetWidth,
-                    bottom: elem.offsetTop + elem.offsetHeight,
-                    left: elem.offsetLeft
-                },
-                width = this.$.offsetWidth,
-                height = this.$.offsetHeight,
-                l = (xy.left + width) > x ? xy.right - width : xy.left,
-                t = xy.bottom + height > y ? xy.top - height : xy.bottom;
+            var
+                elem = this.request || this.host && this.host.$ || document.body,
+                xy = elem.getBoundingClientRect(),
+                top = xy.top - docEl.clientTop + docEl.scrollTop,//document.documentElement.clientTop 在IE67中始终为2，其他高级点的浏览器为0
+                bottom = xy.bottom,
+                left = xy.left - docEl.clientLeft + docEl.scrollLeft,//document.documentElement.clientLeft 在IE67中始终为2，其他高级点的浏览器为0
+                right = xy.right,
+                width = xy.width || (right - left), //IE67不存在width 使用right - left获得
+                height = xy.height || (bottom - top),
+                x = (this.fixed ? doc.scrollLeft || docEl.scrollLeft : 0) + docEl.clientWidth,
+                y = (this.fixed ? doc.scrollTop || docEl.scrollTop : 0) + docEl.clientHeight,
+                l = (left + width) > x ? right - width : left,
+                t = bottom + height > y ? top - height : bottom;
 
             this.$.styleCb({
                 position: this.fixed ? 'fixed' : 'absolute',
                 left: l,
                 top: t
             });
-        },
-        scroll: function (a) {
-            return a = a ? "scrollLeft" : "scrollTop",
-                doc.body[a] | docEl[a];
-        },
-        area: function (a) {
-            return docEl[a ? "clientWidth" : "clientHeight"];
         },
         tip: function (msg, title) {
             var vm = this;
@@ -629,6 +611,7 @@
                 } else {
                     vm.value = '{0}-{1}-{2} {3}:{4}:{5}'.format(y, +M + 1, d, 0 | h, 0 | m, 0 | s);
                 }
+
                 if (vm.autoClose) {
                     vm.hide();
                 }
@@ -780,15 +763,18 @@
 
             if (this.demand) {
                 this.demand.on('click', this.host ? function () {
+                    hideAll();
                     vm.min = vm.host.invoke("date-min");
                     vm.max = vm.host.invoke("date-max")
                     vm.show();
                 } : function () {
+                    hideAll();
                     vm.show();
-                    });
+                });
 
             } else if (this.autoDemand && this.host) {
                 this.host.$core.on('click', function () {
+                    hideAll();
                     vm.min = vm.host.invoke("date-min");
                     vm.max = vm.host.invoke("date-max")
                     vm.show();
@@ -797,10 +783,10 @@
         }
     });
 
-    function click(e) {
+    document.body.on('click', function (e) {
         var elem = e.target || e.srcElement;
         v2.each(v2.GDir('date-picker'), function (vm) {
-            var touch = vm.request || vm.host && vm.host.$;
+            var touch = vm.host && vm.host.$ || vm.demand;
 
             if (!vm.visible) return;
 
@@ -810,11 +796,12 @@
                 vm.hide();
             }
         });
-    }
-    if (document.addEventListener) {
-        document.addEventListener('click', click, false);
-    } else {
-        document.attachEvent('onclick', click);
+    });
+
+    function hideAll() {
+        v2.GDir('date-picker').done(function (vm) {
+            vm.hide();
+        });
     }
 
     return function (options) {

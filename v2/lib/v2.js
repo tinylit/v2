@@ -1,6 +1,6 @@
 /*!
  * JavaScript v2 v1.1.1
- * https://github.com/yepsharp/v2
+ * https://github.com/tinylit/v2
  *
  ** @author hyly
  ** @date 2019-05-20
@@ -155,12 +155,17 @@
             };
         }
         var cache = {},
+            tagCache = {},
             matchCache = makeCache(function (namespace) {
                 return new RegExp("^" + namespace.replace(/\./g, "\\.").replace(rany, "[^\\.]+") + "$", "i");
             }, true),
-            namespaceCache = makeCache(function (string, namespace) {
-                return (!namespace || namespace === "*") ? string : namespace + "." + string;
-            }),
+            namespaceCache = function (tag, namespace) {
+                var value = tagCache[tag];
+                if (value === undefined) {
+                    return tagCache[tag] = !namespace || namespace === "*" ? tag : namespace + "." + tag;
+                }
+                return value;
+            },
             fnGet = function (namespace, tag) {
                 tag = tag || "*";
                 namespace = namespace || "*";
@@ -202,24 +207,25 @@
             };
         return function (string, option) {
 
-            var match, namespace;
+            var namespace;
 
             string = v2.kebabCase(string);
 
             if (option === undefined) {
                 var results = objectCreate(string);
-                while ((match = rnamespaceGet.exec(namespace = namespace || namespaceCache(string)))) {
-                    if ((option = fnGet(namespace, string = match[2]))) {
+                while (rnamespaceGet.test(namespace = namespace || namespaceCache(string))) {
+                    option = fnGet(namespace, string = RegExp.$2);
+                    if (option) {
                         objectCallback(results, option);
                     }
-                    namespace = match[1];
+                    namespace = RegExp.$1;
                     if (!namespace || namespace === "*") break;
                 }
                 return results;
             }
 
-            if ((match = rnamespace.exec(string))) {
-                return fnSet(match[1], match[2], option, core_slice.call(arguments, 2));
+            if (rnamespace.test(string)) {
+                return fnSet(RegExp.$1, RegExp.$2, option, core_slice.call(arguments, 2));
             }
 
             v2.error("string:" + string + ",Invalid class name space.");
@@ -243,7 +249,7 @@
             return true;
         }
         try {
-            return type === "array" || len === 0 || len > 0 && typeof length === "number" && (len - 1) in object;
+            return type === "array" || len === 0 || len > 0 && typeof length === "number" && len - 1 in object;
         } catch (_) {
             return false;
         }
@@ -252,8 +258,8 @@
     function analyzeWildcards(wildCards, key, type, define) {
         if (!wildCards || !key) return key;
 
-        var item, config;
-        if ((item = coreCards[key[0]])) {
+        var config, item = coreCards[key[0]];
+        if (item) {
             key = key.slice(1);
             if (item.type === "*" || typeCache(type)(item.type)) {
                 config = {
@@ -301,10 +307,16 @@
         });
     }
 
-    function ArrayThen() {
-        if (arguments.length > 0) {
-            v2.each(arguments, this.add, this);
+    function ArrayThen(host) {
+        if (host && !(host instanceof ArrayThen)) {
+            return v2.error("无效参数!");
         }
+        this.destroy = function (deep) {
+            core_splice.call(this, 0, this.length);
+            if (deep && host) {
+                host.destroy(deep);
+            }
+        };
     }
 
     ArrayThen.prototype = {
@@ -317,6 +329,7 @@
             }
             this[this.length] = item;
             this.length += 1;
+
             return this;
         },
         remove: function (item) {
@@ -338,11 +351,11 @@
                     results.push(item);
                 }
             }
-            return v2.merge(new ArrayThen(), results);
+            return v2.merge(new ArrayThen(this), results);
         },
         map: function (callback) {
             var i = -1,
-                item, results = new ArrayThen();
+                item, results = new ArrayThen(this);
             while ((item = this[++i])) {
                 results.add(callback(item, i, this));
             }
@@ -359,25 +372,36 @@
         },
         eq: function (index) {
             return this[index < 0 ? index + this.length : index] || null;
-        },
-        destroy: function () {
-            return core_splice.call(this, 0, this.length);
         }
     };
 
     ArrayThen.prototype.nth = ArrayThen.prototype.eq;
-    ArrayThen.prototype.forEach = ArrayThen.prototype.each = ArrayThen.prototype.then;
+    ArrayThen.prototype.forEach = ArrayThen.prototype.each = ArrayThen.prototype.done = ArrayThen.prototype.then;
+
+    var
+        GLOBAL_VARIABLE_IDENTITY = 0, //? 唯一身份ID
+        GLOBAL_VARIABLE_LOOP_GROUP = 0, //? 唯一迭代器组ID
+        GLOBAL_VARIABLE_ON_ROUTES = false, //? 是否处于路由中
+        GLOBAL_VARIABLE_STARTUP_COMPLETE = true, //? 控制是否自动提交渲染
+        GLOBAL_VARIABLE_CURRENT_CONTROL = null; //? 当前渲染控件
 
     function v2(tag, option) {
         if (arguments.length === 1 && v2.isPlainObject(tag)) {
             option = tag;
             tag = option.tag;
         }
-        return new v2.fn.init(tag, option);
+
+        if (GLOBAL_VARIABLE_ON_ROUTES) {
+            return v2.error('禁止在路由中生成新组件!');
+        }
+
+        return v2.useMvc(tag, function () {
+            return new v2.fn.init(tag, option);
+        });
     }
 
     v2.type = function (object) {
-        return (object === null || object === undefined) ? String(object) : (typeof object === "object" || typeof object === "function") ? class2type[core_toString.call(object)] || "object" : typeof object;
+        return object === null || object === undefined ? String(object) : typeof object === "object" || typeof object === "function" ? class2type[core_toString.call(object)] || "object" : typeof object;
     };
 
     function extension(context, callback, array) {
@@ -441,7 +465,7 @@
     };
 
     var improveCallbak = function (value, option) {
-        return (value === null || value === undefined) ? option : value;
+        return value === null || value === undefined ? option : value;
     };
 
     v2.extend = function () {
@@ -502,12 +526,18 @@
             if (isArraylike(object)) {
                 for (var len = object.length; i < len; i++) {
                     value = callback.call(context || object, object[i], i, object);
-                    if (value != null) arr.push(value);
+
+                    if (value === undefined || value === null)
+                        continue;
+
+                    arr.push(value);
                 }
             } else {
                 for (i in object) {
                     value = callback.call(context || object, object[i], i, object);
-                    if (value != null) arr.push(value);
+                    if (value === undefined || value === null)
+                        continue;
+                    arr.push(value);
                 }
             }
             return core_concat.apply([], arr);
@@ -555,7 +585,7 @@
 
     v2.extend({
         trim: function (string) {
-            return (string === null || string === undefined) ? "" : core_trim.call(string);
+            return string === null || string === undefined ? "" : core_trim.call(string);
         },
         urlCase: function (string) {
             return string.replace(rcapitalAlpha, furlCase);
@@ -652,7 +682,8 @@
             return isNaN(date) ? new Date() : new Date(date);
         }
         return new Date();
-    }
+    };
+
     v2.extend({
         isDate: function (date) {
             return v2.type(date) === "date";
@@ -670,7 +701,7 @@
     };
     v2.extend(v2.date, {
         isLeapYear: function (year) {
-            return (year % 400 === 0) || (year % 4 === 0) && (year % 100 > 0);
+            return year % 400 === 0 || year % 4 === 0 && year % 100 > 0;
         },
         day: function (date) {
             return v2.date(date).getDate();
@@ -780,7 +811,7 @@
                     if (type === 'array') return value;
                     break;
                 case 'string':
-                    return (value === null || value === undefined) ? '' : type === 'date' ? v2.date.format(value, 'yyyy-MM-dd HH:mm:ss') : value.toString();
+                    return value === null || value === undefined ? '' : type === 'date' ? v2.date.format(value, 'yyyy-MM-dd HH:mm:ss') : value.toString();
                 case 'number':
                     if (type === 'string') return parseFloat(value);
                     if (type === 'date') return +value;
@@ -851,7 +882,10 @@
                         threadSet = true;
 
                         if (!beforeSetting || beforeSetting.call(this, source) !== false) {
-                            callback.call(this, source);
+                            value = callback.call(this, source);
+                            if (value) {
+                                source = changeType(value, conversionType);
+                            }
                         }
 
                         threadSet = false;
@@ -868,11 +902,11 @@
 
                         threadGet = true;
 
-                        var value = callback.call(this, source, false);
+                        source = changeType(callback.call(this, source, false), conversionType);
 
                         threadGet = false;
 
-                        return value;
+                        return source;
                     },
                     set: function (value) {
 
@@ -902,7 +936,10 @@
                         threadSet = true;
 
                         if (!beforeSetting || beforeSetting.call(this, source) !== false) {
-                            callback.call(this, source, true);
+                            value = callback.call(this, source);
+                            if (value) {
+                                source = changeType(value, conversionType);
+                            }
                         }
 
                         threadSet = false;
@@ -1003,7 +1040,7 @@
 
             return results;
         },
-        contains: (rnative.test(docElem.compareDocumentPosition) || rnative.test(docElem.contains)) ?
+        contains: rnative.test(docElem.compareDocumentPosition) || rnative.test(docElem.contains) ?
             function (a, b) {
                 var adown = a.nodeType === 9 ? a.documentElement : a,
                     bup = b && b.parentNode;
@@ -1013,13 +1050,13 @@
                         a.compareDocumentPosition && a.compareDocumentPosition(bup) & 16
                 ));
             } : function (a, b) {
-                if (b) {
-                    while ((b = b.parentNode)) {
-                        if (b === a) {
-                            return true;
-                        }
+
+                while (b && (b = b.parentNode)) {
+                    if (b === a) {
+                        return true;
                     }
                 }
+
                 return false;
             }
     });
@@ -1073,7 +1110,7 @@
 
             tokens = tokens.sort();
 
-            while ((token = tokens[i++])) { // ȥ��
+            while ((token = tokens[i++])) {
                 while (token === tokens[i]) {
                     core_splice.call(tokens, i, 1);
                 }
@@ -1193,6 +1230,46 @@
         }
     };
 
+    var
+        userAgent = window.navigator.userAgent.toLowerCase(),
+        isIE = /msie|trident/.test(userAgent),
+        isOpera = window.opera && window.opera.toString() === '[object Opera]';
+
+    var tokenList = window.DOMTokenList;
+
+    if ((isIE || isOpera) && !!tokenList) {
+        var toggle = tokenList.prototype.toggle;
+
+        if (isIE) {
+            var add = tokenList.prototype.add,
+                remove = tokenList.prototype.remove;
+
+            tokenList.prototype.add = function () {
+                v2.each(arguments, function (arg) {
+                    return add.call(this, arg);
+                }, this);
+            };
+
+            tokenList.prototype.remove = function () {
+                v2.each(arguments, function (arg) {
+                    return remove.call(this, arg);
+                }, this);
+            };
+        }
+
+        tokenList.prototype.toggle = function (token, _toggle) {
+            if (arguments.length > 1) {
+                if (_toggle) {
+                    this.add(token);
+                } else {
+                    this.remove(token);
+                }
+                return !!_toggle;
+            }
+            return toggle.call(this, token);
+        };
+    }
+
     v2.improve(Element.prototype, {
         remove: function () {
             if (this.parentNode) {
@@ -1237,9 +1314,9 @@
         docElem.msMatchesSelector;
 
     if (!rnative.exec(matches))
-        v2.error('The current browser version is too low.');
+        return v2.error('The current browser version is too low.');
 
-    var rtypenamespace = /^([^.]*)(?:\.(.+)|)$/;
+    var rtypenamespace = /^(?:(.+)\.)?([^.]*)$/;
 
     var
         GLOBAL_VARIABLE_GUID = 0,
@@ -1264,8 +1341,6 @@
                 return;
             }
 
-            type = type.split(".").sort().join(".");
-
             guid = this[timestamp] || (this[timestamp] = ++GLOBAL_VARIABLE_GUID);
 
             cache = nodeCache[guid] || (nodeCache[guid] = {});
@@ -1273,9 +1348,9 @@
             self = this;
             match = rtypenamespace.exec(type);
 
-            type = match[1];
+            type = match[2];
 
-            namespaces = match[2] || "";
+            namespaces = match[1] || "";
 
             if (namespaces) {
                 namespaces = namespaces.split(".").sort();
@@ -1301,7 +1376,7 @@
                 }
 
                 if (node.nodeType && (!e.button || e.type !== "click")) {
-                    for (; node != this; node = node.parentNode) {
+                    for (; node !== this; node = node.parentNode) {
                         if (node.match(selector))
                             return done(node);
                     }
@@ -1378,11 +1453,11 @@
 
             match = rtypenamespace.exec(type);
 
-            typeCache = cache[type = match[1]];
+            typeCache = cache[type = match[2]];
 
             if (!typeCache) return;
 
-            namespaces = match[2] || "";
+            namespaces = match[1] || "";
 
             if (namespaces) {
                 namespaces = namespaces.split(".").sort().join(".");
@@ -1406,6 +1481,9 @@
     v2.improve(Element.prototype, {
         match: function (expr) {
             return !expr || matches.call(this, expr);
+        },
+        take: function (selector, all) {
+            return all ? this.querySelectorAll(selector) : this.querySelector(selector);
         }
     });
 
@@ -1597,7 +1675,7 @@
 
                         if (match[3]) match[2] /= 100;
 
-                        value = (new Function("source", "return source" + match[1] + match[2]))(elem.css(name));
+                        value = new Function("source", "return source" + match[1] + match[2])(elem.css(name));
                     }
 
                     if (match) type = "number";
@@ -1644,6 +1722,18 @@
             });
 
             this.insertBefore(docFrag, this.firstChild);
+        },
+        insertAfter: function (node) {
+            return this.parentNode.insertBefore(node, this.nextSibling);
+        },
+        after: function () {
+            var docFrag = safeFragment.cloneNode();
+
+            v2.each(arguments, function (node) {
+                docFrag.appendChild(node.nodeType ? node : document.createTextNode(node));
+            });
+
+            this.parentNode.insertBefore(docFrag, this);
         }
     });
 
@@ -1691,7 +1781,7 @@
             return superior;
 
         return {
-            type: (source.type === "*" || superior.type === "*") ? "*" : superior.type + "|" + source.type,
+            type: source.type === "*" || superior.type === "*" ? "*" : superior.type + "|" + source.type,
             exec: superior.type === "*" ? function (control, value, key) {
                 var type = v2.type(value);
 
@@ -1867,7 +1957,7 @@
             safe.appendChild(node);
         }
 
-        if (safe.childNodes.length == 1) {
+        if (safe.childNodes.length === 1) {
             safe = safe.firstChild;
         }
 
@@ -1880,7 +1970,7 @@
         rbatch = /\$+/g,
         rbatchZore = /\^+/g,
         whitespace = "[\\x20\\t\\r\\n\\f]",
-        characterEncoding = "(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+",
+        characterEncoding = "(?:\\\\.|[\\w-]|\\$|[^\\x00-\\xa0])+",
         identifier = characterEncoding.replace("w", "w#"),
         combinator = whitespace + "*([>+])" + whitespace + "*",
         attributes = "\\[" + whitespace + "*(" +
@@ -2017,14 +2107,14 @@
                         }
                         return value;
                     }).replace(rbatchZore, function (v) {
-                        var value = (multi - 1) + '';
+                        var value = multi - 1;
                         for (var i = value.length, len = v.length; i < len; i++) {
                             value = '0' + value;
                         }
                         return value;
                     }));
 
-                } while ((--multi) > 0);
+                } while (--multi);
 
                 html = htmls.join('');
             }
@@ -2105,7 +2195,7 @@
         relse = new RegExp('\\belse' + whitespace + '*\\{' + whitespace + "*(.+)"),
         rinject = new RegExp("^" + whitespace + "*(" + word + ")\\(((" + whitespace + "*" + word + whitespace + "*,)*" + whitespace + "*" + word + ")?" + whitespace + "*\\)" + whitespace + "*$", "i");
 
-    var tryCode = makeCache(function (string) {
+    var tryCodeFn = makeCache(function (string) {
         var match, results = [];
         if (string.indexOf('?') === -1)
             return string;
@@ -2135,7 +2225,7 @@
         return results.join('');
     });
 
-    function forCode(_, item, index, data, guid) {
+    function forCodeFn(_, item, index, data, guid) {
         var fn = 'for_done_' + guid,
             results = ['return window.v2.map(', data, ',', fn, ');'];
 
@@ -2146,31 +2236,31 @@
         results.push(')');
 
         return results.join('');
-    };
+    }
 
-    function ifElseCode(all, code) {
+    function ifElseCodeFn(all, code) {
         if (!rreturn.test(code))
             return all.slice(0, -code.length) + 'return ' + code;
         return all;
     }
 
-    function joinCode(string, quote) {
+    function joinCodeFn(string, quote) {
         return string.replace(rbraceCode, function (_, reserved, code) {
             return (reserved || '') + quote + '+ (' + code + ') +' + quote;
         });
     }
     function ternaryCode(_, _2, left, symbol, right) {
-        if (symbol == '?') {
+        if (symbol === '?') {
             return left + '?' + right + ':""';
         }
         return left + '?"":' + right;
     }
     var compileCache = makeCache(function (value) {
-        var callback, body = value.replace(rforin, forCode)
-            .replace(rif, ifElseCode)
-            .replace(relse, ifElseCode)
-            .replace(rquotes, joinCode)
-            .replace(rtryCode, tryCode);
+        var callback, body = value.replace(rforin, forCodeFn)
+            .replace(rif, ifElseCodeFn)
+            .replace(relse, ifElseCodeFn)
+            .replace(rquotes, joinCodeFn)
+            .replace(rtryCode, tryCodeFn);
 
         if (!rreturn.test(body)) {
             body = 'return ' + body;
@@ -2205,7 +2295,7 @@
         }
         var callback, body = value
             .replace(rternaryCode, ternaryCode)
-            .replace(rtryCode, tryCode);
+            .replace(rtryCode, tryCodeFn);
 
         if (!rreturn.test(body)) {
             body = 'return ' + body;
@@ -2260,7 +2350,7 @@
                 return this.add(when || option);
 
             if (v2.isString(when)) {
-                when = new Function("vm", "try{ with(vm){  if(option) with(option) { return " + when + "; } return " + when + ";} }catch(_){ return false; }");
+                when = new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }");
             }
 
             this[this.length] = {
@@ -2285,7 +2375,7 @@
         if (!inject) return value;
         var callback, baseArgs, args = [],
             injections = inject.match(rword);
-        if (callback = context[key]) {
+        if ((callback = context[key])) {
             context[key] = function () {
                 return applyCallback(callback, baseArgs, context, true);
             };
@@ -2340,8 +2430,8 @@
                 name = analyzeWildcards(baseCards, name, type, true);
             }
 
-            if (name === 'enumState') {
-                return v2.log('Attribute enumState can only be injected by fn[v2.useMap(,{enumState:{}})].', 15);
+            if (name === 'flowGraph') {
+                return v2.log('Attribute flowGraph can only be injected by fn[v2.useMap(tag,{flowGraph:{}})].', 15);
             }
 
             if (type === 'function' && (match = rinject.exec(name))) {
@@ -2359,45 +2449,49 @@
                 when = undefined;
             }
             if (v2.isString(tag)) {
+
                 if (arguments.length === 1) {
                     return use(tag);
                 }
 
-                return v2.useMvc(tag, function () {
-                    return use(tag, option, when);
-                });
+                return use(tag, option, when);
             }
 
             if (v2.isPlainObject(tag)) {
                 return useConfig(tag);
             }
         },
-        useMap: function (tag, enumState) {
+        useMap: function (tag, flowGraph) {
             switch (typeof tag) {
                 case 'string':
                     tag = v2.kebabCase(tag.toLowerCase());
                     return useMap.when(function (vm) {
                         return v2.kebabCase(vm.tag) === tag;
-                    }, enumState);
+                    }, flowGraph);
                 case 'function':
-                    return useMap.when(tag, enumState);
+                    return useMap.when(tag, flowGraph);
                 case 'regex':
                     return useMap.when(function (vm) {
                         return tag.test(vm.tag);
-                    }, enumState);
-                case 'boolean':
-                    if (tag) {
-                        return useMap.when(returnTrue, enumState);
-                    }
+                    }, flowGraph);
                 default:
                     return v2.error('Type is not supported(' + tag + ')!');
             }
         },
         useMvc: function (_, resolve) {
             return resolve();
+        },
+        route: function (tag, when, route) {
+            var router = routeCache(v2.kebabCase(tag));
+
+            if (arguments.length === 2) {
+                route = when;
+                when = returnTrue;
+            }
+
+            return router.when(when, route);
         }
     });
-
 
     var stackCache = {};
 
@@ -2410,7 +2504,6 @@
         identity: 0,
         readyWait: 0,
         ready: function (master) {
-            master.sleep(true);
             stackCache[this.identity = master.identity] = this;
         },
         complete: function (tag) {
@@ -2453,6 +2546,8 @@
         waitSatck: function (tag, callback) {
             this.tag = tag;
             this.readyWait += 1;
+            this.master.sleep(true);
+
             return this.pushStack(callback);
         },
         pushStack: function (callback, group) {
@@ -2470,36 +2565,58 @@
         }
     };
 
-    function V2Controls() { }
+    function V2Controls(host) {
+        this.add = function (control) {
+            if (control.host === host)
+                return control;
 
-    V2Controls.prototype = {
-        length: 0,
-        add: function (control) {
+            if (control.host) {
+                control.host.controls.remove(control);
+            }
+
+            control.host = host;
 
             this[this.length] = control;
             this.length += 1;
 
             return control;
-        },
+        };
+    }
+
+    V2Controls.prototype = {
+        length: 0,
         remove: function (control) {
 
             var index = core_indexOf.call(this, control);
 
-            if (index > -1) return core_splice.call(this, index, 1);
+            if (index > -1) {
+                control.host = undefined;
+                core_splice.call(this, index, 1);
+            }
 
             return index;
         },
-        destory: function () {
+        destroy: function () {
 
             var i = 0,
                 control;
 
             while ((control = this[i++])) {
-                control.destory();
+                control.destroy();
             }
         },
         eq: function (index) {
             return this[index < 0 ? this.length + index : index] || null;
+        },
+        get: function (fn) {
+
+            var i = 0,
+                control;
+
+            while ((control = this[i++])) {
+                if (fn(control))
+                    return control;
+            }
         },
         offset: function (control, offset) {
 
@@ -2519,16 +2636,10 @@
         return callback.apply(context, sliced ? args : core_slice.call(args));
     }
 
-    var
-        GLOBAL_VARIABLE_IDENTITY = 0,
-        GLOBAL_VARIABLE_LOOP_GROUP = 0,
-        GLOBAL_VARIABLE_STARTUP_COMPLETE = true,
-        GLOBAL_VARIABLE_CURRENT_CONTROL = null;
-
     v2.GDir = makeCache(function (tag) {
-        var fn = (new Function("return function " + v2.pascalCase(tag) + "Colection(){}"))();
+        var fn = new Function("return function " + v2.pascalCase(tag) + "Colection(){}")();
 
-        fn.prototype = new ArrayThen();
+        fn.prototype = ArrayThen.prototype;
 
         return v2.GDir[tag + "s"] = new fn();
     }, true);
@@ -2561,7 +2672,7 @@
                 if (isControl && object.host === value)
                     return value.controls.remove(object);
                 else
-                    return value.destory && value.destory(true);
+                    return value.destroy && value.destroy(true);
             }
 
             if (value.nodeType) {
@@ -2577,9 +2688,24 @@
         }
     }
 
-    var useMap = new UseThen('*');
+    function MapThen() {
+        var options, accessOptions;
 
-    useMap.when({
+        this.add = function (option, accessOption) {
+            options = mergeOption(options, option);
+            accessOptions = mergeOption(accessOption, accessOptions || options);
+        };
+
+        this.always = function (access) {
+            return access ? accessOptions : options;
+        };
+    }
+
+    MapThen.prototype = UseThen.prototype;
+
+    var useMap = new MapThen('*');
+
+    useMap.add({
         design: 0.5, // 设计
         init: 1, // 初始化
         build: 2, // 构建
@@ -2588,49 +2714,71 @@
         ready: 16, // 就绪
         load: 32, // 加载数据
         commit: 64 // 完成提交
+    }, {
+        design: 0.5, // 设计
+        init: 1, // 初始化
+        build: 2, // 构建
+        render: 4, // 渲染
+        usb: 8, // 监听
+        ready: 16, // 就绪
+        ajax: 31, // 异步取数
+        load: 32, // 加载数据
+        commit: 64 // 完成提交
+    });
+
+    var routeMap = {};
+    var routeCache = makeCache(function (tag) {
+        routeMap[tag] = true;
+        return new UseThen(tag);
     });
 
     v2.fn = v2.prototype = {
         version: version,
         create: function (tag, options) {
-
-            if (arguments.length === 1 && v2.isPlainObject(tag)) {
+            if (v2.isPlainObject(tag)) {
                 options = tag;
                 tag = options.tag;
             }
 
             options = v2.extend(true, {}, options);
 
-            options.host = this;
             options.$$ = options.$$ || this.$;
 
             if (!this.components)
                 return this.controls.add(v2(tag, options));
 
-            var stack = stackCache[this.identity] || new V2Stack(this);
+            var complete = GLOBAL_VARIABLE_STARTUP_COMPLETE;
 
             var component = this.components[tag = v2.kebabCase(tag)];
 
-            GLOBAL_VARIABLE_STARTUP_COMPLETE = false;
+            var componentAsync = this.components[tag + ".async"];
 
-            var control = component ? v2.isFunction(component) ? component(tag, options) : v2(tag, v2.improve(options, component)) : v2(tag, options);
+            GLOBAL_VARIABLE_STARTUP_COMPLETE = !componentAsync;
+
+            var stack = stackCache[this.identity] || GLOBAL_VARIABLE_STARTUP_COMPLETE || new V2Stack(this);
+
+            var control = component ? v2.isFunction(component) ? component(option, tag) : v2(tag, v2.improve(options, component)) : v2(tag, options);
+
+            if (!componentAsync) {
+
+                if (!complete) {
+                    stack.pushStack(function () {
+                        control.startup();
+                    });
+                }
+
+                return this.controls.add(control);
+            }
 
             GLOBAL_VARIABLE_STARTUP_COMPLETE = true;
 
-            component = this.components[tag + ".async"];
+            stack.waitSatck(tag, function () {
+                control.startup();
+            });
 
-            if (component) {
-                stack.waitSatck(tag, function () {
-                    control.startup();
-                });
-                component(function () {
-                    stack.complete(tag);
-                });
-            } else {
-                stack.pushStack(function () {
-                    control.startup();
-                });
-            }
+            componentAsync(function () {
+                stack.complete(tag);
+            });
 
             return this.controls.add(control);
         },
@@ -2642,12 +2790,12 @@
         visible: true,
         defaultVisible: true,
         init: function (tag, option) {
-            this.tag = tag;
-            this.option = option;
+            this.tag = v2.kebabCase(tag);
+            this.option = option || {};
 
             this.host = null;
 
-            this.class = "";
+            this['class'] = "";
 
             this.$ = this.$$ = null;
 
@@ -2673,26 +2821,57 @@
             this.methods = {};
             this.components = {};
 
-            this.enumState = v2.extend({}, useMap.then(this) || useMap.always());
+            this.flowGraph = v2.extend({}, useMap.then(this) || useMap.always(this.access));
 
             this.wildcards = v2.extend(true, {}, baseCards);
 
+            var tag = this.tag;
+
+            if (routeMap[tag]) {
+
+                var route = routeCache(tag);
+
+                var router = route.then(this);
+
+                if (router) {
+                    switch (v2.type(router)) {
+                        case 'string':
+                            this.tag = router;
+                            break;
+                        case 'function':
+                            GLOBAL_VARIABLE_ON_ROUTES = true;
+                            try {
+                                router.call(this);
+                            } finally {
+                                GLOBAL_VARIABLE_ON_ROUTES = false;
+                            }
+                            break;
+                        default:
+                            return v2.error('路由数据类型【' + type + '】不被支持!');
+                    }
+
+                    this.tag = v2.kebabCase(this.tag);
+                }
+            }
+
             this.compile();
 
-            this.switchCase();
+            this.flow();
         },
         compile: function () {
             var fn,
                 timer,
                 controls,
                 sleep = false,
-                isReady = false,
+                completed = false,
+                classOld = "",
                 core_namespace = "",
                 variable = {},
                 descriptors = {},
                 callbacks = [],
                 watchStack = [],
                 context = this,
+                internalCall = true,
                 excludes = {
                     identity: true
                 },
@@ -2705,12 +2884,12 @@
                     var _callback = function () {
                         var base = context.base,
                             tmp_namespace = context.namespace,
-                            value = context.enumState[key] >>> 0;
+                            value = context.flowGraph[key] >>> 0;
 
                         context.base = base.base;
                         core_namespace = namespace;
 
-                        value = value <= 1 ?
+                        value = value <= 1 || arguments.length > 0 ?
                             applyCallback(callback, arguments, context) :
                             value >= 64 ?
                                 callback.call(context) :
@@ -2743,37 +2922,7 @@
                     base[key] = makeCallback(value, key, namespace);
                 },
                 initControls = function (option, define, highest) {
-                    var tag, type;
-
-                    if (!option) return option;
-
-                    tag = option.tag;
-
-                    if (define && !highest) {
-                        if (core_namespace) {
-                            core_namespace += '.' + tag;
-                        } else {
-                            core_namespace = tag;
-                        }
-                    }
-
-                    type = v2.type(option);
-
-                    if (type === "function") {
-
-                        option.call(context);
-
-                        return v2.each(option.prototype, done);
-                    }
-
-                    if (tag && (fn = option[tag] || option[v2.camelCase(tag)]) && v2.isFunction(fn)) {
-
-                        fn.call(context, option);
-                    }
-
-                    return v2.each(option, done);
-
-                    function done(value, key) {
+                    return v2.each(option, function (value, key) {
                         var match,
                             type,
                             sourceValue,
@@ -2781,24 +2930,26 @@
 
                         if (key === tag || key === 'tag' || key === 'constructor' || value === undefined) return;
 
-                        if (key === 'enumState') {
-                            return v2.log('Attribute enumState can only be injected by fn[v2.use({enumState:{}})].', 15);
+                        if (key === 'flowGraph') {
+                            return v2.log('Attribute flowGraph can only be injected by fn[v2.use({flowGraph:{}})].', 15);
                         }
 
-                        if (key in context) {
-                            sourceValue = context[key];
-                        } else {
-                            key = analyzeWildcards(wildcards, key, type, define);
+                        if (key === 'variable') {
+                            return v2.extend(variable, value);
+                        }
 
-                            if (key in context) {
-                                sourceValue = context[key];
-                            }
+                        if (!(key in context)) {
+                            key = analyzeWildcards(wildcards, key, type, define);
                         }
 
                         type = v2.type(value);
 
                         if (type === 'function' && (match = rinject.exec(key))) {
                             value = dependencyInjection(context, key = match[1], match[2], value);
+                        }
+
+                        if (key in context) {
+                            sourceValue = context[key];
                         }
 
                         if (sourceValue === null || sourceValue === undefined) {
@@ -2840,7 +2991,7 @@
                             };
                         }
 
-                        if (key in context.enumState) {
+                        if (key in context.flowGraph) {
                             return v2.error("The enumerated state property value must be a function!");
                         }
 
@@ -2854,7 +3005,7 @@
 
                             context[key] = value;
                         }
-                    }
+                    });
                 };
 
             this.init = function (tag, tagName) {
@@ -2876,31 +3027,31 @@
 
                 if (!(!(node = this.demand) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
-                    isArraylike(node) && !(node = node[0]) ||
-                    (node.version === version) && (node = node.$core) ||
+                    !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
+                    node.version === version && (node = node.$core) ||
                     !(node.nodeType === 1))) {
                     this.demand = node;
                 }
 
                 if (!(!(node = this.request) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
-                    isArraylike(node) && !(node = node[0]) ||
-                    (node.version === version) && (node = node.$core) ||
+                    !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
+                    node.version === version && (node = node.$core) ||
                     !(node.nodeType === 1))) {
                     this.request = node;
                 }
 
                 if (!(!(node = this.response) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
-                    isArraylike(node) && !(node = node[0]) ||
-                    (node.version === version) && (node = node.$core) ||
+                    !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
+                    node.version === version && (node = node.$core) ||
                     !(node.nodeType === 1))) {
                     this.response = node;
                 }
 
                 if (!(parentNode = this.$$) ||
                     v2.isString(parentNode) && !(parentNode = this.take(parentNode, this.host ? this.host.$ : document)) ||
-                    isArraylike(parentNode) && !(parentNode = parentNode[0]) ||
+                    !(parentNode instanceof Element) && isArraylike(parentNode) && !(parentNode = parentNode[0]) ||
                     !(parentNode.nodeType === 1)) {
 
                     parentNode = this.host ? this.host.$ : document.body;
@@ -2908,7 +3059,7 @@
 
                 if (!(node = this.$) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
-                    isArraylike(node) && !(node = node[0]) ||
+                    !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
                     !(node.nodeType === 1)) {
 
                     return this.$$ = parentNode, this.$ = this.$$.appendChild(node || document.createElement(tagName));
@@ -2948,16 +3099,58 @@
                 v2.error("Components do not support elements whose NodeName is " + node.nodeName.toLowerCase() + ".");
             };
 
-            v2.each(v2.use(this.tag), function (then) {
-                var option = then.always(),
-                    supper = then.then(context);
+            function constructor(option, highest) {
+                var tag, type;
 
-                if (!option || !supper) {
-                    return initControls(option || supper, true);
+                if (!option) return option;
+
+                tag = option.tag;
+
+                if (define && !highest) {
+                    if (core_namespace) {
+                        core_namespace += '.' + tag;
+                    } else {
+                        core_namespace = tag;
+                    }
                 }
-                initControls(option, true);
-                initControls(supper, true, option);
-            });
+
+                type = v2.type(option);
+
+                if (type === "function") {
+
+                    option.call(context);
+
+                    return option.prototype;
+                }
+
+                if (tag && (fn = option[tag] || option[v2.camelCase(tag)]) && v2.isFunction(fn)) {
+                    fn.call(context, option);
+                }
+
+                return option;
+            }
+
+            new ArrayThen()
+                .add(v2.use(this.tag))
+                .map(function (then) {
+                    var option = then.always();
+
+                    return {
+                        always: constructor(option),
+                        option: constructor(then.then(context), option)
+                    };
+                })
+                .each(function (use) {
+                    var always = use.always,
+                        option = use.option;
+
+                    if (!always || !option) {
+                        return initControls(always || option, true);
+                    }
+                    initControls(always, true);
+                    initControls(option, true, always);
+                })
+                .destroy(true);
 
             initControls(this.option);
 
@@ -2980,6 +3173,7 @@
                 if (this.host) {
                     return applyCallback(this.host.like, arguments, this.host);
                 }
+                return false;
             };
 
             v2.each(descriptors, function (map, key) {
@@ -3000,7 +3194,7 @@
                     if (extra && !sleep) {
                         this.lazy(function () {
 
-                            this.switchCase();
+                            this.flow();
 
                             while ((extra = callbacks.shift())) {
                                 extra.call(this);
@@ -3025,7 +3219,7 @@
                         timer = null;
                         context.lazy(function () {
 
-                            this.switchCase();
+                            this.flow();
 
                             while ((extra = callbacks.shift())) {
                                 extra.call(this);
@@ -3036,10 +3230,10 @@
                 return sleep;
             };
 
-            this.switchCase = function (state, falseStop) {
-                var i, value, control, prevValue, _isReady = true;
+            this.flow = function (state, falseStop) {
+                var i, value, control, prevValue, isReady = true;
 
-                if (isReady) return;
+                if (completed) return;
 
                 if (typeof state === "boolean") {
                     falseStop = state;
@@ -3053,16 +3247,16 @@
                 GLOBAL_VARIABLE_CURRENT_CONTROL = this;
 
                 if (v2.isString(state)) {
-                    state = this.enumState[state];
+                    state = this.flowGraph[state];
                 }
 
                 prevValue = state = +state || 0;
 
                 this.readyState = +this.readyState || 0;
 
-                for (i in this.enumState) {
+                for (i in this.flowGraph) {
 
-                    value = +this.enumState[i] || 0;
+                    value = +this.flowGraph[i] || 0;
 
                     if (value <= this.readyState) continue;
 
@@ -3072,13 +3266,6 @@
 
                     if (!this[i]) continue;
 
-                    if (this.access && prevValue < 32 && value <= 32) {
-                        if (falseStop && (this.ajax() === false || this.sleep())) {
-                            _isReady = false;
-                            break;
-                        }
-                    }
-
                     prevValue = value;
 
                     if (value > 8) {
@@ -3087,14 +3274,14 @@
                             computeWildcards(this, 'function');
                         }
 
-                        while (value = watchStack.shift()) {
+                        while ((value = watchStack.shift())) {
                             value();
                         }
 
                         value = prevValue;
                     }
 
-                    value = (value <= 1 || value >= 64) ?
+                    value = value <= 1 || value >= 64 ?
                         this[i]() :
                         value < 4 ?
                             this[i](this.view) :
@@ -3109,20 +3296,21 @@
                                             this[i](this.view, this.data);
 
                     if (falseStop && (value === false || this.sleep())) {
-                        _isReady = false;
+                        isReady = false;
                         break;
                     }
                 }
 
-                if (isReady = _isReady) {
-
+                if ((completed = isReady)) {
                     this.define('visible', function (value) {
-                        if (value) {
-                            this.show();
-                        } else {
-                            this.hide();
+                        if (internalCall) {
+                            if (value) {
+                                this.show();
+                            } else {
+                                this.hide();
+                            }
                         }
-                    }, this.visible == this.defaultVisible);
+                    }, this.visible === this.defaultVisible);
 
                     watchStack = null;
                 }
@@ -3171,10 +3359,11 @@
                 }), this;
 
                 function done(name, attributes) {
-                    var contains = elem && (name in elem),
+                    var contains = elem && name in elem,
                         sourceValue = context[name],
                         conversionType,
-                        typeOnly;
+                        typeOnly,
+                        allowFirstSet = true;
 
                     if (name in excludes) {
                         return v2.log('Attributes cannot be repeatedly defined(' + name + ').', 15);
@@ -3191,8 +3380,15 @@
 
                     if (isFunction || isFunction === undefined && v2.isFunction(attributes)) {
                         attributes = makeDescriptor(sourceValue, attributes, contains && function (value) {
-                            elem[name] = value;
-                        }, null, true);
+                            if (allowFirstSet) {
+                                if (value && !(value === Infinity || value === -Infinity)) {
+                                    elem[name] = value;
+                                }
+                                allowFirstSet = false;
+                            } else {
+                                elem[name] = value;
+                            }
+                        }, null, allowFirstSet);
                     }
 
                     if (attributes === undefined || attributes === null) {
@@ -3209,7 +3405,14 @@
                                 return elem.getAttribute(name);
                             },
                             set: contains ? function (value) {
-                                elem[name] = value;
+                                if (allowFirstSet) {
+                                    if (value && !(value === Infinity || value === -Infinity)) {
+                                        elem[name] = value;
+                                    }
+                                    allowFirstSet = false;
+                                } else {
+                                    elem[name] = value;
+                                }
                             } : conversionType === 'boolean' ? function (value) {
                                 if (value) {
                                     elem.setAttribute(name, name);
@@ -3226,16 +3429,20 @@
 
                     if (defineOnly || typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue) {
                         if (contains && (attributes === true || "set" in attributes || attributes.writable === true)) {
-                            if (isReady) {
-                                elem[name] = sourceValue;
+                            if (completed) {
+                                if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
+                                    elem[name] = sourceValue;
+                                }
                             } else {
                                 watchStack.push(function () {
-                                    elem[name] = sourceValue;
+                                    if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
+                                        elem[name] = sourceValue;
+                                    }
                                 });
                             }
                         }
                     } else if (attributes === true || "set" in attributes || attributes.writable === true) {
-                        if (isReady) {
+                        if (completed) {
                             context[name] = sourceValue;
                         } else {
                             watchStack.push(function () {
@@ -3246,7 +3453,7 @@
                 }
             };
 
-            this.destory = function (deep) {
+            this.destroy = function (deep) {
 
                 v2.each(core_namespace.split('.'), function (name) {
                     if (rtag.test(name))
@@ -3264,11 +3471,33 @@
                 destroyObject(this, deep || arguments.length === 0, excludes);
 
                 context = null;
-                core_namespace = null;
+                core_namespace = classOld= null;
                 variable = wildcards = excludes = controls = callbacks = descriptors = null;
             };
 
-            this.define('isReady', function () { return isReady; });
+            this.define('completed', function () { return completed; });
+
+            this.define("show", function (show) {
+                return function () {
+                    internalCall = false;
+                    try {
+                        return applyCallback(show, arguments, this);
+                    } finally {
+                        internalCall = true;
+                    }
+                };
+            });
+
+            this.define("hide", function (hide) {
+                return function () {
+                    internalCall = false;
+                    try {
+                        return applyCallback(hide, arguments, this);
+                    } finally {
+                        internalCall = true;
+                    }
+                };
+            });
 
             this.define({
                 tag: function () {
@@ -3285,11 +3514,24 @@
                 }
             });
 
-            this.define('class', function (value) {
-                if (value) {
-                    v2.each(value.match(rnotwhite), function (clazz) {
-                        context.$.classList.add(clazz);
-                    });
+            this.define('class', {
+                get: function () {
+                    return this.$.className;
+                },
+                set: function (value) {
+                    if (classOld) {
+                        v2.each(classOld.match(rnotwhite), function (clazz) {
+                            context.$.classList.remove(clazz);
+                        });
+                    }
+
+                    if (value) {
+                        v2.each(value.match(rnotwhite), function (clazz) {
+                            context.$.classList.add(clazz);
+                        });
+                    }
+
+                    classOld = value;
                 }
             });
 
@@ -3302,13 +3544,7 @@
 
             this.define({
                 controls: function () {
-                    return controls || (controls = new V2Controls());
-                },
-                firstChild: function () {
-                    return this.controls.eq(0);
-                },
-                lastChild: function () {
-                    return this.controls.eq(-1);
+                    return controls || (controls = new V2Controls(this));
                 },
                 previousSibling: function () {
                     return this.host && this.host.controls.offset(this, -1);
@@ -3361,7 +3597,7 @@
 
             args = core_slice.call(arguments, i);
 
-            if (!!(stack = stackCache[identity])) {
+            if ((stack = stackCache[identity])) {
                 return stack.pushStack(function () {
                     return applyCallback(fn, args, context, true);
                 });
@@ -3370,7 +3606,7 @@
             return applyCallback(fn, args, context, true);
         },
         when: function (extra, context) {
-            if (v2.isString(extra) && (!context || context.nodeType == 1)) {
+            if (v2.isString(extra) && (!context || context.nodeType === 1)) {
                 return v2.when(this.take(extra, context || this.$, true));
             }
             if (arguments.length > 1) {
@@ -3414,6 +3650,7 @@
         };
     }
 
+    var rcontext = /^\$\+(\[([-a-z]+)\])?/i;
     v2.extend(v2.fn, {
         usb: function (watch) {
             this.define('disabled', function (value) {
@@ -3439,9 +3676,27 @@
         commit: function () {
             if (this.skipOn) return;
 
+            var vm = this;
             v2.each(this.events, function (handle, type) {
-                this.$.on(type, handle);
-            }, this);
+                var context = vm, match = rcontext.exec(type);
+                if (match) {
+                    do {
+                        if (match[2] ? context.like(match[2]) : !context.host) {
+                            break;
+                        }
+                    } while ((context = context.host));
+
+                    if (context === undefined || context === null) {
+                        return v2.error("未找到符合表达式条件的组件项目!");
+                    }
+
+                    type = type.slice(match[0].length);
+                }
+
+                vm.$.on(type, function (e) {
+                    return handle.call(context, e);
+                });
+            });
         },
         invoke: function (fn) {
 
@@ -3489,7 +3744,7 @@
         '&focus': function () {
             try {
                 this.$.focus();
-            } catch (_) { }
+            } catch (_) { /* do something! */ }
         },
         "?toggle": function (toggle) {
             if (arguments.length > 0) {
@@ -3504,13 +3759,13 @@
                     'table' :
                     nodeName === 'tr' ?
                         'table-row' :
-                        (nodeName === 'td' || nodeName === 'th') ?
+                        nodeName === 'td' || nodeName === 'th' ?
                             'table-cell' :
                             rinlineTag.test(nodeName) ?
                                 'inline' :
                                 '';
-
             this.$.styleCb('display', display);
+
             this.visible = true;
         },
         "&hide": function () {
@@ -3520,6 +3775,306 @@
     });
 
     v2.fn.init.prototype = v2.fn;
+
+    v2.use('wait', {
+        wait: function () {
+            this.style = 1;
+        },
+        render: function () {
+            this.$.classList.add('wait-backdrop');
+        },
+        build: function () {
+            this.$wait = this.$.insertAfter(".wait>.shape.shape$*4".htmlCoding().html());
+        },
+        usb: function () {
+            this.base.usb();
+
+            this.define("style", function (style) {
+                this.$wait.className = "wait animation-" + style;
+            });
+        },
+        show: function () {
+            this.base.show();
+            this.$wait.classList.remove('hide');
+        },
+        hide: function () {
+            this.base.hide();
+            this.$wait.classList.add('hide');
+        }
+    });
+
+    window.wait = {
+        __wait_: null,
+        show: function (style) {
+            if (this.__wait_) {
+                this.__wait_.style = style || 2;
+                this.__wait_.show();
+            } else {
+                this.__wait_ = v2("wait", { style: style || 2 });
+            }
+        },
+        hide: function () {
+            if (this.__wait_) {
+                this.__wait_.hide();
+            }
+        }
+    };
+
+    v2.use('button', {
+        button: function () {
+            /** 按钮类型 */
+            this.type = "button";
+            /** 按钮名称 */
+            this.text = '';
+            /** 用于替换按钮的所有子元素 */
+            this.html = '';
+            /** 超小按钮 */
+            this.xs = false;
+            /** 小按钮 */
+            this.sm = false;
+            /** 大按钮 */
+            this.lg = false;
+        },
+        init: function () {
+            this.base.init('button');
+        },
+        render: function () {
+            this.$.classList.add('btn');
+
+            if (this.lg || this.sm || this.xs) {
+                this.$.classList.add(this.lg ? 'btn-lg' : this.sm ? 'btn-sm' : 'btn-xs');
+            }
+
+            if (this.host && this.hostlike('navbar')) {
+                this.$.classList.add('navbar-btn');
+            }
+
+            if (this.type === 'submit') {
+                this.$.classList.add('btn-primary');
+            } else if (this.type === 'reset') {
+                this.$.classList.add('btn-warning');
+            }
+        },
+        usb: function () {
+
+            this.base.usb();
+
+            this.define('type');
+
+            this.define({
+                text: function (text) {
+                    this.$.empty()
+                        .append(document.createTextNode(text));
+                },
+                html: function (html) {
+                    if (html) {
+                        this.$.empty()
+                            .append(html.html());
+                    }
+                }
+            });
+        },
+        commit: function () {
+            var vm = this;
+            this.base.commit();
+            this.$.on("keyup", function (e) {
+                var code = e.keyCode || e.which;
+                if (code === 13 || code === 108) {
+                    vm.invoke("keyboard-enter");
+                }
+            });
+        }
+    });
+
+    v2.use('modal', {
+        modal: function () {
+            /** 显示遮罩层 */
+            this.backdrop = true;
+            /** Esc 关闭 */
+            this.keyboard = true;
+            /** 标题 */
+            this.title = "模态框";
+            /** 显示按钮 */
+            this.showBtn = true;
+            /** 显示确定按钮 */
+            this.showOk = true;
+            /** 显示取消按钮 */
+            this.showCancel = true;
+            /** 显示关闭按钮 */
+            this.showClose = true;
+            /** 按钮组 */
+            this.buttons = [];
+
+            this.xs = false;
+            this.sm = false;
+            this.lg = false;
+        },
+        design: function () {
+            var vm = this;
+            this.defaultVisible = false;
+
+            if (this.showBtn && v2.isEmpty(this.buttons)) {
+
+                this.buttons = [];
+
+                if (this.showCancel) {
+                    this.buttons.push({
+                        text: "取消",
+                        "class": "btn-warning",
+                        events: {
+                            click: function () {
+                                if (vm.invoke('cancel-event') !== false) {
+                                    vm.hide();
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (this.showOk) {
+                    this.buttons.push({
+                        text: "确定",
+                        type: "submit",
+                        events: {
+                            click: function () {
+                                if (vm.invoke('ok-event') !== false) {
+                                    vm.hide();
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        },
+        render: function () {
+            this.$.classList.add('modal', 'fade');
+        },
+        build: function (view) {
+            var vm = this, htmls = ['.modal-dialog'];
+
+            if (this.lg || this.sm || this.xs) {
+                htmls.push(this.lg ? '.modal-lg' : this.sm ? '.modal-sm' : '.modal-xs');
+            }
+
+            htmls.push('>.modal-content>(.modal-header>h5.modal-title{', this.title, '}');
+
+            if (this.showClose) {
+                htmls.push('+button.close[data-dismiss="modal"]>span{&times;}');
+            }
+
+            htmls.push(')+.modal-body');
+
+            if (this.showBtn) {
+                htmls.push('+.modal-footer');
+            }
+
+            var html = htmls.join('');
+
+            this.$modal = this.$.appendChild(html.htmlCoding().html());
+
+            this.$content = this.$modal.firstChild;
+
+            this.$header = this.$content.firstChild;
+
+            this.$body = this.$header.nextSibling;
+
+            if (this.showBtn) {
+                this.$footer = this.$body.nextSibling;
+
+                v2.each(this.buttons, function (button) {
+                    button.$$ = vm.$footer;
+                    vm.create('button', button);
+                });
+            }
+
+            if (this.backdrop) {
+                this.$backdrop = this.$.appendChild('.modal-backdrop.fade'.htmlCoding().html());
+            }
+
+            return (function done(view) {
+                if (view === null || view === undefined)
+                    return;
+
+                var type = v2.type(view);
+
+                switch (type) {
+                    case 'string':
+                        return vm.$body.appendChild(view.html());
+                    case 'array':
+                        return v2.each(view, vm.lazy(true, done));
+                    case 'object':
+                        if (view.nodeType) {
+                            return vm.$body.appendChild(view);
+                        }
+                        if ('tag' in view) {
+                            view.$$ = vm.$body;
+
+                            return vm.lazy(vm.create, view);
+                        }
+                        return v2.each(view, vm.lazy(true, function (option) {
+                            option.$$ = vm.$body;
+                            vm.create(option);
+                        }));
+                    case 'function':
+                        return view.call(vm);
+                    default:
+                        return v2.error('Unsupported exception:View types are not supported.');
+                }
+            })(view);
+        },
+        show: function () {
+            if (this.backdrop) {
+                this.$backdrop.classList.add('in');
+            }
+            document.body.classList.add('modal-open');
+            this.$.classList.add('in');
+            this.visible = true;
+        },
+        hide: function () {
+            this.$.classList.remove('in');
+
+            if (this.backdrop) {
+                this.$backdrop.classList.remove('in');
+            }
+            document.body.classList.remove('modal-open');
+            this.visible = false;
+        },
+        commit: function () {
+            var vm = this;
+            if (this.keyboard) {
+                this.$.on('keyup', function (e) {
+                    var code = e.keyCode || e.which;
+                    if (code === 27) {
+                        vm.hide();
+                    }
+                });
+            }
+
+            if (this.backdrop) {
+                this.$backdrop.on('click', function () {
+                    if (vm.visible) {
+                        vm.hide();
+                    }
+                });
+            }
+
+            if (this.showClose) {
+                this.$header.take('[data-dismiss="modal"]').on('click', function () {
+                    if (vm.invoke('close-event') !== false) {
+                        vm.hide();
+                    }
+                });
+            }
+        }
+    });
+
+    window.alert = function (msg, title) {
+        return v2('modal', {
+            title: title || '温馨提示',
+            showCancel: false,
+            view: msg
+        });
+    };
 
     function noop() { }
 
@@ -3570,7 +4125,7 @@
                         return;
                     }
                     var onchange, callback = xhr.onreadystatechange;
-                    xhr.onreadystatechange = callback ? (onchange = function () {
+                    xhr.onreadystatechange = callback ? onchange = function () {
                         applyCallback(callback, arguments, this);
                         if (xhr_id in xhrCallbacks) {
                             xhrCallbacks[xhr_id]();
@@ -3579,7 +4134,7 @@
                             callback = xhr.onreadystatechange || noop;
                             xhr.onreadystatechange = onchange;
                         }
-                    }) : xhrCallbacks[xhr_id];
+                    } : xhrCallbacks[xhr_id];
                 });
             }
             return data ? xhr_send.call(this, data) : xhr_send.call(this);
@@ -3598,5 +4153,5 @@
         });
     }
 
-    window.v2Kit = window.v2 = v2;
+    window.v2 = v2;
 });

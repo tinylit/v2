@@ -4,8 +4,9 @@
     baseUrl: '/js',
     waitSeconds: 30000,
     paths: {
-        vue: 'lib/vue/vue',
-        axios: 'lib/ajax/axios'
+        v2: '/lib/v2',
+        axios: 'lib/ajax/axios',
+        components: '/lib/components'
     }
 });
 var r = /https?:\/\/[^\/]+\/(.+?)(\.[\w-]+|\?|#|$)/i;

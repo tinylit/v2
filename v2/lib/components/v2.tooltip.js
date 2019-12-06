@@ -12,8 +12,8 @@
                 }
                 return factory(v2kit);
             } :
-            factory(v2kit);
-}(function (v2) {
+            factory(v2);
+}(function (/** @type CN.V2kitStatic */v2) {
     var
         doc = document,
         docEl = doc.documentElement;
@@ -59,43 +59,34 @@
                 }
             }, true);
         },
-        scroll: function (a) {
-            return a = a ? "scrollLeft" : "scrollTop",
-                doc.body[a] | docEl[a];
-        },
-        area: function (a) {
-            return docEl[a ? "clientWidth" : "clientHeight"];
-        },
         show: function () {
             var direction = this.direction.toLowerCase();
-            var vm = this,
+            var x, y, vm = this,
                 elem = this.request || this.host && this.host.$ || document.body,
-                xy = {
-                    top: elem.offsetTop,
-                    right: elem.offsetLeft + elem.offsetWidth,
-                    bottom: elem.offsetTop + elem.offsetHeight,
-                    left: elem.offsetLeft,
-                    width: elem.offsetWidth,
-                    height: elem.offsetHeight
-                };
-
+                xy = elem.getBoundingClientRect(),
+                top = xy.top - docEl.clientTop + docEl.scrollTop,//document.documentElement.clientTop 在IE67中始终为2，其他高级点的浏览器为0
+                bottom = xy.bottom,
+                left = xy.left - docEl.clientLeft + docEl.scrollLeft,//document.documentElement.clientLeft 在IE67中始终为2，其他高级点的浏览器为0
+                right = xy.right,
+                width = xy.width || (right - left), //IE67不存在width 使用right - left获得
+                height = xy.height || (bottom - top);
 
             this.$.classList.add(direction.indexOf('bottom') > -1 ? 'bottom' : direction.indexOf('top') > -1 ? 'top' : direction, 'in');
 
-            var width = this.$.offsetWidth,
-                height = this.$.offsetHeight;
+            var offsetWidth = this.$.offsetWidth,
+                offsetHeight = this.$.offsetHeight;
 
             if (direction === 'auto') {
-                var x = (this.fixed ? this.scroll(1) : 0) + this.area(1),
-                    y = (this.fixed ? this.scroll() : 0) + this.area();
+                x = (this.fixed ? doc.scrollLeft || docEl.scrollLeft : 0) + docEl.clientWidth;
+                y = (this.fixed ? doc.scrollTop || docEl.scrollTop : 0) + docEl.clientHeight;
 
                 this.$.classList.remove(direction);
 
-                if ((xy.bottom + height + 10) < y) {
-                    direction = 'bottom-left';
-                } else if (y > (xy.top - height - 10)) {
-                    direction = 'top-left';
-                } else if ((xy.left - width - 10) > x) {
+                if ((bottom + offsetHeight + 10) < y) {
+                    direction = 'bottom';
+                } else if (y > (top - offsetHeight - 10)) {
+                    direction = 'top';
+                } else if ((left - offsetWidth - 10) > x) {
                     direction = 'left';
                 } else {
                     direction = "right";
@@ -103,8 +94,8 @@
 
                 this.$.classList.add(direction.indexOf('bottom') > -1 ? 'bottom' : direction.indexOf('top') > -1 ? 'top' : direction);
 
-                width = this.$.offsetWidth;
-                height = this.$.offsetHeight
+                offsetWidth = this.$.offsetWidth;
+                offsetHeight = this.$.offsetHeight
             }
 
             if (this.duration > 0) {
@@ -116,30 +107,30 @@
             switch (direction) {
                 case 'top':
                     return this.$.styleCb({
-                        left: xy.left + (xy.width - width) / 2,
-                        top: xy.top - height
+                        left: left + (width - offsetWidth) / 2,
+                        top: top - offsetHeight
                     });
                 case 'top-left':
                     return this.$.styleCb({
-                        left: xy.left,
-                        top: xy.top - height
+                        left: left,
+                        top: top - offsetHeight
                     });
                 case 'top-right':
                     return this.$.styleCb({
-                        left: xy.right,
-                        top: xy.top - height
+                        left: right,
+                        top: top - offsetHeight
                     });
                 case 'right':
 
                     var result = this.$.styleCb({
-                        left: xy.right,
-                        top: xy.top + (xy.height - height) / 2
+                        left: right,
+                        top: top + (height - offsetHeight) / 2
                     });
 
-                    if (this.$.offsetHeight > height) {
+                    if (this.$.offsetHeight > offsetHeight) {
                         return this.$.styleCb({
-                            left: xy.right,
-                            top: xy.top + (xy.height - this.$.offsetHeight) / 2
+                            left: right,
+                            top: top + (height - this.$.offsetHeight) / 2
                         });
                     }
 
@@ -147,24 +138,24 @@
 
                 case 'bottom':
                     return this.$.styleCb({
-                        left: xy.left + (xy.width - width) / 2,
-                        top: xy.bottom
+                        left: left + (width - offsetWidth) / 2,
+                        top: bottom
                     });
                 case 'bottom-right':
                     return this.$.styleCb({
-                        left: xy.right,
-                        top: xy.bottom
+                        left: right,
+                        top: bottom
                     });
                 case 'left':
                     return this.$.styleCb({
-                        left: xy.left - width,
-                        top: xy.top + (xy.height - height) / 2
+                        left: left - offsetWidth,
+                        top: top + (height - offsetHeight) / 2
                     });
                 case 'bottom-left':
                 default:
                     return this.$.styleCb({
-                        left: xy.left,
-                        top: xy.bottom
+                        left: left,
+                        top: bottom
                     });
             }
         },

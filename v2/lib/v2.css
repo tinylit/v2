@@ -1,11 +1,5 @@
 ﻿@import 'bootstrap-3.3.7/css/bootstrap.min.css';
 
-body {
-    font-size: 62.5%;
-    font-weight: 400;
-    line-height: 1.5;
-}
-
 .ignore {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -92,34 +86,34 @@ input[type=checkbox] {
     input[type=radio]::after,
     input[type=checkbox]::after {
         z-index: 11;
-        top: .325em;
-        right: .325em;
-        bottom: .325em;
-        left: .325em;
+        top: 2px;
+        right: 2px;
+        bottom: 2px;
+        left: 2px;
         background-color: transparent;
     }
 
     input[type=radio]::before,
     input[type=checkbox]::before {
-        border: .085em solid #c1caca;
-        border-radius: .2em;
-        -webkit-box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
-        box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+        border: 1px solid #c1caca;
+        border-radius: 4px;
+        -webkit-box-shadow: inset 0 2.5px 0.5px rgba(142, 142, 142, .25);
+        box-shadow: inset 0 2.5px 0.5px rgba(142, 142, 142, .25);
     }
 
     input[type=radio]::before,
     input[type=checkbox]::before {
-        border: .085em solid #c1caca;
-        border-radius: .2em;
-        -webkit-box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
-        box-shadow: inset 0 .125em .025em rgba(142, 142, 142, .25);
+        border: 1px solid #c1caca;
+        border-radius: 4px;
+        -webkit-box-shadow: inset 0 2.5px 0.5px rgba(142, 142, 142, .25);
+        box-shadow: inset 0 2.5px 0.5px rgba(142, 142, 142, .25);
     }
 
     input[type=radio]:checked::before,
     input[type=checkbox]:checked::before {
-        border: .085em solid rgb(255, 126, 80);
-        -webkit-box-shadow: inset 0 .125em .025em rgba(249, 136, 95, .25);
-        box-shadow: inset 0 .125em .025em rgba(249, 136, 95, .25);
+        border: 1px solid rgb(255, 126, 80);
+        -webkit-box-shadow: inset 0 2.5px 0.5px rgba(249, 136, 95, .25);
+        box-shadow: inset 0 2.5px 0.5px rgba(249, 136, 95, .25);
     }
 
     input[type=radio]::after,
@@ -130,32 +124,6 @@ input[type=checkbox] {
     input[type=radio]:checked::after,
     input[type=checkbox]:checked::after {
         background-color: rgb(255, 126, 80);
-    }
-
-.radio label,
-.checkbox label,
-.radio-inline label,
-.checkbox-inline label {
-    padding-left: 0;
-}
-
-.radio-inline,
-.checkbox-inline {
-    padding-left: 0;
-}
-
-    .radio-inline + .checkbox-inline,
-    .checkbox-inline + .radio-inline {
-        margin-top: 0;
-        margin-left: 10px;
-    }
-
-    .checkbox input[type=checkbox],
-    .checkbox-inline input[type=checkbox],
-    .radio input[type=radio],
-    .radio-inline input[type=radio] {
-        position: relative;
-        margin-left: 0;
     }
 /** -------------------------------------------------------------- date-picker -------------------------------------------------------------- */
 input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
@@ -210,63 +178,6 @@ input::-webkit-datetime-edit-millisecond-field {
     font-size: 75%;
 }
 
-input::-webkit-datetime-edit-ampm-field:focus {
-}
-
-input::-webkit-datetime-edit-day-field:focus {
-}
-
-input::-webkit-datetime-edit-hour-field:focus {
-}
-
-input::-webkit-datetime-edit-millisecond-field:focus {
-}
-
-input::-webkit-datetime-edit-minute-field:focus {
-}
-
-input::-webkit-datetime-edit-month-field:focus {
-}
-
-input::-webkit-datetime-edit-second-field:focus {
-}
-
-input::-webkit-datetime-edit-week-field:focus {
-}
-
-input::-webkit-datetime-edit-year-field:focus {
-}
-
-input::-webkit-datetime-edit-year-field[disabled] {
-}
-
-input::-webkit-datetime-edit-month-field[disabled] {
-}
-
-input::-webkit-datetime-edit-week-field[disabled] {
-}
-
-input::-webkit-datetime-edit-day-field[disabled] {
-}
-
-input::-webkit-datetime-edit-ampm-field[disabled] {
-}
-
-input::-webkit-datetime-edit-hour-field[disabled] {
-}
-
-input::-webkit-datetime-edit-millisecond-field[disabled] {
-}
-
-input::-webkit-datetime-edit-minute-field[disabled] {
-}
-
-input::-webkit-datetime-edit-second-field[disabled] {
-}
-
-input::-webkit-datetime-edit-text {
-}
-
 input::-webkit-inner-spin-button {
     visibility: hidden;
 }
@@ -290,7 +201,7 @@ input::-webkit-clear-button {
         left: 0;
         right: 0;
         margin: auto;
-        z-index: 1000;
+        z-index: 1050;
         background-color: #fff;
         border: 1px solid #efefef;
         box-shadow: 2px 2px 15px 2px #e3e3e3;
@@ -499,3 +410,1065 @@ input::-webkit-clear-button {
             width: 10%;
         }
 /** -------------------------------------------------------------- date-picker -------------------------------------------------------------- */
+
+
+/** ----------------------------------------------------------------- form -------------------------------------------------------------------*/
+
+.form-inline .control-label {
+    min-width: 60px;
+    padding-right: 8px;
+    text-align: right;
+}
+
+.form-inline .form-group {
+    margin-bottom: 5px;
+}
+
+.checkbox-inline {
+    padding-top: 5px;
+}
+
+    .radio label,
+    .checkbox label,
+    .radio-inline label,
+    .checkbox-inline label {
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+
+        .radio label > span,
+        .checkbox label > span,
+        .radio-inline label > span,
+        .checkbox-inline label > span {
+            padding-left: 5px;
+            padding-right: 5px;
+            vertical-align: text-bottom;
+        }
+
+.radio-inline,
+.checkbox-inline {
+    padding-left: 0;
+}
+
+    .radio-inline + .checkbox-inline,
+    .checkbox-inline + .radio-inline {
+        margin-top: 0;
+        margin-left: 10px;
+    }
+
+    .checkbox input[type=checkbox],
+    .checkbox-inline input[type=checkbox],
+    .radio input[type=radio],
+    .radio-inline input[type=radio] {
+        position: relative;
+        margin-left: 0;
+    }
+
+
+/** ----------------------------------------------------------------- form -------------------------------------------------------------------*/
+
+
+/** ----------------------------------------------------------------- wait -------------------------------------------------------------------*/
+
+.wait,
+.wait-backdrop {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1040;
+}
+
+.wait-backdrop {
+    background-color: #f5f5f5;
+    filter: alpha(opacity=25);
+    opacity: .25;
+}
+
+.wait {
+    width: 30px;
+    height: 30px;
+    margin: auto;
+}
+
+    .wait.animation-1 {
+        -webkit-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+
+    .wait.animation-2, .wait.animation-4 {
+        -webkit-transform: rotate(10deg);
+        transform: rotate(10deg);
+    }
+
+        .wait.animation-2 .shape, .wait.animation-4 .shape {
+            border-radius: 5px;
+        }
+
+    .wait.animation-2, .wait.animation-3, .wait.animation-4 {
+        -webkit-animation: rotation 1s infinite;
+        animation: rotation 1s infinite;
+    }
+
+        .wait.animation-3 .shape1 {
+            border-top-left-radius: 10px;
+        }
+
+        .wait.animation-3 .shape2 {
+            border-top-right-radius: 10px;
+        }
+
+        .wait.animation-3 .shape3 {
+            border-bottom-left-radius: 10px;
+        }
+
+        .wait.animation-3 .shape4 {
+            border-bottom-right-radius: 10px;
+        }
+
+    .wait.animation-4, .wait.animation-5 {
+        -webkit-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+
+        .wait.animation-5 .shape {
+            width: 15px;
+            height: 15px;
+        }
+
+    .wait.animation-6 {
+        -webkit-animation: rotation 1s infinite;
+        animation: rotation 1s infinite;
+    }
+
+        .wait.animation-6 .shape {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+    .wait .shape {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 1px;
+    }
+
+        .wait .shape.shape1 {
+            left: 0;
+            background-color: #5C6BC0;
+        }
+
+        .wait .shape.shape2 {
+            right: 0;
+            background-color: #8BC34A;
+        }
+
+        .wait .shape.shape3 {
+            bottom: 0;
+            background-color: #FFB74D;
+        }
+
+        .wait .shape.shape4 {
+            bottom: 0;
+            right: 0;
+            background-color: #F44336;
+        }
+
+@-webkit-keyframes rotation {
+    from {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    to {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotation {
+    from {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    to {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+.animation-1 .shape1 {
+    -webkit-animation: animation1shape1 0.5s ease 0s infinite alternate;
+    animation: animation1shape1 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation1shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(16px, 16px);
+        transform: translate(16px, 16px);
+    }
+}
+
+@keyframes animation1shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(16px, 16px);
+        transform: translate(16px, 16px);
+    }
+}
+
+.animation-1 .shape2 {
+    -webkit-animation: animation1shape2 0.5s ease 0s infinite alternate;
+    animation: animation1shape2 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation1shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-16px, 16px);
+        transform: translate(-16px, 16px);
+    }
+}
+
+@keyframes animation1shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-16px, 16px);
+        transform: translate(-16px, 16px);
+    }
+}
+
+.animation-1 .shape3 {
+    -webkit-animation: animation1shape3 0.5s ease 0s infinite alternate;
+    animation: animation1shape3 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation1shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(16px, -16px);
+        transform: translate(16px, -16px);
+    }
+}
+
+@keyframes animation1shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(16px, -16px);
+        transform: translate(16px, -16px);
+    }
+}
+
+.animation-1 .shape4 {
+    -webkit-animation: animation1shape4 0.5s ease 0s infinite alternate;
+    animation: animation1shape4 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation1shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-16px, -16px);
+        transform: translate(-16px, -16px);
+    }
+}
+
+@keyframes animation1shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-16px, -16px);
+        transform: translate(-16px, -16px);
+    }
+}
+
+.animation-2 .shape1 {
+    -webkit-animation: animation2shape1 0.5s ease 0s infinite alternate;
+    animation: animation2shape1 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation2shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(20px, 20px);
+        transform: translate(20px, 20px);
+    }
+}
+
+@keyframes animation2shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(20px, 20px);
+        transform: translate(20px, 20px);
+    }
+}
+
+.animation-2 .shape2 {
+    -webkit-animation: animation2shape2 0.5s ease 0s infinite alternate;
+    animation: animation2shape2 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation2shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-20px, 20px);
+        transform: translate(-20px, 20px);
+    }
+}
+
+@keyframes animation2shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-20px, 20px);
+        transform: translate(-20px, 20px);
+    }
+}
+
+.animation-2 .shape3 {
+    -webkit-animation: animation2shape3 0.5s ease 0s infinite alternate;
+    animation: animation2shape3 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation2shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(20px, -20px);
+        transform: translate(20px, -20px);
+    }
+}
+
+@keyframes animation2shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(20px, -20px);
+        transform: translate(20px, -20px);
+    }
+}
+
+.animation-2 .shape4 {
+    -webkit-animation: animation2shape4 0.5s ease 0s infinite alternate;
+    animation: animation2shape4 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation2shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-20px, -20px);
+        transform: translate(-20px, -20px);
+    }
+}
+
+@keyframes animation2shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-20px, -20px);
+        transform: translate(-20px, -20px);
+    }
+}
+
+.animation-3 .shape1 {
+    -webkit-animation: animation3shape1 0.5s ease 0s infinite alternate;
+    animation: animation3shape1 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation3shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, 5px);
+        transform: translate(5px, 5px);
+    }
+}
+
+@keyframes animation3shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, 5px);
+        transform: translate(5px, 5px);
+    }
+}
+
+.animation-3 .shape2 {
+    -webkit-animation: animation3shape2 0.5s ease 0s infinite alternate;
+    animation: animation3shape2 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation3shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, 5px);
+        transform: translate(-5px, 5px);
+    }
+}
+
+@keyframes animation3shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, 5px);
+        transform: translate(-5px, 5px);
+    }
+}
+
+.animation-3 .shape3 {
+    -webkit-animation: animation3shape3 0.5s ease 0s infinite alternate;
+    animation: animation3shape3 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation3shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, -5px);
+        transform: translate(5px, -5px);
+    }
+}
+
+@keyframes animation3shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, -5px);
+        transform: translate(5px, -5px);
+    }
+}
+
+.animation-3 .shape4 {
+    -webkit-animation: animation3shape4 0.5s ease 0s infinite alternate;
+    animation: animation3shape4 0.5s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation3shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, -5px);
+        transform: translate(-5px, -5px);
+    }
+}
+
+@keyframes animation3shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, -5px);
+        transform: translate(-5px, -5px);
+    }
+}
+
+.animation-4 .shape1 {
+    -webkit-animation: animation4shape1 0.3s ease 0s infinite alternate;
+    animation: animation4shape1 0.3s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation4shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, 5px);
+        transform: translate(5px, 5px);
+    }
+}
+
+@keyframes animation4shape1 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, 5px);
+        transform: translate(5px, 5px);
+    }
+}
+
+.animation-4 .shape2 {
+    -webkit-animation: animation4shape2 0.3s ease 0.3s infinite alternate;
+    animation: animation4shape2 0.3s ease 0.3s infinite alternate;
+}
+
+@-webkit-keyframes animation4shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, 5px);
+        transform: translate(-5px, 5px);
+    }
+}
+
+@keyframes animation4shape2 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, 5px);
+        transform: translate(-5px, 5px);
+    }
+}
+
+.animation-4 .shape3 {
+    -webkit-animation: animation4shape3 0.3s ease 0.3s infinite alternate;
+    animation: animation4shape3 0.3s ease 0.3s infinite alternate;
+}
+
+@-webkit-keyframes animation4shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, -5px);
+        transform: translate(5px, -5px);
+    }
+}
+
+@keyframes animation4shape3 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(5px, -5px);
+        transform: translate(5px, -5px);
+    }
+}
+
+.animation-4 .shape4 {
+    -webkit-animation: animation4shape4 0.3s ease 0s infinite alternate;
+    animation: animation4shape4 0.3s ease 0s infinite alternate;
+}
+
+@-webkit-keyframes animation4shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, -5px);
+        transform: translate(-5px, -5px);
+    }
+}
+
+@keyframes animation4shape4 {
+    from {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    to {
+        -webkit-transform: translate(-5px, -5px);
+        transform: translate(-5px, -5px);
+    }
+}
+
+.animation-5 .shape1 {
+    animation: animation5shape1 2s ease 0s infinite reverse;
+}
+
+@-webkit-keyframes animation5shape1 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, 15px);
+        transform: translate(0, 15px);
+    }
+
+    50% {
+        -webkit-transform: translate(15px, 15px);
+        transform: translate(15px, 15px);
+    }
+
+    75% {
+        -webkit-transform: translate(15px, 0);
+        transform: translate(15px, 0);
+    }
+}
+
+@keyframes animation5shape1 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, 15px);
+        transform: translate(0, 15px);
+    }
+
+    50% {
+        -webkit-transform: translate(15px, 15px);
+        transform: translate(15px, 15px);
+    }
+
+    75% {
+        -webkit-transform: translate(15px, 0);
+        transform: translate(15px, 0);
+    }
+}
+
+.animation-5 .shape2 {
+    animation: animation5shape2 2s ease 0s infinite reverse;
+}
+
+@-webkit-keyframes animation5shape2 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(-15px, 0);
+        transform: translate(-15px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(-15px, 15px);
+        transform: translate(-15px, 15px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, 15px);
+        transform: translate(0, 15px);
+    }
+}
+
+@keyframes animation5shape2 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(-15px, 0);
+        transform: translate(-15px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(-15px, 15px);
+        transform: translate(-15px, 15px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, 15px);
+        transform: translate(0, 15px);
+    }
+}
+
+.animation-5 .shape3 {
+    animation: animation5shape3 2s ease 0s infinite reverse;
+}
+
+@-webkit-keyframes animation5shape3 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(15px, 0);
+        transform: translate(15px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(15px, -15px);
+        transform: translate(15px, -15px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, -15px);
+        transform: translate(0, -15px);
+    }
+}
+
+@keyframes animation5shape3 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(15px, 0);
+        transform: translate(15px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(15px, -15px);
+        transform: translate(15px, -15px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, -15px);
+        transform: translate(0, -15px);
+    }
+}
+
+.animation-5 .shape4 {
+    animation: animation5shape4 2s ease 0s infinite reverse;
+}
+
+@-webkit-keyframes animation5shape4 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, -15px);
+        transform: translate(0, -15px);
+    }
+
+    50% {
+        -webkit-transform: translate(-15px, -15px);
+        transform: translate(-15px, -15px);
+    }
+
+    75% {
+        -webkit-transform: translate(-15px, 0);
+        transform: translate(-15px, 0);
+    }
+}
+
+@keyframes animation5shape4 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, -15px);
+        transform: translate(0, -15px);
+    }
+
+    50% {
+        -webkit-transform: translate(-15px, -15px);
+        transform: translate(-15px, -15px);
+    }
+
+    75% {
+        -webkit-transform: translate(-15px, 0);
+        transform: translate(-15px, 0);
+    }
+}
+
+.animation-6 .shape1 {
+    -webkit-animation: animation6shape1 2s linear 0s infinite normal;
+    animation: animation6shape1 2s linear 0s infinite normal;
+}
+
+@-webkit-keyframes animation6shape1 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, 18px);
+        transform: translate(0, 18px);
+    }
+
+    50% {
+        -webkit-transform: translate(18px, 18px);
+        transform: translate(18px, 18px);
+    }
+
+    75% {
+        -webkit-transform: translate(18px, 0);
+        transform: translate(18px, 0);
+    }
+}
+
+@keyframes animation6shape1 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, 18px);
+        transform: translate(0, 18px);
+    }
+
+    50% {
+        -webkit-transform: translate(18px, 18px);
+        transform: translate(18px, 18px);
+    }
+
+    75% {
+        -webkit-transform: translate(18px, 0);
+        transform: translate(18px, 0);
+    }
+}
+
+.animation-6 .shape2 {
+    -webkit-animation: animation6shape2 2s linear 0s infinite normal;
+    animation: animation6shape2 2s linear 0s infinite normal;
+}
+
+@-webkit-keyframes animation6shape2 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(-18px, 0);
+        transform: translate(-18px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(-18px, 18px);
+        transform: translate(-18px, 18px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, 18px);
+        transform: translate(0, 18px);
+    }
+}
+
+@keyframes animation6shape2 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(-18px, 0);
+        transform: translate(-18px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(-18px, 18px);
+        transform: translate(-18px, 18px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, 18px);
+        transform: translate(0, 18px);
+    }
+}
+
+.animation-6 .shape3 {
+    -webkit-animation: animation6shape3 2s linear 0s infinite normal;
+    animation: animation6shape3 2s linear 0s infinite normal;
+}
+
+@-webkit-keyframes animation6shape3 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(18px, 0);
+        transform: translate(18px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(18px, -18px);
+        transform: translate(18px, -18px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, -18px);
+        transform: translate(0, -18px);
+    }
+}
+
+@keyframes animation6shape3 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(18px, 0);
+        transform: translate(18px, 0);
+    }
+
+    50% {
+        -webkit-transform: translate(18px, -18px);
+        transform: translate(18px, -18px);
+    }
+
+    75% {
+        -webkit-transform: translate(0, -18px);
+        transform: translate(0, -18px);
+    }
+}
+
+.animation-6 .shape4 {
+    -webkit-animation: animation6shape4 2s linear 0s infinite normal;
+    animation: animation6shape4 2s linear 0s infinite normal;
+}
+
+@-webkit-keyframes animation6shape4 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, -18px);
+        transform: translate(0, -18px);
+    }
+
+    50% {
+        -webkit-transform: translate(-18px, -18px);
+        transform: translate(-18px, -18px);
+    }
+
+    75% {
+        -webkit-transform: translate(-18px, 0);
+        transform: translate(-18px, 0);
+    }
+}
+
+@keyframes animation6shape4 {
+    0% {
+        -webkit-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        -webkit-transform: translate(0, -18px);
+        transform: translate(0, -18px);
+    }
+
+    50% {
+        -webkit-transform: translate(-18px, -18px);
+        transform: translate(-18px, -18px);
+    }
+
+    75% {
+        -webkit-transform: translate(-18px, 0);
+        transform: translate(-18px, 0);
+    }
+}
+/** ----------------------------------------------------------------- wait -------------------------------------------------------------------*/
+
+/** ----------------------------------------------------------------- form -------------------------------------------------------------------*/
+textarea.form-control {
+    max-width: 100%;
+}
+/** ----------------------------------------------------------------- form -------------------------------------------------------------------*/
+
+/** ----------------------------------------------------------------- Modal ------------------------------------------------------------------*/
+.modal.fade {
+    display: block;
+}
+
+.modal-dialog {
+    z-index: 1045;
+}
+
+.modal-title {
+    float: left;
+}
+/** ----------------------------------------------------------------- Modal ------------------------------------------------------------------*/

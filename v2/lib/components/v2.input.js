@@ -14,7 +14,7 @@
                 return factory(v2kit);
             } :
             factory(v2kit);
-}(function (v2) {
+}(function (/** @type CN.V2kitStatic */v2) {
 
     var matchExpr = {
         number: /^[+-]?(0|[1-9][0-9]*)(?:\.([0-9]+))?$/,
@@ -26,7 +26,9 @@
     var patternCache = v2.makeCache(function (pattern) {
         try {
             return new RegExp(pattern);
-        } catch (_) { }
+        } catch (_) {
+            return null;
+        }
     });
 
     function ValidityState() {
@@ -61,9 +63,9 @@
     function validity(vm) {
         var validity, validationMessage;
 
-        this.define('name pattern min max minlength maxlength required readonly');
+        vm.define('id name pattern min max minlength maxlength required readonly');
 
-        if (vm.$core.validity == null) {
+        if (vm.$core.validity === null || vm.$core.validity === undefined) {
 
             validationMessage = "";
             validity = new ValidityState();
@@ -86,12 +88,12 @@
 
                             validity.patternMismatch = true;
 
-                            if ((pattern = pattern.exec(value))) {
+                            if ((pattern = pattern.exec(value)) && (pattern = pattern[0])) {
                                 validity.patternMismatch = pattern.length < value.length;
                             }
                         }
                     }
-                    validity.valueMissing = validity.required && !value;
+                    validity.valueMissing = this.required && !value;
                     validity.valid = !(validity.valueMissing || validity.typeMismatch || validity.badInput || validity.patternMismatch || validity.rangeOverflow || validity.rangeUnderflow || validity.tooLong || validity.tooShort);
                     return validity;
                 },
@@ -138,14 +140,16 @@
                     if (validity.tooLong) {
                         return "值必须小于或等于{0}个字符。".format(this.maxlength);
                     }
+
+                    return "";
                 }
             });
 
-            /** 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。 */
+            // 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。
             vm.setCustomValidity = function (message) {
                 validationMessage = message;
             };
-            /** 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。 */
+            // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
                 return this.validity.valid;
             };
@@ -158,11 +162,11 @@
                     return this.$core.validationMessage;
                 }
             });
-            /** 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。 */
+            // 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。
             vm.setCustomValidity = function (message) {
                 this.$core.setCustomValidity(message);
             };
-            /** 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。 */
+            // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
                 return this.$core.checkValidity();
             };
@@ -185,6 +189,7 @@
                     tooltip.show();
                 } else {
                     tooltip = this.create('tooltip', {
+                        $$: document.body,
                         request: this.$core,
                         duration: 2000,
                         content: this.validationMessage
@@ -196,11 +201,24 @@
         }
     }
 
+    var supportHtml5 = true;
+
+    var input = document.createElement('input');
+
+    try {
+        input.type = "datetime";
+        input.type = "datetime-local";
+    } catch (e) {
+        supportHtml5 = false;
+    } finally {
+        input = null;
+    }
+
     /** 所有类型 */
     v2.use('input', {
         components: {
             'tooltip.async': function (callback) {
-                require(['components/v2.date-tooltip'], callback);
+                require(['components/v2.tooltip'], callback);
             }
         },
         input: function () {
@@ -229,6 +247,9 @@
             /** 返回/设置元素的多个属性，指示是否可能有多个值(例如，多个文件)。 */
             this.multiple = false;
 
+            /** ID */
+            this.id = "";
+
             /** 名称 */
             this.name = "";
 
@@ -247,18 +268,12 @@
             this.sm = false;
             /** 大输入框 */
             this.lg = false;
-
-            /** 指示元素是否为约束验证的候选项。如果有条件阻止约束验证，则为false。 */
-            this.willValidate = "";
-
-            /** 返回一个本地化消息，该消息描述控件不满足的验证约束(如果有的话)。如果控件不是约束验证的候选项(willvalidate为false)，或者它满足约束，则该字符串为空。 */
-            this.validationMessage = "";
         },
         design: function () {
             this.defaultValue = this.value;
         },
-        init: function () {
-            this.base.init(this.multiple ? 'textarea' : 'input');
+        init: function (tag) {
+            this.base.init(tag || 'input');
         },
         render: function () {
             this.$.classList.add('form-control');
@@ -273,7 +288,9 @@
         usb: function () {
             this.base.usb();
 
-            this.define('type multiple placeholder');
+            if (this.tag === 'input') {
+                this.define('type multiple placeholder');
+            }
 
             this.define('autocomplete', {
                 get: function () {
@@ -327,16 +344,18 @@
     v2.use('input', 'type === "checkbox" || type === "radio"', {
         components: {
             'tooltip.async': function (callback) {
-                require(['components/v2.date-tooltip'], callback);
+                require(['components/v2.tooltip'], callback);
             }
         },
         input: function () {
-
-            /** 对选项描述 */
-            this.text = "";
+            /** ID */
+            this.id = "";
 
             /** 名称 */
             this.name = "";
+
+            /** 对选项描述 */
+            this.description = "";
 
             /** 按钮类型 */
             this.type = "redio";//[redio|checkbox]
@@ -378,7 +397,6 @@
             }
         },
         usb: function () {
-
             this.base.usb();
 
             this.define('type placeholder');
@@ -387,7 +405,7 @@
                 this.invoke('checked-change', this.$core.checked = checked);
             }, true);
 
-            this.define('text', function (text) {
+            this.define('description', function (text) {
                 this.$txt.empty()
                     .append(text);
             });
@@ -396,10 +414,12 @@
         }
     });
 
+    var datePikers = [];
+
     v2.use('input', 'type === "time" || type === "date" || type === "datetime" || type === "datetime-local"', {
         components: {
             'tooltip.async': function (callback) {
-                require(['components/v2.date-tooltip'], callback);
+                require(['components/v2.tooltip'], callback);
             },
             'date-picker.async': function (callback) {
                 require(['components/v2.date-picker'], callback);
@@ -429,6 +449,7 @@
                         break;
                 }
             }
+            this.defaultValue = this.value;
             this.isGrouplike = this.hostlike(function (vm) {
                 return vm.tag === 'input' && vm.type === 'group';
             });
@@ -442,12 +463,11 @@
         },
         build: function () {
             if (this.showIcon) {
-                var html = '.input-group-btn>button.btn.btn-default>i.glyphicon.glyphicon-calendar';
+                var html = '.input-group-btn>button.btn.btn-default[type="button"]>i.glyphicon.glyphicon-calendar';
 
                 if (this.isGrouplike) {
                     this.$icon = this.$.insertBefore(html.htmlCoding().html(), this.$.nextElementSibling);
                 } else {
-
                     html = 'input.form-control+' + html;
 
                     this.$.appendChild(html.htmlCoding().html());
@@ -474,43 +494,186 @@
             }
         },
         usb: function () {
+            var type = this.type;
 
             this.base.usb();
 
-            this.define('type placeholder');
+            if (supportHtml5) {
+                this.define('type');
+            } else {
+                this.define('type', {
+                    get: function () { return type; },
+                    set: function (value) { type = value; }
+                });
+            }
 
-            this.define('autocomplete', {
-                get: function () {
-                    return this.$core.autocomplete.toLowerCase() === 'on';
-                },
-                set: function (value) {
-                    this.$core.autocomplete = value ? 'on' : 'off';
-                }
-            });
+            this.define('placeholder')
+                .define('autocomplete', {
+                    get: function () {
+                        return this.$core.autocomplete.toLowerCase() === 'on';
+                    },
+                    set: function (value) {
+                        this.$core.autocomplete = value ? 'on' : 'off';
+                    }
+                });
 
             this.define('value', function (value) {
+                if (value) {
+                    value = v2.date.format(value, this.format);
+                }
+
                 this.invoke('input-change', this.$core.value = value);
+
+                return value;
             }, true);
 
             validity(this);
         },
         ready: function () {
-            var option = {
-                $$: document.body,
-                visible: false,
-                format: this.format
-            };
+            var vm = this, demand = this.$core;
 
             if (this.showIcon) {
-                option.demand = this.$icon;
+                demand = this.$icon;
             }
 
-            this.create('date-picker', option);
+            demand.on('stop.click', function () {
+                v2.GDir('date-picker').done(function (vm) {
+                    vm.hide();
+                });
+                /** @type CN.V2Control */
+                var picker, i = 0;
+                while ((picker = datePikers[i++])) {
+                    if (picker.format === vm.format) {
+                        picker.demand = demand;
+                        picker.min = vm.invoke("date-min");
+                        picker.max = vm.invoke("date-max");
+                        picker.host = vm;
+                        picker.show();
+                        return false;
+                    }
+                }
+                datePikers.push(vm.create('date-picker', {
+                    $$: document.body,
+                    visible: true,
+                    defaultVisible: false,
+                    autoClose: true,
+                    autoDemand: false,
+                    format: vm.format,
+                    min: vm.invoke("date-min"),
+                    max: vm.invoke("date-max"),
+                    hide: function () {
+                        this.base.hide();
+                    }
+                }));
+            });
         }
     });
 
-    v2.use('input', 'type === "select"', {
+    v2.use('input', 'type === "group"', {
         input: function () {
+            this.value = '';
+        },
+        init: function () {
+            this.base.init();
+        },
+        build: function (view) {
+            if ('previous' in view || 'nexts' in view) {
+                return done(this, view.previous), done(this, view), done(this, view.nexts);
+            }
+
+            return done(this, view);
+
+            function done(context) {
+                var type;
+
+                if (view === null || view === undefined)
+                    return;
+
+                type = v2.type(view);
+
+                switch (type) {
+                    case 'string':
+                        return context.$.appendChild('span.input-group-addon'.htmlCoding().html())
+                            .appendChild(view.html());
+                    case 'array':
+                        return v2.each(view, context.lazy(true, context.build));
+                    case 'object':
+                        if (view.nodeType) {
+                            return context.$.appendChild('span.input-group-addon'.htmlCoding().html().appendChild(view));
+                        }
+
+                        view.name = view.name || context.name;
+
+                        if ('tag' in view) {
+                            if (view.tag === 'button' || view.tag === 'input' && (view.type === 'button' || view.type === 'reset' || view.type === 'submit')) {
+                                view.$$ = context.$.appendChild('span.input-group-btn'.htmlCoding().html());
+                            } else {
+                                view.$$ = context.$.appendChild('span.input-group-addon'.htmlCoding().html());
+                            }
+                            return context.lazy(context.create, view);
+                        }
+                        return context.create('input', view);
+                    case 'function':
+                        return view.call(context);
+                    default:
+                        return v2.error('Unsupported exception:View types are not supported.');
+                }
+            }
+        },
+        render: function () {
+            this.$.classList.add('input-group');
+        },
+        usb: function () {
+            this.base.usb();
+
+            this.define('value', function (value) {
+                v2.when(this.controls)
+                    .when(function (vm) { return vm.like('input', 'select'); })
+                    .done(function (vm) {
+                        if (vm.type === 'radio' || control.type === 'checkbox') {
+                            vm.checked = vm.value === value;
+                        } else {
+                            vm.value = value;
+                        }
+                    })
+                    .destroy(true);
+            });
+        },
+        reportValidity: function () {
+            return v2.all(this.controls, function (vm) {
+                if (vm.like('input')) {
+                    return vm.reportValidity();
+                }
+                return true;
+            });
+        }
+    });
+
+    v2.use('input.textarea', {
+        textarea: function () {
+            /** 显示几行 */
+            this.rows = 0;
+            /** 显示几列 */
+            this.cols = 0;
+        },
+        init: function () {
+            this.base.init('textarea');
+        },
+        usb: function () {
+            this.base.usb();
+            this.define('rows cols placeholder');
+        }
+    });
+
+    v2.use('select', {
+        select: function () {
+
+            /** ID */
+            this.id = "";
+
+            /** 名称 */
+            this.name = "";
+
             /** 多选 */
             this.multiple = false;
 
@@ -521,29 +684,46 @@
             this.value = '';
 
             /** 选中 */
-            this.selectedIndex = 0;
+            this.selectedIndex = -1;
+
+            /** 超小输入框 */
+            this.xs = false;
+            /** 小输入框 */
+            this.sm = false;
+            /** 大输入框 */
+            this.lg = false;
+        },
+        design: function () {
+            this.defaultValue = this.value;
         },
         init: function () {
             this.base.init('select');
         },
-        build: function (data) {
+        render: function () {
+            this.$.classList.add('form-control');
+            if (this.lg || this.sm || this.xs) {
+                this.$.classList.add(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
+            }
+
+            if (this.autofocus) {
+                this.focus();
+            }
+        },
+        build: function (view) {
             var template = this.template, htmls = [];
             if (template) {
-                v2.each(data, function (option) {
+                v2.each(view, function (option) {
                     switch (typeof option) {
                         case 'object':
                             htmls.push(template.withCb(option));
                             break;
-                        case 'array':
-                            htmls.push(template.format(option));
-                            break;
                         default:
-                            htmls.push(template.format(option + ''));
+                            htmls.push(template.format(option));
                             break;
                     }
                 });
             } else {
-                v2.each(data, function (option) {
+                v2.each(view, function (option) {
                     switch (typeof option) {
                         case 'object':
                             htmls.push('<option value="{0}">{1}</option>'.format(option.id || option.value, option.name || option.text));
@@ -552,7 +732,7 @@
                             htmls.push('<option value="{0}">{1}</option>'.format(option));
                             break;
                         default:
-                            htmls.push('<option value="{0}">{0}</option>'.format(option + ''))
+                            htmls.push('<option value="{0}">{0}</option>'.format(option + ''));
                             break;
                     }
                 });
@@ -561,13 +741,9 @@
                 .appendChild(htmls.join('').html());
         },
         usb: function () {
-            this.define('multiple selectedIndex');
+            this.base.usb();
 
-            if (!this.multiple) {
-                return this.define('value', function () {
-                    return this.$.value;
-                });
-            }
+            this.define('multiple selectedIndex');
 
             if (this.selectedIndex > -1) {
                 this.value = this.$.value;
@@ -575,96 +751,42 @@
 
             this.define('value', {
                 get: function () {
-                    return v2.map(this.$.selectedOptions, function (option) {
-                        return option.value || option.text;
-                    }).join(',');
+                    if (this.multiple) {
+                        return v2.map(this.$.selectedOptions, function (option) {
+                            return option.value || option.text;
+                        }).join(',');
+                    }
+
+                    return this.$.value;
                 },
                 set: function (value) {
+                    if (this.multiple) {
+                        var arr = !!value && value.split(',');
 
-                    var arr = !!value && value.split('');
+                        v2.each(this.$.options, function (option) {
+                            option.selected = arr && arr.indexOf(option.value || option.text) > -1;
+                        });
 
-                    v2.each(this.$.options, function (option) {
-                        option.selected = arr && arr.indexOf(option.value || option.text) > -1;
-                    });
+                    } else {
+                        v2.each(this.$.options, function (option) {
+                            return !(option.selected = (option.value || option.text) === value);
+                        });
+                    }
                 }
             }, true);
-        },
-        checkValidity: function () { return true; },
-        reportValidity: function () { return true; }
-    });
-
-    v2.use('input', 'type === "button" || type === "reset" || type === "submit"', {
-        input: function () {
-            /** 按钮类型 */
-            this.type = "button";
-            /** 按钮名称 */
-            this.text = '';
-            /** 用于替换按钮的所有子元素 */
-            this.html = '';
-            /** 超小按钮 */
-            this.xs = false;
-            /** 小按钮 */
-            this.sm = false;
-            /** 大按钮 */
-            this.lg = false;
-        },
-        init: function () {
-            this.base.init('button');
-        },
-        render: function () {
-
-            this.$.classList.add('btn');
-
-            if (this.lg || this.sm || this.xs) {
-                this.$.classList.add(this.lg ? 'btn-lg' : this.sm ? 'btn-sm' : 'btn-xs');
-            }
-
-            if (this.host && this.host.isInstanceOf('navbar')) {
-                this.$.classList.add('navbar-btn');
-            }
-
-            if (this.type === 'submit') {
-                this.$.classList.add('btn-primary');
-            } else if (this.type === 'reset') {
-                this.$.classList.add('btn-warning');
-            }
-        },
-        usb: function () {
-
-            this.base.usb();
-
-            this.define('type');
-
-            this.define({
-                value: function (text) {
-                    this.$.empty()
-                        .append(document.createTextNode(text));
-                },
-                text: function (text) {
-                    this.$.empty()
-                        .append(document.createTextNode(text));
-                },
-                html: function (html) {
-                    this.$.empty()
-                        .append(html.withCb(this));
-                }
-            });
-        },
-        checkValidity: function () { return true; },
-        reportValidity: function () { return true; },
-        commit: function () {
-            var vm = this;
-            this.base.commit();
-            this.$.on("keyup", function (e) {
-                var code = e.keyCode || e.which;
-                if (code === 13 || code === 108) {
-                    vm.invoke("keyboard-enter");
-                }
-            });
         }
     });
 
+    //? 路由到【select】插件。
+    v2.route('input', 'type === "select"', 'select');
+
+    //? 路由到【textarea】插件。
+    v2.route('input', 'type === "textarea"', 'textarea');
+
+    //? 路由到【button】插件。
+    v2.route('input', 'type === "button" || type === "reset" || type === "submit" || type === "image"', 'button');
+
     return function (option) {
         return v2('input', option);
-    }
+    };
 }));
