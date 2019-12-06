@@ -471,6 +471,7 @@ input::-webkit-clear-button {
 /** ----------------------------------------------------------------- wait -------------------------------------------------------------------*/
 
 .wait,
+.wait-reveal,
 .wait-backdrop {
     position: absolute;
     top: 0;
@@ -486,91 +487,91 @@ input::-webkit-clear-button {
     opacity: .25;
 }
 
-.wait {
+.wait-reveal {
     width: 30px;
     height: 30px;
     margin: auto;
 }
 
-    .wait.animation-1 {
+    .wait-reveal.animation-1 {
         -webkit-transform: rotate(45deg);
         transform: rotate(45deg);
     }
 
-    .wait.animation-2, .wait.animation-4 {
+    .wait-reveal.animation-2, .wait-reveal.animation-4 {
         -webkit-transform: rotate(10deg);
         transform: rotate(10deg);
     }
 
-        .wait.animation-2 .shape, .wait.animation-4 .shape {
+        .wait-reveal.animation-2 .shape, .wait-reveal.animation-4 .shape {
             border-radius: 5px;
         }
 
-    .wait.animation-2, .wait.animation-3, .wait.animation-4 {
+    .wait-reveal.animation-2, .wait-reveal.animation-3, .wait-reveal.animation-4 {
         -webkit-animation: rotation 1s infinite;
         animation: rotation 1s infinite;
     }
 
-        .wait.animation-3 .shape1 {
+        .wait-reveal.animation-3 .shape1 {
             border-top-left-radius: 10px;
         }
 
-        .wait.animation-3 .shape2 {
+        .wait-reveal.animation-3 .shape2 {
             border-top-right-radius: 10px;
         }
 
-        .wait.animation-3 .shape3 {
+        .wait-reveal.animation-3 .shape3 {
             border-bottom-left-radius: 10px;
         }
 
-        .wait.animation-3 .shape4 {
+        .wait-reveal.animation-3 .shape4 {
             border-bottom-right-radius: 10px;
         }
 
-    .wait.animation-4, .wait.animation-5 {
+    .wait-reveal.animation-4, .wait-reveal.animation-5 {
         -webkit-transform: rotate(45deg);
         transform: rotate(45deg);
     }
 
-        .wait.animation-5 .shape {
+        .wait-reveal.animation-5 .shape {
             width: 15px;
             height: 15px;
         }
 
-    .wait.animation-6 {
+    .wait-reveal.animation-6 {
         -webkit-animation: rotation 1s infinite;
         animation: rotation 1s infinite;
     }
 
-        .wait.animation-6 .shape {
+        .wait-reveal.animation-6 .shape {
             width: 12px;
             height: 12px;
             border-radius: 2px;
         }
 
-    .wait .shape {
+    .wait-reveal .shape {
         position: absolute;
         width: 10px;
         height: 10px;
         border-radius: 1px;
     }
 
-        .wait .shape.shape1 {
+        .wait-reveal .shape.shape1 {
             left: 0;
             background-color: #5C6BC0;
         }
 
-        .wait .shape.shape2 {
+        .wait-reveal .shape.shape2 {
             right: 0;
             background-color: #8BC34A;
         }
 
-        .wait .shape.shape3 {
+        .wait-reveal .shape.shape3 {
             bottom: 0;
             background-color: #FFB74D;
         }
 
-        .wait .shape.shape4 {
+        .wait-reveal .shape.shape4 {
             bottom: 0;
             right: 0;
             background-color: #F44336;

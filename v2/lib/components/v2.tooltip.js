@@ -13,7 +13,7 @@
                 return factory(v2kit);
             } :
             factory(v2);
-}(function (/** @type CN.V2kitStatic */v2) {
+}(function (/** @type Use.V2kitStatic */v2) {
     var
         doc = document,
         docEl = doc.documentElement;
@@ -49,8 +49,7 @@
                     .appendChild(html.html());
             });
 
-            var direction = this.direction.toLowerCase();
-            this.define('direction', function (_) {
+            this.define('direction', function (_, direction) {
 
                 this.$.classList.remove(direction);
 

@@ -115,7 +115,7 @@
 
                 this.$months = this.when('a', this.$monthPicker);
 
-                var week = 'ul.weeks>`${for(var item<index> in week){ if(index > 0){ "+li{{{item}}}" }else{ "li{{{item}}}" } }}`'.withCb(this);
+                var week = 'ul.weeks>`${for(var item<index> in week){ if(index > 0){ $"+li{{item}}" }else{ $"li{{item}}" } }}`'.withCb(this);
 
                 var days = 'ul.days>li*35>a[href="#"]';
 

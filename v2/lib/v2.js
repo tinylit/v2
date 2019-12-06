@@ -833,8 +833,6 @@
             throw new Error('InvalidCastException:This conversion is not supported.');
         },
         makeDescriptor = function (source, callback, beforeSetting, conversionType, allowFirstSet) {
-            var threadGet,
-                threadSet;
 
             conversionType = conversionType || v2.type(source);
 
@@ -847,106 +845,80 @@
                 };
             }
 
+            var attributes = {
+                configurable: true,
+                get: function () {
+                    return source;
+                }
+            };
+
             if (callback.length === 1) {
-                return {
-                    configurable: true,
-                    get: function () {
-                        return source;
-                    },
-                    set: function (value) {
+                attributes.set = function (value) {
+                    if (allowFirstSet) {
 
-                        if (allowFirstSet) {
+                        allowFirstSet = false;
 
-                            allowFirstSet = false;
+                        if (source === undefined || source === null) {
+                            conversionType = v2.type(value);
+                        }
 
-                            if (source === undefined || source === null) {
-                                conversionType = v2.type(value);
-                            }
+                    } else {
 
+                        if (value === source) return;
+
+                        value = changeType(value, conversionType);
+
+                        if (value === source) return;
+
+                        if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
+                            return;
+                    }
+
+                    if (!beforeSetting || beforeSetting.call(this, source) !== false) {
+                        var result = callback.call(this, source);
+                        if (result) {
+                            source = changeType(result, conversionType);
                         } else {
-
-                            if (value === source) return;
-
-                            value = changeType(value, conversionType);
-
-                            if (value === source) return;
-
-                            if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
-                                return;
+                            source = value;
                         }
-
-                        source = value;
-
-                        if (threadSet) return;
-
-                        threadSet = true;
-
-                        if (!beforeSetting || beforeSetting.call(this, source) !== false) {
-                            value = callback.call(this, source);
-                            if (value) {
-                                source = changeType(value, conversionType);
-                            }
-                        }
-
-                        threadSet = false;
                     }
                 };
-            }
-            if (callback.length === 2) {
-                return {
-                    configurable: true,
-                    get: function () {
+            } else if (callback.length === 2) {
+                attributes.set = function (value) {
 
-                        if (threadGet)
-                            return v2.error("Methods fall into an endless loop.");
+                    if (allowFirstSet) {
 
-                        threadGet = true;
+                        allowFirstSet = false;
 
-                        source = changeType(callback.call(this, source, false), conversionType);
+                        if (source === undefined || source === null) {
+                            conversionType = v2.type(value);
+                        }
 
-                        threadGet = false;
+                    } else {
+                        if (value === source) return;
 
-                        return source;
-                    },
-                    set: function (value) {
+                        value = changeType(value, conversionType);
 
-                        if (allowFirstSet) {
+                        if (value === source) return;
 
-                            allowFirstSet = false;
+                        if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
+                            return;
+                    }
 
-                            if (source === undefined || source === null) {
-                                conversionType = v2.type(value);
-                            }
-
+                    if (!beforeSetting || beforeSetting.call(this, source) !== false) {
+                        var result = callback.call(this, value, source);
+                        if (result) {
+                            source = changeType(value, conversionType);
                         } else {
-                            if (value === source) return;
-
-                            value = changeType(value, conversionType);
-
-                            if (value === source) return;
-
-                            if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
-                                return;
+                            source = value;
                         }
-
-                        source = value;
-
-                        if (threadSet) return;
-
-                        threadSet = true;
-
-                        if (!beforeSetting || beforeSetting.call(this, source) !== false) {
-                            value = callback.call(this, source);
-                            if (value) {
-                                source = changeType(value, conversionType);
-                            }
-                        }
-
-                        threadSet = false;
                     }
                 };
+            } else {
+                v2.log("Cannot analyze a callback function with a parameter length of " + callback.length + ".", 15);
             }
-            v2.error("Cannot analyze a callback function with a parameter length of " + callback.length + ".");
+
+            return attributes;
         };
 
     v2.define = function (obj, prop, attributes) {
@@ -2182,9 +2154,9 @@
 
     var rcompile = new RegExp('(`\\$\\{(.+?)\\}`|\\{' + whitespace + '*\\{' + whitespace + '*([^\\{].+?)' + whitespace + '*\\}' + whitespace + '*\\})', 'gm'); // /`\$\{(.*)?\}`/gm;
     var word = '[_a-z][_a-z0-9]*',
-        rquotes = new RegExp("(['\"])(?:\\\\.|[^\\\\])+\\1", 'gm'),
-        rbraceCode = new RegExp('(\\{' + whitespace + '*)*\\{' + whitespace + '*\\{(.+?)\\}' + whitespace + '*\\}', 'gm'),
-        rternaryCode = new RegExp('^(((?:\\w+\\.)?\\w+(?:\\(.*?\\))?)' + whitespace + '*([?!])' + whitespace + '*(.+?))$'),
+        rquotes = new RegExp("\\$(['\"])(?:\\\\.|[^\\\\])*?\\1", 'gm'),
+        rbraceCode = new RegExp('\\{([^\\{\\}]+?)\\}', 'g'),
+        rternaryCode = new RegExp('^(((?:\\w+\\.)?\\w+(?:\\(.*?\\))?)' + whitespace + '*([?!]{1,2})' + whitespace + '*([^:]+?))$'),
         tryCode = word + '(?:\\??(?:\\.' + word + '|\\[.+?\\]))*',
         rtryCode = new RegExp(tryCode, 'img'),
         rtry = new RegExp('(' + word + '|\\])\\?(?=(\\.|\\[))', 'i'),
@@ -2245,22 +2217,33 @@
     }
 
     function joinCodeFn(string, quote) {
-        return string.replace(rbraceCode, function (_, reserved, code) {
-            return (reserved || '') + quote + '+ (' + code + ') +' + quote;
+        return string.slice(1).replace(rbraceCode, function (_, code) {
+            return quote + '+ (' + code.replace(rternaryCode, ternaryCode) + ') +' + quote;
         });
     }
     function ternaryCode(_, _2, left, symbol, right) {
-        if (symbol === '?') {
-            return left + '?' + right + ':""';
+        switch (symbol) {
+            case '?':
+            case '!!':
+                return left + '?' + right + ':""';
+            case '??':
+                return left + '== null ?' + left + ':' + right;
+            case '?!':
+                return left + '&& !' + right + '?' + left + ':' + right;
+            case '!?':
+                return '!' + left + '&&' + right + '?' + left + ':' + right;
+            default:
+                return left + '? "" :' + right;
         }
-        return left + '?"":' + right;
     }
     var compileCache = makeCache(function (value) {
-        var callback, body = value.replace(rforin, forCodeFn)
+        var callback, body = value
+            .replace(rforin, forCodeFn)
             .replace(rif, ifElseCodeFn)
             .replace(relse, ifElseCodeFn)
             .replace(rquotes, joinCodeFn)
-            .replace(rtryCode, tryCodeFn);
+            .replace(rtryCode, tryCodeFn)
+            .replace(rternaryCode, ternaryCode);
 
         if (!rreturn.test(body)) {
             body = 'return ' + body;
@@ -2294,8 +2277,8 @@
             };
         }
         var callback, body = value
-            .replace(rternaryCode, ternaryCode)
-            .replace(rtryCode, tryCodeFn);
+            .replace(rtryCode, tryCodeFn)
+            .replace(rternaryCode, ternaryCode);
 
         if (!rreturn.test(body)) {
             body = 'return ' + body;
@@ -3471,7 +3454,7 @@
                 destroyObject(this, deep || arguments.length === 0, excludes);
 
                 context = null;
-                core_namespace = classOld= null;
+                core_namespace = classOld = null;
                 variable = wildcards = excludes = controls = callbacks = descriptors = null;
             };
 
@@ -3535,11 +3518,15 @@
                 }
             });
 
-            this.define('$core', function (value, iswite) {
+            var valueCore;
 
-                if (iswite) return value;
-
-                return value || this['$' + this.tag] || this.$;
+            this.define('$core', {
+                get: function () {
+                    return valueCore || this['$' + this.tag] || this.$;
+                },
+                set: function (value) {
+                    valueCore = value;
+                }
             });
 
             this.define({
@@ -3781,25 +3768,18 @@
             this.style = 1;
         },
         render: function () {
-            this.$.classList.add('wait-backdrop');
+            this.$.classList.add('wait');
         },
         build: function () {
-            this.$wait = this.$.insertAfter(".wait>.shape.shape$*4".htmlCoding().html());
+            this.$backdrop = this.$.appendChild(".wait-backdrop".htmlCoding().html());
+            this.$wait = this.$.appendChild(".wait-reveal>.shape.shape$*4".htmlCoding().html());
         },
         usb: function () {
             this.base.usb();
-
-            this.define("style", function (style) {
-                this.$wait.className = "wait animation-" + style;
+            this.define("style", function (style, oldStyle) {
+                this.$wait.classList.remove('animation-' + oldStyle);
+                this.$wait.classList.add('animation-' + style);
             });
-        },
-        show: function () {
-            this.base.show();
-            this.$wait.classList.remove('hide');
-        },
-        hide: function () {
-            this.base.hide();
-            this.$wait.classList.add('hide');
         }
     });
 
@@ -4086,6 +4066,7 @@
         xhr_send = xhr.send,
         xhr_open = xhr.open,
         xhr_abort = xhr.abort;
+
     v2.extend(xhrCb.prototype, {
         open: function (_method, _url, async) {
             if (async && GLOBAL_VARIABLE_CURRENT_CONTROL) {

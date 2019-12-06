@@ -220,13 +220,13 @@
          * @param prop 属性名称。
          * @param descriptorSet 设置属性值的方法。
          */
-        define<T>(this: T, prop: string, descriptorSet: (value: any) => any): T;
+        define<T, TValue>(this: T, prop: string, descriptorSet: (value: TValue) => TValue | void): T;
         /**
          * 定义属性（设置可读写方法）
          * @param prop 属性名称。
          * @param descriptorGetSet 设置属性值的方法。
          */
-        define<T>(this: T, prop: string, descriptorGetSet: (value: any, isWrite: boolean) => any): T;
+        define<T, TValue>(this: T, prop: string, descriptorGetSet: (value: TValue, oldValue: TValue) => TValue | void): T;
     }
 
     /** 通配符 */
