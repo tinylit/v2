@@ -73,3 +73,74 @@
 ---
     v2.use(tag:string,option:Object);
 ----
+
+* 可使用 **v2(tag:string[,option:Object]):V2Contrl** 即可使用配置的控件。
+* 可使用 **v2.useMap(tag:string,flowGraph:Object):void** 配置程序运行流程。
+* 默认运行流程。
+    + 构造函数：定义控件属性。
+    + design：设计和规划程序运行中需要使用的属性。
+    + init：初始化，生成主控件。
+    + build：生成HTML代码。
+    + render：渲染HTML。
+    + usb：定义属性监听。
+    + ready：控件加载就绪。
+    + ajax：异步请求数据（仅 **access** 为 **真** 时，有 **ajax** 流程）。
+    + load：加载页面数据。
+    + commit：绑定页面交互事件。
+* 可覆盖 **v2.useMvc(tag:string,resolve:()=>V2Control):V2Control** 方法，添加控件执行前或执行后处理逻辑。
+* 可使用 **v2.route(tag:string,route-tag:string):void** 将“tag”控件使用“route-tag”控件实现。
+* 可使用 **v2.use(option:Object)** 注册所有控件的默认属性或方法。
+* 可使用 **v2.useCards(letter:char,{type:string,exec:(control:V2Contrl,value:V2Contrl[K],key:K)=>any})**定义更多通配符。 通配符（在方法名称前加上指定符号，程序运行时，参数中相同属性名称的属性值满足通配符条件时，将通配符指定方法）。
+    + ? 当值为 **\{boolean\}** 时，执行方法。
+    + % 当值为 **\{number\}** 时，执行方法。
+    + " 或 ' 当值为 **\{string\}** 时，执行方法。
+    + < 当值为 **\{Date\}** 时，执行方法。
+    + [ 当值为 **\{Array\}** 时，执行方法。
+    + / 当值为 **\{Regex\}** 时，执行方法。
+    + \* 始终执行方法。
+    + 还支持“&”，“!”，“.”，“{”，“#”等通配符。
+* 支持依赖注入。
+    
+#### 用例:
+``` js
+    // 定义。
+    v2.use('wait', {
+        wait: function () { // 构造函数生成控件时调用。
+            /** 风格 */
+            this.style = 1;
+        },
+        "render(style)": function (style) { // 依赖注入【style】属性。
+            if(style === this.style){
+                this.$.classList.add('wait');
+            }
+        },
+        build: function () {
+            this.$backdrop = this.$.appendChild(".wait-backdrop".htmlCoding().html());
+            this.$wait = this.$.appendChild(".wait-reveal>.shape.shape$*4".htmlCoding().html());
+        },
+        usb: function () {
+            this.base.usb();
+            this.define("style", function (style, oldStyle) {
+                this.$wait.classList.remove('animation-' + oldStyle);
+                this.$wait.classList.add('animation-' + style);
+            });
+        }
+    });
+
+    // 使用。
+    var wait = v2("wait", { style: 2 });
+```
+
+#### 动态生成的HTML:
+
+``` html
+    <div class="wait">
+        <div class="wait-backdrop"></div>
+        <div class="wait-reveal animation-6">
+            <div class="shape shape1"></div>
+            <div class="shape shape2"></div>
+            <div class="shape shape3"></div>
+            <div class="shape shape4"></div>
+        </div>
+    </div>
+```
