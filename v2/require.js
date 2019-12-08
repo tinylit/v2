@@ -1882,7 +1882,7 @@ var requirejs, require, define;
             document.createElement('script');
         node.type = config.scriptType || 'text/javascript';
         node.charset = 'utf-8';
-        node.async = true;
+
         return node;
     };
 

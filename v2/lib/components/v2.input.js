@@ -14,7 +14,7 @@
                 return factory(v2kit);
             } :
             factory(v2kit);
-}(function (/** @type CN.V2kitStatic */v2) {
+}(function (/** @type Use.V2kitStatic */v2) {
 
     var matchExpr = {
         number: /^[+-]?(0|[1-9][0-9]*)(?:\.([0-9]+))?$/,
@@ -61,11 +61,11 @@
     }
 
     function validity(vm) {
-        var validity, validationMessage;
+        var validity, validationMessage, core = vm.$core || vm['$' + vm.tag] || vm.$;
 
         vm.define('id name pattern min max minlength maxlength required readonly');
 
-        if (vm.$core.validity === null || vm.$core.validity === undefined) {
+        if (core.validity === null || core.validity === undefined) {
 
             validationMessage = "";
             validity = new ValidityState();
@@ -151,30 +151,33 @@
             };
             // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
+                if (this.validityGetter) {
+                    return this.validityGetter().valid;
+                }
                 return this.validity.valid;
             };
         } else {
             vm.define({
                 validity: function () {
-                    return this.$core.validity;
+                    return core.validity;
                 },
                 validationMessage: function () {
-                    return this.$core.validationMessage;
+                    return core.validationMessage;
                 }
             });
             // 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。
             vm.setCustomValidity = function (message) {
-                this.$core.setCustomValidity(message);
+                core.setCustomValidity(message);
             };
             // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
-                return this.$core.checkValidity();
+                return core.checkValidity();
             };
         }
 
-        if (v2.isFunction(vm.$core.reportValidity)) {
+        if (v2.isFunction(core.reportValidity)) {
             vm.reportValidity = function () {
-                return this.$core.reportValidity();
+                return core.reportValidity();
             };
         } else {
             var tooltip;
@@ -184,15 +187,21 @@
 
                 this.focus();
 
+                var message = this.validationMessageGetter ? this.validationMessageGetter() : this.validationMessage;
+
                 if (tooltip) {
-                    tooltip.content = this.validationMessage;
+                    if (tooltip.contentSetter) {
+                        tooltip.contentSetter(message);
+                    } else {
+                        tooltip.content = message;
+                    }
                     tooltip.show();
                 } else {
                     tooltip = this.create('tooltip', {
                         $$: document.body,
-                        request: this.$core,
+                        request: core,
                         duration: 2000,
-                        content: this.validationMessage
+                        content: message
                     });
                 }
 
@@ -210,14 +219,13 @@
         input.type = "datetime-local";
     } catch (e) {
         supportHtml5 = false;
-    } finally {
-        input = null;
     }
 
+    input = null;
     /** 所有类型 */
     v2.use('input', {
         components: {
-            'tooltip.async': function (callback) {
+            'tooltip': function (callback) {
                 require(['components/v2.tooltip'], callback);
             }
         },
@@ -286,6 +294,8 @@
             }
         },
         usb: function () {
+            var core = this.$core || this['$' + this.tag] || this.$;
+
             this.base.usb();
 
             if (this.tag === 'input') {
@@ -294,10 +304,10 @@
 
             this.define('autocomplete', {
                 get: function () {
-                    return this.$core.autocomplete.toLowerCase() === 'on';
+                    return core.autocomplete.toLowerCase() === 'on';
                 },
                 set: function (value) {
-                    this.$core.autocomplete = value ? 'on' : 'off';
+                    core.autocomplete = value ? 'on' : 'off';
                 }
             });
 
@@ -309,31 +319,45 @@
 
             validity(this);
         },
+        ready: function () {
+            if (this.type === 'hidden') {
+                this.hide();
+            }
+        },
         commit: function () {
+            var core = this.$core || this['$' + this.tag] || this.$;
             var isChinese, vm = this;
 
-            this.$core.on("compositionstart", function () {
+            core.on("compositionstart", function () {
                 isChinese = true;
             });
 
-            this.$core.on("compositionend", function () {
+            core.on("compositionend", function () {
                 isChinese = false;
             });
 
-            this.$core.on("input propertychange", function () {
+            core.on("input propertychange", function () {
                 if (!isChinese) {
-                    vm.value = this.value;
+                    if (vm.valueSetter) {
+                        vm.valueSetter(this.value);
+                    } else {
+                        vm.value = this.value;
+                    }
                 }
             });
 
-            this.$core.on("keyup", function (e) {
+            core.on("keyup", function (e) {
                 var code = e.keyCode || e.which;
                 if (code === 13 || code === 108) {
                     vm.invoke("keyboard-enter");
                 }
 
                 if (!isChinese) {
-                    vm.value = this.value;
+                    if (vm.valueSetter) {
+                        vm.valueSetter(this.value);
+                    } else {
+                        vm.value = this.value;
+                    }
                 }
             });
         }
@@ -343,7 +367,7 @@
 
     v2.use('input', 'type === "checkbox" || type === "radio"', {
         components: {
-            'tooltip.async': function (callback) {
+            'tooltip': function (callback) {
                 require(['components/v2.tooltip'], callback);
             }
         },
@@ -377,8 +401,8 @@
             this.base.init();
         },
         build: function () {
-            this.$.appendChild('label[for="__use_{0}"]>input#__use_{0}+span'
-                .format(++GLOBAL_VARIABLE_CHECK_FOR)
+            this.$.appendChild('label[for="__use_{0}"]>input#__use_{0}[type={1}]+span'
+                .format(++GLOBAL_VARIABLE_CHECK_FOR, this.type)
                 .htmlCoding()
                 .html());
 
@@ -397,12 +421,14 @@
             }
         },
         usb: function () {
+            var core = this.$core || this['$' + this.tag] || this.$;
+
             this.base.usb();
 
             this.define('type placeholder');
 
             this.define('checked', function (checked) {
-                this.invoke('checked-change', this.$core.checked = checked);
+                this.invoke('checked-change', core.checked = checked);
             }, true);
 
             this.define('description', function (text) {
@@ -418,10 +444,10 @@
 
     v2.use('input', 'type === "time" || type === "date" || type === "datetime" || type === "datetime-local"', {
         components: {
-            'tooltip.async': function (callback) {
+            'tooltip': function (callback) {
                 require(['components/v2.tooltip'], callback);
             },
-            'date-picker.async': function (callback) {
+            'date-picker': function (callback) {
                 require(['components/v2.date-picker'], callback);
             }
         },
@@ -479,11 +505,12 @@
             }
         },
         render: function () {
+            var core = this.$core || this['$' + this.tag] || this.$;
             if (this.showIcon && !this.isGrouplike) {
                 this.$.classList.add('input-group');
             }
 
-            this.$core.classList.add('form-control');
+            core.classList.add('form-control');
 
             if (this.lg || this.sm || this.xs) {
                 this.$.classList.add(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
@@ -495,6 +522,7 @@
         },
         usb: function () {
             var type = this.type;
+            var core = this.$core || this['$' + this.tag] || this.$;
 
             this.base.usb();
 
@@ -510,10 +538,10 @@
             this.define('placeholder')
                 .define('autocomplete', {
                     get: function () {
-                        return this.$core.autocomplete.toLowerCase() === 'on';
+                        return core.autocomplete.toLowerCase() === 'on';
                     },
                     set: function (value) {
-                        this.$core.autocomplete = value ? 'on' : 'off';
+                        core.autocomplete = value ? 'on' : 'off';
                     }
                 });
 
@@ -522,7 +550,7 @@
                     value = v2.date.format(value, this.format);
                 }
 
-                this.invoke('input-change', this.$core.value = value);
+                this.invoke('input-change', core.value = value);
 
                 return value;
             }, true);
@@ -530,7 +558,7 @@
             validity(this);
         },
         ready: function () {
-            var vm = this, demand = this.$core;
+            var vm = this, demand = this.$core || this['$' + this.tag] || this.$;
 
             if (this.showIcon) {
                 demand = this.$icon;
@@ -540,7 +568,7 @@
                 v2.GDir('date-picker').done(function (vm) {
                     vm.hide();
                 });
-                /** @type CN.V2Control */
+                /** @type Develop<'date-picker'> */
                 var picker, i = 0;
                 while ((picker = datePikers[i++])) {
                     if (picker.format === vm.format) {

@@ -52,8 +52,8 @@
             },
             /**
              * 依赖注入
-             * @param {CN.PlainObject} view
-             * @param {Array<CN.Button>} buttons
+             * @param {Use.PlainObject} view
+             * @param {Array<Use.Button>} buttons
              */
             "build(view, buttons)": function (view, buttons) {
                 console.log("view:", this.view === view);

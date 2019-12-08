@@ -38,23 +38,14 @@
         prototype: V2Control;
     }
 
-    /** 组件 */
-    interface Components<T = any> extends PlainObject<T>, V2ControlStandard { }
-
     /** 普通组件(key是“{TAG}”) */
-    interface PlainComponents<T = any> extends Components<T> { }
-
-    /** 对象组件(key是“{TAG}”) */
-    interface ObjectComponents<T extends V2ControlBase = V2Control> extends PlainComponents<(this: T, ...args: any[]) => any> { }
+    interface PlainComponents extends PlainObject<PlainObject>, V2ControlStandard { }
 
     /** 同步方法组件(key是“{TAG}”) */
-    interface FunctionComponents<T extends V2ControlBase = V2Control> extends ObjectComponents<T> {
-        <K extends keyof V2ControlMap>(option: ObjectComponents<V2ControlMap[K]>, tag: K): V2ControlMap[K];
-        <TAG extends string>(option: ObjectComponents<V2Control<TAG>>, tag: TAG): V2Control<TAG>;
-    }
+    interface FunctionComponents extends PlainObject<(resolve: () => void) => void> { }
 
-    /** 异步方法组件（key必须是“{TAG}.async”） */
-    interface AsyncFunctionComponents extends PlainComponents<(resolve: () => void) => void> { }
+    /** 配置 */
+    interface Options<T extends V2ControlBase> extends T, PlainObject<(this: T, ...args: any[]) => any> { }
 
     /** 控件基类（当前控件实现的方法，仅做语法提示，不一定可以调用指定方法。） */
     interface V2ControlBase {
@@ -141,13 +132,13 @@
         /** 插件主元素的父元素 */
         $$: Element;
         /** 需求、要求 */
-        demand: Element | null;
+        demand: Element;
         /** 请求元素 */
-        request: Element | null;
+        request: Element;
         /** 响应元素 */
-        response: Element | null;
+        response: Element;
         /** 样式 */
-        class: string | null;
+        class: string;
         /** 变量 */
         variable: PlainObject<boolean | number | string | object>;
         /** 插件数据 */
@@ -155,33 +146,33 @@
         /** 视图渲染 */
         view: any;
         /** 监控数据变化，数据变化时，调用指定方法 */
-        watch: PlainObject<Function> | null,
+        watch: PlainObject<Function>,
         /** 事件集合 */
-        events: PlainObject<PlainEvent> | null;
+        events: PlainObject<PlainEvent>;
         /** 方法集合 */
-        methods: PlainObject<PlainMethod> | null;
+        methods: PlainObject<PlainMethod>;
         /** 通配符 */
-        wildcards: PlainObject<WildCard> | null,
+        wildcards: PlainObject<WildCard>,
         /** 组件集合 */
-        components: AsyncFunctionComponents | FunctionComponents | PlainComponents | Components | null;
+        components: FunctionComponents | PlainComponents;
         /**
         * 渲染子控件
         * @param tag TAG
         * @param options 配置信息
         */
-        create<K extends keyof V2ControlMap>(tag: K, options: ObjectComponents<V2ControlMap[K]>): V2ControlMap[K];
+        create<K extends keyof V2ControlMap>(tag: K, options: Options<V2ControlMap[K]>): V2ControlMap[K];
         /**
          * 渲染子控件
          * @param tag TAG
          * @param options 配置信息
          */
-        create<TAG extends string = "*">(tag: TAG, options: ObjectComponents<V2Control<TAG>>): V2Control<TAG>;
+        create<TAG extends string>(tag: TAG, options: Options<V2Control<TAG>>): V2Control<TAG>;
         /**
          * 渲染子控件
          * @param tag TAG
          * @param options 配置信息
          */
-        create(options: ObjectComponents<V2Control>): V2Control;
+        create(options: Options<V2Control>): V2Control;
         /** 启动 */
         startup(): void;
         /** 构建插件 */
@@ -202,13 +193,13 @@
          * 定义多个属性
          * @param value 属性对象
          */
-        define<T>(this: T, value: PlainObject): T;
+        define<T>(this: T, value: PropertyDescriptorMap): T;
         /**
          * 定义属性
          * @param prop 属性名称
          * @param descriptor 属性描述
          */
-        define<T>(this: T, prop: string, descriptor: PlainObject): T;
+        define<T>(this: T, prop: string, descriptor: PropertyDescriptor): T;
         /**
          * 定义属性（设置只读方法）
          * @param prop 属性名称。
@@ -264,18 +255,18 @@
          * 获取指定索引位的控件。
          * @param index 索引。小于0时，加上当前集合的长度作为索引。
          */
-        eq(index: number): V2Control | null;
+        eq(index: number): V2Control;
         /**
          * 获取满足函数条件的第一个元素。
          * @param callback 回调函数。
          */
-        get(callback: (control: V2Control) => boolean): V2Control | null;
+        get(callback: (control: V2Control) => boolean): V2Control;
         /**
          * 获取基于【control】偏移【offset】索引次的控件。
          * @param control 控件。
          * @param offset 偏移量。
          */
-        offset(control: V2Control, offset: number): V2Control | null;
+        offset(control: V2Control, offset: number): V2Control;
     }
 
     /** 控件*/
@@ -289,13 +280,13 @@
         /** 流程图 */
         flowGraph: PlainObject<number>;
         /** 宿主插件 */
-        host: V2Control | null,
+        host: V2Control,
         /** 所有子控件 */
         controls: V2Controls;
         /** 上一个控件 */
-        previousSibling: V2Control | null;
+        previousSibling: V2Control;
         /** 下一个控件 */
-        nextSibling: V2Control | null;
+        nextSibling: V2Control;
     }
 
     /** 默认控件基类 */
@@ -641,15 +632,15 @@ declare namespace Use {
     /** 选择框 */
     interface Select extends MeasureV2Control<"select">, DefaultV2ControlBase {
         /** 只读 */
-        readonly: false;
+        readonly: boolean;
         /** 禁用 */
-        disabled: false;
+        disabled: boolean;
         /** 自动填充 */
-        autocomplete: false;
+        autocomplete: boolean;
         /** 自动获取焦点 */
-        autofocus: false;
+        autofocus: boolean;
         /** 支持多个值 */
-        multiple: false;
+        multiple: boolean;
         /** 默认选中项 */
         selectedIndex: -1;
         /** 值 */
@@ -668,7 +659,7 @@ declare namespace Use {
          * 等待框
          * @param show 显示或隐藏等待框。
          */
-        wait(show?: false): void;
+        wait(show?: boolean): void;
         /** 取数 */
         ajax(): void;
         /** 检查是否验证成功 */
@@ -713,9 +704,9 @@ declare namespace Use {
     /** 控件或基础方法 */
     interface V2kitStatic {
         /** 渲染控件 */
-        <K extends keyof V2ControlMap>(tagName: K, options?: V2Control): V2ControlMap[K];
+        <K extends keyof V2ControlMap>(tagName: K, options?: Dev.Options<V2ControlMap[K]>): V2ControlMap[K];
         /** 渲染控件 */
-        <TAG extends string>(tag: TAG, options?: V2Control<TAG>): V2Control<TAG>;
+        <TAG extends string>(tag: TAG, options?: Dev.Options<V2Control<TAG>>): V2Control<TAG>;
         /** 控件原型 */
         readonly fn: V2Control;
 
@@ -814,12 +805,12 @@ declare namespace Use {
          * 获取指定位置的元素
          * @param index 位置：小于 0 时，取 this.length + index 的元素。
          */
-        eq(index: number): T | null;
+        eq(index: number): T;
         /**
         * 获取指定位置的元素
         * @param index 位置：小于 0 时，取 this.length + index 的元素。
         */
-        nth(index: number): T | null;
+        nth(index: number): T;
         /** 移除集合中所有元素 */
         destroy(): void;
     }
@@ -1014,7 +1005,7 @@ declare namespace Use {
          * @param dir 属性路径
          * @param contains 节点本身是否可用。
          */
-        sibling(node: Node, dir: string, contains?: boolean): Element | null;
+        sibling(node: Node, dir: string, contains?: boolean): Element;
         /**
         * 指定节点的 dir 属性迭代的所有元素。
         * @param node 节点
@@ -1052,7 +1043,7 @@ declare namespace Use {
          */
         add(option: PlainObject | Function): PlainObject | Function;
         /** 始终需要的配置 */
-        always(): PlainObject | Function | null;
+        always(): PlainObject | Function;
 
         /**
          * 插件逻辑对象
@@ -1064,7 +1055,7 @@ declare namespace Use {
          * 返回插件逻辑对象中第一个满足过滤函数的配置。
          * @param option 控件
          */
-        then(option: V2Control): PlainObject | Function | null;
+        then(option: V2Control): PlainObject | Function;
     }
 
     /** 注册控件或获取控件配置 */
@@ -1083,7 +1074,7 @@ declare namespace Use {
          * 注册全局配置（将在所有组件中体现）
          * @param option 配置
          */
-        use(option: ObjectComponents): void;
+        use(option: Options): void;
         /**
          * 获取 TAG 配置
          * @param tag TAG
@@ -1095,40 +1086,40 @@ declare namespace Use {
         * @param tag TAG
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, option: ObjectComponents<V2ControlMap[K]>): void;
+        use<K extends keyof V2ControlMap>(tag: K, option: Options<V2ControlMap[K]>): void;
         /**
          * 注册 TAG 始终需要的配置
          * @param tag TAG
          * @param option 配置
          */
-        use<TAG extends string>(tag: TAG, option: ObjectComponents<V2Control<TAG>>): void;
+        use<TAG extends string>(tag: TAG, option: Options<V2Control<TAG>>): void;
         /**
         * 注册 TAG 始终需要的配置
         * @param tag TAG
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, when: (option: V2ControlMap[K]) => boolean, option: ObjectComponents<V2ControlMap[K]>): void;
+        use<K extends keyof V2ControlMap>(tag: K, when: (option: V2ControlMap[K]) => boolean, option: Options<V2ControlMap[K]>): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
          * @param when 条件过滤函数
          * @param option 配置
          */
-        use<TAG extends string>(tag: TAG, when: (option: V2Control<TAG>) => boolean, option: ObjectComponents<V2Control<TAG>>);
+        use<TAG extends string>(tag: TAG, when: (option: V2Control<TAG>) => boolean, option: Options<V2Control<TAG>>);
         /**
         * 注册 TAG 始终需要的配置
         * @param tag TAG
         * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, when: string, option: ObjectComponents<V2ControlMap[K]>): void;
+        use<K extends keyof V2ControlMap>(tag: K, when: string, option: Options<V2ControlMap[K]>): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
          * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
          * @param option 配置
          */
-        use<TAG extends string>(tag: TAG, when: string, option: ObjectComponents<V2Control<TAG>>);
+        use<TAG extends string>(tag: TAG, when: string, option: Options<V2Control<TAG>>);
         /**
          * 注册 TAG 组件之前或之后处理一些事情。
          * @param tag TAG
@@ -1216,7 +1207,7 @@ declare namespace Use {
         * @param objectCreate 创建获取缓存对象
         * @param objectCallback 设置获取缓存的对象
         */
-        namespaceCache<T, TOption, TReadyOption>(readyCallback: (source: TOption, option: TOption) => TReadyOption | null, objectCreate: (name: string) => T, objectCallback: (obj: T, option: TReadyOption) => any): NamespaceCacheFunction<T, TReadyOption>;
+        namespaceCache<T, TOption, TReadyOption>(readyCallback: (source: TOption, option: TOption) => TReadyOption, objectCreate: (name: string) => T, objectCallback: (obj: T, option: TReadyOption) => any): NamespaceCacheFunction<T, TReadyOption>;
         /**
         * 设置命名空间缓存
         * @param initCallback
@@ -1224,7 +1215,7 @@ declare namespace Use {
         * @param objectCreate 创建获取缓存对象
         * @param objectCallback 设置获取缓存的对象
         */
-        namespaceCache<T, TOption, TInitOption>(initCallback: (name: string) => TInitOption, readyCallback: (source: TInitOption, option: TOption) => TInitOption | null, objectCreate: (name: string) => T, objectCallback: (obj: T, option: TInitOption) => any): NamespaceCacheFunction<T, TInitOption>;
+        namespaceCache<T, TOption, TInitOption>(initCallback: (name: string) => TInitOption, readyCallback: (source: TInitOption, option: TOption) => TInitOption, objectCreate: (name: string) => T, objectCallback: (obj: T, option: TInitOption) => any): NamespaceCacheFunction<T, TInitOption>;
     }
 
     /** 注册通配符 */
@@ -1278,21 +1269,40 @@ declare namespace Use {
 /** 开发 */
 declare namespace Dev {
     /** 控件*/
-    interface V2Control<TAG extends string> extends Use.V2Control<TAG> { }
+    interface V2Control<T extends Use.V2ControlBase> extends Use.V2Control<"*", T> {
+        readonly tag: T["tag"];
+        /** 只能调用方法，不能使用属性 */
+        readonly base: T;
+    }
+    /** 待开发的控件 */
+    interface ToDevelop<K> extends Use.V2Control<K> { }
 
     /** 仅开发使用，请勿修改 */
     interface V2ControlMap<K extends string> extends Use.V2ControlMap {
-        [key: string]: V2Control<K>;
+        [key: string]: ToDevelop<K>;
     }
+
+    /** 对象组件(key是“{TAG}”) */
+    interface Options<T extends Use.V2ControlBase = Use.V2Control, TContext = V2Control<T>> extends T, Use.PlainObject<(this: TContext, ...args: any[]) => any> { }
 }
 
 /** 辅助开发 */
-interface Develop<K extends string> extends Use.ObjectComponents<Use.V2Control<K, Dev.V2ControlMap<K>[K]>> { }
+interface Develop<TAG extends string> extends Dev.Options<Dev.V2ControlMap<TAG>[TAG]> { }
 
 declare const v2: Use.V2kitStatic;
 
 /** 字符串 */
 interface String {
+    /**
+     * 格式化字符串
+     * @param args 格式化内容。
+     */
+    format(...args: any[]): string;
+    /**
+    * 格式化字符串
+    * @param args 格式化内容。
+    */
+    format(args: ArrayLike<any>): string;
     /** 将文本转为DOM元素 */
     html(): Element | Text;
     /** 将字符串选择器转为 html 代码 */

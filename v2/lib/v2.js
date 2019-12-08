@@ -766,8 +766,8 @@
     });
 
     var defineSurport,
-        defineFix = function (attributes, value) {
-            var _value = attributes.value || value,
+        defineFix = function (attributes) {
+            var _value = attributes.value,
                 descriptor = {
                     get: attributes.get || function () {
                         return _value;
@@ -874,12 +874,12 @@
                             return;
                     }
 
-                    if (!beforeSetting || beforeSetting.call(this, source) !== false) {
-                        var result = callback.call(this, source);
-                        if (result) {
-                            source = changeType(result, conversionType);
-                        } else {
+                    if (!beforeSetting || beforeSetting.call(this, value) !== false) {
+                        var result = callback.call(this, value);
+                        if (result === undefined) {
                             source = value;
+                        } else {
+                            source = changeType(result, conversionType);
                         }
                     }
                 };
@@ -905,12 +905,12 @@
                             return;
                     }
 
-                    if (!beforeSetting || beforeSetting.call(this, source) !== false) {
+                    if (!beforeSetting || beforeSetting.call(this, value) !== false) {
                         var result = callback.call(this, value, source);
-                        if (result) {
-                            source = changeType(value, conversionType);
-                        } else {
+                        if (result === undefined) {
                             source = value;
+                        } else {
+                            source = changeType(value, conversionType);
                         }
                     }
                 };
@@ -924,7 +924,7 @@
     v2.define = function (obj, prop, attributes) {
         if (obj === null || obj === undefined) return obj;
 
-        if (v2.isPlainObject(prop)) {
+        if (arguments.length === 2 && v2.isPlainObject(prop)) {
             return v2.each(prop, function (attributes, prop) {
                 return v2.define(obj, prop, attributes);
             }), obj;
@@ -954,7 +954,7 @@
         if (!attributes) return false;
 
         if (v2.isFunction(attributes)) {
-            attributes = makeDescriptor(value, attributes);
+            attributes = makeDescriptor(attributes.value, attributes);
         }
 
         try {
@@ -962,12 +962,36 @@
             defineSurport = true;
         } catch (e) {
             if ((defineSurport || defineSurport === undefined) && ('value' in attributes || 'writable' in attributes || 'configurable' in attributes || 'enumerable' in attributes)) {
-                return v2.define(obj, name, defineFix(attributes, value));
-            } else if (defineSurport) {
+                try {
+
+                    Object.defineProperty(obj, prop, defineFix(attributes));
+
+                    return obj;
+                } catch (_) {
+                    defineSurport = false;
+                }
+            }
+
+            if (defineSurport) {
                 throw e;
-            } else {
-                defineSurport = false;
-                console.log('The current browser version is too low, please use a mainstream browser or IE9+.');
+            }
+
+            if ('value' in attributes) {
+                obj[prop] = attributes.value;
+            }
+
+            if ('get' in attributes) {
+                obj[prop + "Getter"] = attributes.get;
+            }
+
+            if ('set' in attributes) {
+                obj[prop + "Setter"] = function (value) {
+                    var result = attributes.set.call(this, value);
+
+                    obj[prop] = result === undefined ? value : result;
+
+                    return result;
+                };
             }
         }
 
@@ -1076,7 +1100,8 @@
     function DOMClassList(node) {
 
         var i = 0,
-            token, tokens = node.className.match(rnotwhite);
+            token,
+            tokens = node.className.match(rnotwhite);
 
         if (tokens) {
 
@@ -1093,7 +1118,7 @@
             node.className = tokens.join(" ");
         }
 
-        Object.defineProperty(this, "value", {
+        v2.define(this, "value", {
             get: function () {
                 return node.className;
             },
@@ -1103,8 +1128,14 @@
                     .replace(rclass, " ")
                     .match(rnotwhite);
 
-                if (this.length > 0)
+                if (this.length > 0) {
+                    if (isIE8) {
+                        for (var i = 0; i < this.length; i++) {
+                            delete this[i];
+                        }
+                    } 
                     core_splice.call(this, 0, this.length);
+                }
 
                 if (arr && arr.length > 0) {
 
@@ -1117,13 +1148,14 @@
             }
         });
     }
-
+    
     DOMClassList.prototype = {
+        length: 0,
         add: function () {
             var i = 0,
                 token,
                 contains,
-                value = this.value;
+                value = this.valueGetter ? this.valueGetter() : this.value;
 
             while ((token = arguments[i++])) {
 
@@ -1139,14 +1171,20 @@
                 value += " " + token;
             }
 
-            if (contains) this.value = value;
+            if (contains) {
+                if (this.valueSetter) {
+                    this.valueSetter(value);
+                } else {
+                    this.value = value;
+                }
+            }
         },
         remove: function () {
             var i = 0,
                 token,
                 pattern,
                 contains,
-                value = this.value;
+                value = this.valueGetter ? this.valueGetter() : this.value;
 
             while ((token = arguments[i++])) {
 
@@ -1164,7 +1202,13 @@
                 value = value.replace(pattern, " ");
             }
 
-            if (contains) this.value = value;
+            if (contains) {
+                if (this.valueSetter) {
+                    this.valueSetter(value);
+                } else {
+                    this.value = value;
+                }
+            }
         },
         contains: function (value) {
             if (arguments.length === 0)
@@ -1181,18 +1225,27 @@
                 return v2.error("Uncaught DOMException: Failed to execute 'toggle' on 'DOMTokenList': The token provided ('" + token + "') contains HTML space characters, which are not valid in tokens.");
 
 
-            var value = this.value,
+            var value = this.valueGetter ? this.valueGetter() : this.value,
                 pattern = classCache(token);
 
             if (arguments.length === 1) {
                 if (pattern.test(value)) {
-                    this.value = value.replace(pattern, " ");
+                    if (this.valueSetter) {
+                        this.valueSetter(value.replace(pattern, " "));
+                    } else {
+                        this.value = value.replace(pattern, " ");
+                    }
                     return false;
                 }
                 return true;
             }
-
-            if (toggle) {
+            if (this.valueSetter) {
+                if (toggle) {
+                    this.valueSetter(value + " " + token);
+                } else {
+                    this.valueSetter(value.replace(pattern, " "));
+                }
+            } else if (toggle) {
                 this.value = value + " " + token;
             } else {
                 this.value = value.replace(pattern, " ");
@@ -1205,6 +1258,7 @@
     var
         userAgent = window.navigator.userAgent.toLowerCase(),
         isIE = /msie|trident/.test(userAgent),
+        isIE8 = /msie\s+8/.test(userAgent),
         isOpera = window.opera && window.opera.toString() === '[object Opera]';
 
     var tokenList = window.DOMTokenList;
@@ -1240,6 +1294,32 @@
             }
             return toggle.call(this, token);
         };
+    }
+
+    function IE8Callback(callback) {
+        if (isIE8) {
+            return function (value) {
+                try {
+                    return callback.call(this, value);
+                } catch (e) {
+                    v2.log(e.message, 15);
+                }
+            };
+        }
+
+        return callback;
+    }
+
+    function IE8Call(callback) {
+        if (isIE8) {
+            try {
+                return callback();
+            } catch (e) {
+                v2.log(e.message, 15);
+            }
+        }
+
+        return callback();
     }
 
     v2.improve(Element.prototype, {
@@ -1283,10 +1363,16 @@
         docElem.mozMatchesSelector ||
         docElem.webkitMatchesSelector ||
         docElem.oMatchesSelector ||
-        docElem.msMatchesSelector;
+        docElem.msMatchesSelector ||
+        docElem.matches || function (selectors) {
+            var i = 0, element, results = (this.document || this.ownerDocument).querySelectorAll(selectors);
 
-    if (!rnative.exec(matches))
-        return v2.error('The current browser version is too low.');
+            while ((element = results[i++])) {
+                if (this === element) return true;
+            }
+
+            return false;
+        };
 
     var rtypenamespace = /^(?:(.+)\.)?([^.]*)$/;
 
@@ -1348,7 +1434,7 @@
                 }
 
                 if (node.nodeType && (!e.button || e.type !== "click")) {
-                    for (; node !== this; node = node.parentNode) {
+                    for (; node !== this && node !== document; node = node.parentNode) {
                         if (node.match(selector))
                             return done(node);
                     }
@@ -1367,7 +1453,12 @@
                     }
 
                     if (map("prev")) {
-                        if (e.preventDefault) e.preventDefault();
+                        if (e.preventDefault) {
+                            e.preventDefault();
+                        }
+                        else {
+                            value = false;
+                        }
                     }
 
                     if (map("stop")) {
@@ -1460,8 +1551,6 @@
     });
 
     v2.improve(Element.prototype, eventMap);
-
-    v2.improve(Document.prototype, eventMap);
 
     function getStyles(elem) {
         var view = elem.ownerDocument.defaultView;
@@ -1797,7 +1886,7 @@
         "&": { //true
             type: "function",
             exec: function (control, value, key) {
-                if (value) {
+                if (value === true) {
                     control[key](value);
                 }
             }
@@ -1805,7 +1894,7 @@
         "!": { //false
             type: "function",
             exec: function (control, value, key) {
-                if (!value) {
+                if (value === false) {
                     control[key](value);
                 }
             }
@@ -1821,7 +1910,7 @@
         '.': { // any
             type: 'function',
             exec: function (control, value, key) {
-                if (value !== null && value !== undefined) {
+                if (!(value === null || value === undefined)) {
                     control[key](value);
                 }
             }
@@ -1937,6 +2026,16 @@
 
         return safe;
     };
+
+    v2.improve(String.prototype, {
+        trim: function () {
+            return v2.trim(this);
+        }
+    });
+
+    v2.improve(Array.prototype, {
+        indexOf: core_indexOf
+    });
 
     var
         rbatch = /\$+/g,
@@ -2496,7 +2595,7 @@
                 callback,
                 readyWait = this.readyWait -= 1;
 
-            while ((callback = this[i++])) {
+            while (i < this.length && (callback = this[i++])) {
 
                 if (callback.tag === '*' | callback.tag === tag || readyWait === 0) {
 
@@ -2730,37 +2829,39 @@
             if (!this.components)
                 return this.controls.add(v2(tag, options));
 
-            var complete = GLOBAL_VARIABLE_STARTUP_COMPLETE;
-
             var component = this.components[tag = v2.kebabCase(tag)];
 
-            var componentAsync = this.components[tag + ".async"];
+            var isFunction = component && v2.isFunction(component);
 
-            GLOBAL_VARIABLE_STARTUP_COMPLETE = !componentAsync;
+            GLOBAL_VARIABLE_STARTUP_COMPLETE = false;
 
-            var stack = stackCache[this.identity] || GLOBAL_VARIABLE_STARTUP_COMPLETE || new V2Stack(this);
-
-            var control = component ? v2.isFunction(component) ? component(option, tag) : v2(tag, v2.improve(options, component)) : v2(tag, options);
-
-            if (!componentAsync) {
-
-                if (!complete) {
-                    stack.pushStack(function () {
-                        control.startup();
-                    });
-                }
-
-                return this.controls.add(control);
-            }
+            var control = !component || isFunction ? v2(tag, options) : v2(tag, v2.improve(options, component));
 
             GLOBAL_VARIABLE_STARTUP_COMPLETE = true;
 
-            stack.waitSatck(tag, function () {
-                control.startup();
-            });
+            if (v2.isFunction(component)) {
+                var stack, complete = false, lazy = true;
 
-            componentAsync(function () {
-                stack.complete(tag);
+                component(function () {
+                    lazy = false;
+                    if (complete) {
+                        stack.complete(tag);
+                    }
+                });
+
+                if ((complete = lazy)) {
+                    stack = stackCache[this.identity] || new V2Stack(this);
+
+                    stack.waitSatck(tag, function () {
+                        control.startup();
+                    });
+
+                    return this.controls.add(control);
+                }
+            }
+
+            this.lazy(function () {
+                control.startup();
             });
 
             return this.controls.add(control);
@@ -2787,8 +2888,8 @@
             this.view = this.watch = this.data = null;
 
             var identity = ++GLOBAL_VARIABLE_IDENTITY;
-
             v2.define(this, "identity", {
+                value: identity,
                 get: function () {
                     return identity;
                 }
@@ -2859,8 +2960,24 @@
                     identity: true
                 },
                 wildcards = this.wildcards,
-                makeCallback = function (callback, key, namespace) {
+                makeInternalCall = function (callback, visible) {
+                    return function () {
+                        internalCall = false;
+                        try {
+                            applyCallback(callback, arguments, this);
 
+                            if (this.visibleSetter) {
+                                this.visibleSetter(visible);
+                            } else {
+                                this.visible = visible;
+                            }
+
+                        } finally {
+                            internalCall = true;
+                        }
+                    };
+                },
+                makeCallback = function (callback, key, namespace) {
                     if (callback.identity === context.identity)
                         return callback;
 
@@ -3011,7 +3128,7 @@
                 if (!(!(node = this.demand) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
                     !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
-                    node.version === version && (node = node.$core) ||
+                    node.version === version && (node = node.$core || node['$' + node.tag] || node.$) ||
                     !(node.nodeType === 1))) {
                     this.demand = node;
                 }
@@ -3019,7 +3136,7 @@
                 if (!(!(node = this.request) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
                     !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
-                    node.version === version && (node = node.$core) ||
+                    node.version === version && (node = node.$core || node['$' + node.tag] || node.$) ||
                     !(node.nodeType === 1))) {
                     this.request = node;
                 }
@@ -3027,7 +3144,7 @@
                 if (!(!(node = this.response) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
                     !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
-                    node.version === version && (node = node.$core) ||
+                    node.version === version && (node = node.$core || node['$' + node.tag] || node.$) ||
                     !(node.nodeType === 1))) {
                     this.response = node;
                 }
@@ -3325,7 +3442,7 @@
 
 
                 if (v2.isPlainObject(prop)) {
-                    elem = descriptor || this.$core;
+                    elem = descriptor || this.$core || this['$' + this.tag] || this.$;
 
                     return v2.each(prop, function (attributes, name) {
                         done(name, attributes);
@@ -3333,7 +3450,7 @@
                 }
 
 
-                elem = elem || this.$core;
+                elem = elem || this.$core || this['$' + this.tag] || this.$;
 
                 isFunction = v2.isFunction(descriptor);
 
@@ -3362,7 +3479,7 @@
                     }
 
                     if (isFunction || isFunction === undefined && v2.isFunction(attributes)) {
-                        attributes = makeDescriptor(sourceValue, attributes, contains && function (value) {
+                        attributes = makeDescriptor(sourceValue, attributes, contains && IE8Callback(function (value) {
                             if (allowFirstSet) {
                                 if (value && !(value === Infinity || value === -Infinity)) {
                                     elem[name] = value;
@@ -3371,7 +3488,8 @@
                             } else {
                                 elem[name] = value;
                             }
-                        }, null, allowFirstSet);
+
+                        }), null, allowFirstSet);
                     }
 
                     if (attributes === undefined || attributes === null) {
@@ -3387,7 +3505,7 @@
                             } : function () {
                                 return elem.getAttribute(name);
                             },
-                            set: contains ? function (value) {
+                            set: contains ? IE8Callback(function (value) {
                                 if (allowFirstSet) {
                                     if (value && !(value === Infinity || value === -Infinity)) {
                                         elem[name] = value;
@@ -3396,7 +3514,7 @@
                                 } else {
                                     elem[name] = value;
                                 }
-                            } : conversionType === 'boolean' ? function (value) {
+                            }) : conversionType === 'boolean' ? function (value) {
                                 if (value) {
                                     elem.setAttribute(name, name);
                                 } else {
@@ -3413,23 +3531,35 @@
                     if (defineOnly || typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue) {
                         if (contains && (attributes === true || "set" in attributes || attributes.writable === true)) {
                             if (completed) {
-                                if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
-                                    elem[name] = sourceValue;
-                                }
-                            } else {
-                                watchStack.push(function () {
+                                IE8Call(function () {
                                     if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
                                         elem[name] = sourceValue;
                                     }
+                                });
+                            } else {
+                                watchStack.push(function () {
+                                    IE8Call(function () {
+                                        if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
+                                            elem[name] = sourceValue;
+                                        }
+                                    });
                                 });
                             }
                         }
                     } else if (attributes === true || "set" in attributes || attributes.writable === true) {
                         if (completed) {
-                            context[name] = sourceValue;
+                            if (defineSurport || !context[name + "Setter"]) {
+                                context[name] = sourceValue;
+                            } else {
+                                context[name + "Setter"](sourceValue);
+                            }
                         } else {
                             watchStack.push(function () {
-                                context[name] = sourceValue;
+                                if (defineSurport || !context[name + "Setter"]) {
+                                    context[name] = sourceValue;
+                                } else {
+                                    context[name + "Setter"](sourceValue);
+                                }
                             });
                         }
                     }
@@ -3458,44 +3588,42 @@
                 variable = wildcards = excludes = controls = callbacks = descriptors = null;
             };
 
-            this.define('completed', function () { return completed; });
+            if (defineSurport) {
+                this.define("show", function (show) {
+                    return makeInternalCall(show, true);
+                });
 
-            this.define("show", function (show) {
-                return function () {
-                    internalCall = false;
-                    try {
-                        return applyCallback(show, arguments, this);
-                    } finally {
-                        internalCall = true;
+                this.define("hide", function (hide) {
+                    return makeInternalCall(hide, false);
+                });
+
+                this.define({
+                    completed: function () {
+                        return completed;
+                    },
+                    tag: function () {
+                        return core_namespace.split('.').pop();
+                    },
+                    namespace: function () {
+                        return core_namespace;
+                    },
+                    wildcards: function () {
+                        return wildcards;
+                    },
+                    variable: function () {
+                        return variable;
                     }
-                };
-            });
+                });
+            } else {
+                this.tag = core_namespace.split('.').pop();
+                this.namespace = core_namespace;
+                this.wildcards = wildcards;
+                this.variable = variable;
+                this.completed = completed;
+                this.show = makeInternalCall(this.show, true);
+                this.hide = makeInternalCall(this.hide, false);
+            }
 
-            this.define("hide", function (hide) {
-                return function () {
-                    internalCall = false;
-                    try {
-                        return applyCallback(hide, arguments, this);
-                    } finally {
-                        internalCall = true;
-                    }
-                };
-            });
-
-            this.define({
-                tag: function () {
-                    return core_namespace.split('.').pop();
-                },
-                namespace: function () {
-                    return core_namespace;
-                },
-                wildcards: function () {
-                    return wildcards;
-                },
-                variable: function () {
-                    return variable;
-                }
-            });
 
             this.define('class', {
                 get: function () {
@@ -3518,28 +3646,21 @@
                 }
             });
 
-            var valueCore;
-
-            this.define('$core', {
-                get: function () {
-                    return valueCore || this['$' + this.tag] || this.$;
-                },
-                set: function (value) {
-                    valueCore = value;
-                }
-            });
-
-            this.define({
-                controls: function () {
-                    return controls || (controls = new V2Controls(this));
-                },
-                previousSibling: function () {
-                    return this.host && this.host.controls.offset(this, -1);
-                },
-                nextSibling: function () {
-                    return this.host && this.host.controls.offset(this, 1);
-                }
-            });
+            if (defineSurport) {
+                this.define({
+                    controls: function () {
+                        return controls || (controls = new V2Controls(this));
+                    },
+                    previousSibling: function () {
+                        return this.host && this.host.controls.offset(this, -1);
+                    },
+                    nextSibling: function () {
+                        return this.host && this.host.controls.offset(this, 1);
+                    }
+                });
+            } else {
+                this.controls = new V2Controls(this);
+            }
 
             computeWildcards(wildcards, 'function', true);
         },
@@ -4008,7 +4129,6 @@
             }
             document.body.classList.add('modal-open');
             this.$.classList.add('in');
-            this.visible = true;
         },
         hide: function () {
             this.$.classList.remove('in');
@@ -4017,7 +4137,6 @@
                 this.$backdrop.classList.remove('in');
             }
             document.body.classList.remove('modal-open');
-            this.visible = false;
         },
         commit: function () {
             var vm = this;

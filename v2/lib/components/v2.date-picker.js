@@ -13,7 +13,7 @@
                 return factory(v2kit);
             } :
             factory(v2kit);
-}(function (/** @type CN.V2kitStatic */v2) {
+}(function (/** @type Use.V2kitStatic */v2) {
     var
         doc = document,
         docEl = doc.documentElement;
@@ -348,7 +348,9 @@
         },
         timePicker: function (type) {//0:时、1:分、2:秒
             var when, vm = this;
+
             this.hidePicker();
+
             switch (type) {
                 case 0:
                     this.$hourPicker
@@ -440,7 +442,7 @@
                         return this.host.value;
                     }
 
-                    elem = this.host.$core;
+                    elem = this.host.$core || this.host['$' + this.host.tag] || this.host.$;
 
                     if (rinputTag.test(elem.tagName)) {
                         return elem.value;
@@ -509,10 +511,14 @@
 
                     if (this.host) {
                         if ('value' in this.host) {
-                            return this.host.value = value;
+                            if (this.host.valueSetter) {
+                                return this.host.valueSetter(value), value;
+                            } else {
+                                return this.host.value = value;
+                            }
                         }
 
-                        elem = this.host.$core;
+                        elem = this.host.$core || this.host['$' + this.host.tag] || this.host.$;
 
                         if (rinputTag.test(elem.tagName)) {
                             return elem.value = value;
@@ -595,7 +601,7 @@
             }, 1200);
         },
         load: function (value) {
-            this.ymd = (value || this.value).match(/\d+/g);
+            this.ymd = (value || this.valueGetter ? this.valueGetter() : this.value).match(/\d+/g);
             if (this.showHms) {
                 this.timeView(this.ymd[3], this.ymd[4], this.ymd[5]);
             }
@@ -607,9 +613,17 @@
         commit: function () {
             var vm = this, valueSet = function (y, M, d, h, m, s) {
                 if (arguments.length === 1 && v2.isArraylike(y)) {
-                    vm.value = '{0}-{1}-{2} {3}:{4}:{5}'.format(y[0], +y[1] + 1, y[2], y[3] | 0, y[4] | 0, y[5] | 0);
+                    if (vm.valueSetter) {
+                        vm.valueSetter('{0}-{1}-{2} {3}:{4}:{5}'.format(y[0], +y[1] + 1, y[2], y[3] | 0, y[4] | 0, y[5] | 0));
+                    } else {
+                        vm.value = '{0}-{1}-{2} {3}:{4}:{5}'.format(y[0], +y[1] + 1, y[2], y[3] | 0, y[4] | 0, y[5] | 0);
+                    }
                 } else {
-                    vm.value = '{0}-{1}-{2} {3}:{4}:{5}'.format(y, +M + 1, d, 0 | h, 0 | m, 0 | s);
+                    if (vm.valueSetter) {
+                        vm.valueSetter('{0}-{1}-{2} {3}:{4}:{5}'.format(y, +M + 1, d, 0 | h, 0 | m, 0 | s));
+                    } else {
+                        vm.value = '{0}-{1}-{2} {3}:{4}:{5}'.format(y, +M + 1, d, 0 | h, 0 | m, 0 | s);
+                    }
                 }
 
                 if (vm.autoClose) {
@@ -650,18 +664,28 @@
                     vm.tabMonth(+this.getAttribute('m-switch'));
                 });
 
-                this.$header.on('stop.click', '[y]:not(.disabled)', function () {
+                this.$header.on('stop.click', '[y]', function () {
+                    if (this.classList.contains('.disabled')) {
+                        return;
+                    }
+
                     vm.hidePicker();
 
                     vm.dayView(+this.innerHTML, vm.ymd[1], vm.ymd[2]);
                 });
 
-                this.$header.on('stop.click', '[m]:not(.disabled)', function () {
+                this.$header.on('stop.click', '[m]', function () {
+                    if (this.classList.contains('.disabled')) {
+                        return;
+                    }
                     vm.hidePicker();
                     vm.dayView(vm.ymd[0], +this.innerHTML - 1, vm.ymd[2]);
                 });
 
-                this.$.on('stop.click', '[d]:not(.disabled)', function () {
+                this.$.on('stop.click', '[d]', function () {
+                    if (this.classList.contains('.disabled')) {
+                        return;
+                    }
                     vm.hidePicker();
                     if (vm.showHms && vm.showBtn) {
                         vm.dayView(+this.getAttribute('y'), +this.getAttribute('m'), +this.getAttribute('d'));
@@ -687,7 +711,10 @@
                     this.$hour.on('stop.click', function () {
                         return vm.timePicker(0);
                     });
-                    this.$hourPicker.on('stop.click', 'a:not(.disabled)', function () {
+                    this.$hourPicker.on('stop.click', 'a', function () {
+                        if (this.classList.contains('.disabled')) {
+                            return;
+                        }
                         return hmsCallback(this, 0);
                     });
                 }
@@ -697,7 +724,10 @@
                         return vm.timePicker(1);
                     });
 
-                    this.$minutePicker.on('stop.click', 'a:not(.disabled)', function () {
+                    this.$minutePicker.on('stop.click', 'a', function () {
+                        if (this.classList.contains('.disabled')) {
+                            return;
+                        }
                         return hmsCallback(this, 1);
                     });
                 }
@@ -706,7 +736,10 @@
                     this.$sec.on('stop.click', function () {
                         return vm.timePicker(2);
                     });
-                    this.$secPicker.on('stop.click', 'a:not(.disabled)', function () {
+                    this.$secPicker.on('stop.click', 'a', function () {
+                        if (this.classList.contains('.disabled')) {
+                            return;
+                        }
                         return hmsCallback(this, 2);
                     });
                 }
@@ -715,7 +748,11 @@
             if (this.showBtn) {
                 if (this.showClearBtn) {
                     this.$clear.on('stop.click', function () {
-                        vm.value = '';
+                        if (vm.valueSetter) {
+                            vm.valueSetter('');
+                        } else {
+                            vm.value = '';
+                        }
 
                         if (vm.dialog) {
                             vm.hide();
@@ -773,7 +810,8 @@
                 });
 
             } else if (this.autoDemand && this.host) {
-                this.host.$core.on('click', function () {
+                var core = this.host.$core || this.host['$' + this.host.tag] || this.host.$;
+                core.on('click', function () {
                     hideAll();
                     vm.min = vm.host.invoke("date-min");
                     vm.max = vm.host.invoke("date-max")

@@ -14,11 +14,11 @@
                 return factory(v2);
             } :
             factory(v2);
-}(function (/** @type CN.V2kitStatic */v2) {
-    
+}(function (/** @type Use.V2kitStatic */v2) {
+
     v2.use('form', {
         components: {
-            'input.async': function (callback) {
+            'input': function (callback) {
                 require(['components/v2.input'], callback);
             }
         },
@@ -92,7 +92,6 @@
                     done(view);
                     break;
             }
-
             v2.each(this.buttons, this.lazy(true, function (button) {
                 vm.create('button', button);
             }));
@@ -151,10 +150,10 @@
                 .then(function (response) {
                     vm.invoke("ajax-success", response);
                 })
-                .catch(function (error) {
+                ["catch"](function (error) {
                     vm.invoke("ajax-fail", error);
                 })
-                .finally(function () {
+                ["finally"](function () {
                     vm.wait();
                 });
         },
@@ -224,12 +223,12 @@
                 .then(function (response) {
                     vm.invoke("submit-success", response);
                 })
-                .catch(function (error) {
-                    vm.invoke("submit-fail", error);
-                })
-                .finally(function () {
-                    vm.wait();
-                });
+            ["catch"](function (error) {
+                vm.invoke("submit-fail", error);
+            })
+            ["finally"](function () {
+                vm.wait();
+            });
         },
         ready: function () {
             var vm = this;
@@ -242,6 +241,8 @@
                 try {
                     vm.reset();
                 } catch (_) { }
+
+                return false;
             });
         },
         commit: function () {

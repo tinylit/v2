@@ -34,8 +34,6 @@
         },
         render: function () {
             this.$.classList.add('tooltip', 'fade');
-
-            this.$viewport = v2.isString(this.viewport) ? document.querySelector(this.viewport) : this.viewport;
         },
         build: function () {
             this.$.appendChild('.tooltip-arrow+.tooltip-inner'.htmlCoding().html());
