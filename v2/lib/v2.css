@@ -424,10 +424,6 @@ input::-webkit-clear-button {
     margin-bottom: 5px;
 }
 
-.checkbox-inline {
-    padding-top: 5px;
-}
-
     .radio label,
     .checkbox label,
     .radio-inline label,

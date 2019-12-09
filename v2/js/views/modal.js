@@ -59,6 +59,7 @@
                 console.log("view:", this.view === view);
                 console.log("buttons:", this.buttons === buttons);
                 this.base.build();
+                this.base.b
             },
             buttons: [{
                 text: "重置",

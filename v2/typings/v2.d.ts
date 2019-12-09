@@ -44,9 +44,6 @@
     /** 同步方法组件(key是“{TAG}”) */
     interface FunctionComponents extends PlainObject<(resolve: () => void) => void> { }
 
-    /** 配置 */
-    interface Options<T extends V2ControlBase> extends T, PlainObject<(this: T, ...args: any[]) => any> { }
-
     /** 控件基类（当前控件实现的方法，仅做语法提示，不一定可以调用指定方法。） */
     interface V2ControlBase {
 		/**
@@ -93,7 +90,38 @@
          * @param callback 回调函数
          */
         lazy<T>(callback: () => T, arg: any, ...args: any[]): (arg: any, ...args: any[]) => T;
-
+        /**
+         * 调用控件“methods”属性中，指定属性名称为“name”的方法。
+         * @param name 控件“methods”中属性名称为“name”的方法。
+         * @param args 函数执行的参数。
+         */
+        invoke(name: string, ...args: any[]): any;
+        /**
+         * 调用指定方法。
+         * @param fn 方法。
+         * @param args 函数执行的参数。
+         */
+        invoke<T>(fn: (...args: any[]) => T, ...args: any[]): T;
+        /**
+         * 判断当前控件是否类似于指定TAG名称（即当前控件继承TAG对应的控件）。
+         * @param tag 名称
+         */
+        like(tag: string): boolean;
+        /**
+         * 判断当前控件是否类似于指定TAG组名称（即当前控件继承TAG组中任意控件）。
+         * @param args tag名称
+         */
+        like(...args: string[]): boolean;
+        /**
+        * 判断当前宿主控件是否类似于指定TAG名称（即当前控件继承TAG组中任意控件）。
+        * @param tag 名称
+        */
+        hostlike(tag: string): boolean;
+        /**
+         * 判断当前宿主控件是否类似于指定TAG组名称（即当前宿主控件继承TAG对应的控件）。
+         * @param args tag名称
+         */
+        hostlike(...args: string[]): boolean;
         /** 使控件获取焦点 */
         focus(): void;
         /** 显示控件 */
@@ -160,19 +188,19 @@
         * @param tag TAG
         * @param options 配置信息
         */
-        create<K extends keyof V2ControlMap>(tag: K, options: Options<V2ControlMap[K]>): V2ControlMap[K];
+        create<K extends keyof V2ControlMap>(tag: K, options: Dev.Options<V2ControlMap[K]>): V2ControlMap[K];
         /**
          * 渲染子控件
          * @param tag TAG
          * @param options 配置信息
          */
-        create<TAG extends string>(tag: TAG, options: Options<V2Control<TAG>>): V2Control<TAG>;
+        create<TAG extends string>(tag: TAG, options: Dev.Options<V2Control<TAG>>): V2Control<TAG>;
         /**
          * 渲染子控件
          * @param tag TAG
          * @param options 配置信息
          */
-        create(options: Options<V2Control>): V2Control;
+        create(options: Dev.Options<V2Control>): V2Control;
         /** 启动 */
         startup(): void;
         /** 构建插件 */
@@ -205,19 +233,19 @@
          * @param prop 属性名称。
          * @param descriptorGet 设置属性值的方法。
          */
-        define<T>(this: T, prop: string, descriptorGet: () => any): T;
+        define<T>(this: T, prop: string, descriptorGet: (this: T) => any): T;
         /**
          * 定义属性（设置只写方法）
          * @param prop 属性名称。
          * @param descriptorSet 设置属性值的方法。
          */
-        define<T, TValue>(this: T, prop: string, descriptorSet: (value: TValue) => TValue | void): T;
+        define<T, TValue>(this: T, prop: string, descriptorSet: (this: T, value: TValue) => TValue | void): T;
         /**
          * 定义属性（设置可读写方法）
          * @param prop 属性名称。
          * @param descriptorGetSet 设置属性值的方法。
          */
-        define<T, TValue>(this: T, prop: string, descriptorGetSet: (value: TValue, oldValue: TValue) => TValue | void): T;
+        define<T, TValue>(this: T, prop: string, descriptorGetSet: (this: T, value: TValue, oldValue: TValue) => TValue | void): T;
     }
 
     /** 通配符 */
@@ -333,7 +361,7 @@ declare namespace Use {
     interface Button extends MeasureV2Control<"button"> {
         /** 类型 */
         type: 'button' | 'submit' | 'reset';
-        /* 按钮文字 */
+        /** 按钮文字 */
         text: string;
         /** 内容 */
         html: string;
@@ -374,6 +402,11 @@ declare namespace Use {
 
     /** 输入框基类 */
     interface InputBase extends DefaultV2ControlBase {
+        /**
+         * 指定渲染的HTML TAG元素。
+         * @param tag 元素TAG名称。
+         */
+        init(tag?: string): void | false;
         /**
         *  自定义验证消息
         * @param message 消息
@@ -821,6 +854,11 @@ declare namespace Use {
          * 生成 ArrayThen 集合
          * @param args 元素集合
          */
+        when<T>(args: ArrayLike<T>): ArrayThen<T>;
+        /**
+         * 生成 ArrayThen 集合
+         * @param args 元素集合
+         */
         when<T>(...args: T[]): ArrayThen<T>;
         /**
          * 合并集合
@@ -1074,7 +1112,7 @@ declare namespace Use {
          * 注册全局配置（将在所有组件中体现）
          * @param option 配置
          */
-        use(option: Options): void;
+        use(option: V2Control): void;
         /**
          * 获取 TAG 配置
          * @param tag TAG
@@ -1086,40 +1124,40 @@ declare namespace Use {
         * @param tag TAG
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, option: Options<V2ControlMap[K]>): void;
+        use<K extends keyof V2ControlMap>(tag: K, option: V2ControlMap[K]): void;
         /**
          * 注册 TAG 始终需要的配置
          * @param tag TAG
          * @param option 配置
          */
-        use<TAG extends string>(tag: TAG, option: Options<V2Control<TAG>>): void;
+        use<TAG extends string>(tag: TAG, option: V2Control<TAG>): void;
         /**
         * 注册 TAG 始终需要的配置
         * @param tag TAG
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, when: (option: V2ControlMap[K]) => boolean, option: Options<V2ControlMap[K]>): void;
+        use<K extends keyof V2ControlMap>(tag: K, when: (option: V2ControlMap[K]) => boolean, option: V2ControlMap[K]): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
          * @param when 条件过滤函数
          * @param option 配置
          */
-        use<TAG extends string>(tag: TAG, when: (option: V2Control<TAG>) => boolean, option: Options<V2Control<TAG>>);
+        use<TAG extends string>(tag: TAG, when: (option: V2Control<TAG>) => boolean, option: V2Control<TAG>);
         /**
         * 注册 TAG 始终需要的配置
         * @param tag TAG
         * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, when: string, option: Options<V2ControlMap[K]>): void;
+        use<K extends keyof V2ControlMap>(tag: K, when: string, option: V2ControlMap[K]): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
          * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
          * @param option 配置
          */
-        use<TAG extends string>(tag: TAG, when: string, option: Options<V2Control<TAG>>);
+        use<TAG extends string>(tag: TAG, when: string, option: V2Control<TAG>);
         /**
          * 注册 TAG 组件之前或之后处理一些事情。
          * @param tag TAG
@@ -1283,7 +1321,7 @@ declare namespace Dev {
     }
 
     /** 对象组件(key是“{TAG}”) */
-    interface Options<T extends Use.V2ControlBase = Use.V2Control, TContext = V2Control<T>> extends T, Use.PlainObject<(this: TContext, ...args: any[]) => any> { }
+    interface Options<T extends Use.V2ControlBase = Use.V2Control, TContext = V2Control<T>> extends T, TContext, Use.PlainObject<(this: TContext, ...args: any[]) => any> { }
 }
 
 /** 辅助开发 */
@@ -1321,27 +1359,29 @@ interface Element {
      * @param type 事件类型（如:click）
      * @param handle 事件
      */
-    on(type: string, handle: Function): any;
+    on(type: string, handle: Function): void;
     /**
      * 绑定事件
      * @param type 事件类型（如:click）
      * @param selector 选择器（触发元素满足选择器时触发事件）
      * @param handle 事件
      */
-    on(type: string, selector: string, handle: Function): any;
+    on(type: string, selector: string, handle: Function): void;
     /**
      * 解绑事件
      * @param type 事件类型（如:click）
      * @param handle 事件
      */
-    off(type: string, handle: Function): any;
+    off(type: string, handle: Function): void;
     /**
      * 解绑事件
      * @param type 事件类型（如:click）
      * @param selector 选择器
      * @param handle 事件
      */
-    off(type: string, selector: string, handle: Function): any;
+    off(type: string, selector: string, handle: Function): void;
+    /** 移除所有子节点 */
+    empty(): Element;
     /**
      * 返回style属性值
      * @param name 属性名称
