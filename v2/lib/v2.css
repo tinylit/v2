@@ -424,22 +424,22 @@ input::-webkit-clear-button {
     margin-bottom: 5px;
 }
 
-    .radio label,
-    .checkbox label,
-    .radio-inline label,
-    .checkbox-inline label {
-        padding-left: 0;
-        margin-bottom: 0;
-    }
+.radio label,
+.checkbox label,
+.radio-inline label,
+.checkbox-inline label {
+    padding-left: 0;
+    margin-bottom: 0;
+}
 
-        .radio label > span,
-        .checkbox label > span,
-        .radio-inline label > span,
-        .checkbox-inline label > span {
-            padding-left: 5px;
-            padding-right: 5px;
-            vertical-align: text-bottom;
-        }
+    .radio label > span,
+    .checkbox label > span,
+    .radio-inline label > span,
+    .checkbox-inline label > span {
+        padding-left: 5px;
+        padding-right: 5px;
+        vertical-align: text-bottom;
+    }
 
 .radio-inline,
 .checkbox-inline {
@@ -1460,9 +1460,11 @@ textarea.form-control {
 .fade {
     filter: alpha(opacity=0);
 }
-.fade.in {
-    filter: alpha(opacity=100);
-}
+
+    .fade.in {
+        filter: alpha(opacity=100);
+    }
+
 .modal.fade {
     display: block;
 }
@@ -1475,3 +1477,40 @@ textarea.form-control {
     float: left;
 }
 /** ----------------------------------------------------------------- Modal ------------------------------------------------------------------*/
+
+
+.dropdown-submenu {
+    position: relative;
+}
+    .dropdown-menu > li > a:hover, 
+    .dropdown-menu > li > a:focus,
+    .dropdown-submenu:hover > a, .dropdown-submenu:focus > a {
+        color: #ffffff;
+        text-decoration: none;
+        background-color: #0081c2;
+        background-image: -moz-linear-gradient(top, #0088cc, #0077b3);
+        background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#0088cc), to(#0077b3));
+        background-image: -webkit-linear-gradient(top, #0088cc, #0077b3);
+        background-image: -o-linear-gradient(top, #0088cc, #0077b3);
+        background-image: linear-gradient(to bottom, #0088cc, #0077b3);
+        background-repeat: repeat-x;
+        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff0088cc', endColorstr='#ff0077b3', GradientType=0);
+    }
+
+    .dropdown-submenu:hover > .dropdown-menu {
+        top: 0;
+        left: 100%;
+        margin-top: -6px;
+        margin-left: -1px;
+        border-top-left-radius: 0;
+        display: block;
+    }
+
+.dropup .dropdown-submenu > .dropdown-menu {
+    top: auto;
+    bottom: 0;
+    margin-top: 0;
+    margin-bottom: -6px;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 0;
+}

@@ -100,19 +100,19 @@
                     vm.hide();
                 }, this.duration);
             }
-
+           
             switch (direction) {
                 case 'top':
                     return this.$.styleCb({
                         left: left + (width - offsetWidth) / 2,
                         top: top - offsetHeight
                     });
-                case 'top-left':
+                case 'top-start':
                     return this.$.styleCb({
                         left: left,
                         top: top - offsetHeight
                     });
-                case 'top-right':
+                case 'top-end':
                     return this.$.styleCb({
                         left: right,
                         top: top - offsetHeight
@@ -138,7 +138,7 @@
                         left: left + (width - offsetWidth) / 2,
                         top: bottom
                     });
-                case 'bottom-right':
+                case 'bottom-end':
                     return this.$.styleCb({
                         left: right,
                         top: bottom
@@ -148,7 +148,7 @@
                         left: left - offsetWidth,
                         top: top + (height - offsetHeight) / 2
                     });
-                case 'bottom-left':
+                case 'bottom-start':
                 default:
                     return this.$.styleCb({
                         left: left,

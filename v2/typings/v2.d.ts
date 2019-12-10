@@ -51,10 +51,6 @@
          * @param tag 控件元素TAG，默认：div
          */
         init(tag?: string, tagName?: string): void | false;
-        /** 将控件属性和核心元素属性进行绑定 */
-        usb(): void | false;
-        /** 完成提交（绑定事件） */
-        commit(): void | false;
         /**
          * 按照状态流程持续构建插件。
          * @param state 状态，不传的时候取控件当前状态。
@@ -122,6 +118,50 @@
          * @param args tag名称
          */
         hostlike(...args: string[]): boolean;
+        /**
+         * 在当前控件主元素下查找满足选择器的第一个元素。
+         * @param selectors 选择器
+         */
+        take(selectors: string): Element;
+        /**
+         * 在指定上下文中下查找满足选择器的第一个元素。
+         * @param context 上下文
+         * @param selectors 选择器
+         */
+        take(selectors: string, context: Element): Element;
+        /**
+         * 在指定上下文中下查找满足选择器的所有元素。
+         * @param context 上下文
+         * @param selectors 选择器
+         * @param all 查找所有
+         */
+        take(selectors: string, context: Element, all: true): Element;
+        /**
+         * 返回只包含当前主元素的集合。
+         */
+        when(): ArrayThen<Element>;
+        /**
+         * 在当前控件主元素下查找满足选择器的所有元素。
+         * @param selectors 选择器
+         */
+        when(selectors: string): ArrayThen<Element>;
+        /**
+         * 在指定上下文中下查找满足选择器的所有元素。
+         * @param selectors 选择器
+         * @param context 上下文
+         */
+        when(selectors: string, context: Element): ArrayThen<Element>;
+        /**
+         * 返回包含所有参数的集合。
+         * @param elem 元素
+         */
+        when(...args: Element[]): ArrayThen<Element>;
+        /**
+         * 在指定上下文中下查找满足选择器的所有元素。
+         * @param selectors 选择器
+         * @param context 上下文
+         */
+        when(selectors: string, context: Element): ArrayThen<Element>;
         /** 使控件获取焦点 */
         focus(): void;
         /** 显示控件 */
@@ -159,8 +199,8 @@
         $: Element;
         /** 插件主元素的父元素 */
         $$: Element;
-        /** 需求、要求 */
-        demand: Element;
+        /** 请求上下文 */
+        httpContext: Element;
         /** 请求元素 */
         request: Element;
         /** 响应元素 */
@@ -203,8 +243,6 @@
         create(options: Dev.Options<V2Control>): V2Control;
         /** 启动 */
         startup(): void;
-        /** 构建插件 */
-        build(): void;
         /** 编译控件（属性继承和方法继承） */
         compile(): void;
         /**
@@ -213,15 +251,11 @@
          */
         destroy(deep?: false): void;
         /**
-         * 定义属性
-         * @param props 多个名称用空格分开。
+         * 定义属性(无参函数表示定义只读属性)
+         * @param prop 属性名称。
+         * @param descriptor 设置属性值的方法。
          */
-        define<T>(this: T, props: string): T;
-        /**
-         * 定义多个属性
-         * @param value 属性对象
-         */
-        define<T>(this: T, value: PropertyDescriptorMap): T;
+        define<T, TValue>(this: T, prop: string, descriptor: (this: T) => TValue | ((this: T, value: TValue, oldValue?: TValue) => TValue | void)): T;
         /**
          * 定义属性
          * @param prop 属性名称
@@ -229,23 +263,15 @@
          */
         define<T>(this: T, prop: string, descriptor: PropertyDescriptor): T;
         /**
-         * 定义属性（设置只读方法）
-         * @param prop 属性名称。
-         * @param descriptorGet 设置属性值的方法。
+         * 定义多个属性
+         * @param value 属性对象
          */
-        define<T>(this: T, prop: string, descriptorGet: (this: T) => any): T;
+        define<T>(this: T, value: PropertyDescriptorMap): T;
         /**
-         * 定义属性（设置只写方法）
-         * @param prop 属性名称。
-         * @param descriptorSet 设置属性值的方法。
+         * 定义属性
+         * @param props 多个名称用空格分开。
          */
-        define<T, TValue>(this: T, prop: string, descriptorSet: (this: T, value: TValue) => TValue | void): T;
-        /**
-         * 定义属性（设置可读写方法）
-         * @param prop 属性名称。
-         * @param descriptorGetSet 设置属性值的方法。
-         */
-        define<T, TValue>(this: T, prop: string, descriptorGetSet: (this: T, value: TValue, oldValue: TValue) => TValue | void): T;
+        define<T>(this: T, props: string): T;
     }
 
     /** 通配符 */
@@ -298,7 +324,7 @@
     }
 
     /** 控件*/
-    interface V2Control<TAG extends string = "*", T extends V2ControlBase = V2ControlBase> extends V2ControlStandard {
+    interface V2Control<TAG extends string = "*", T extends V2ControlBase = CommonV2ControlBase> extends V2ControlStandard {
         /** 控件TAG */
         readonly tag: TAG;
         /** 控件声明空间 */
@@ -317,24 +343,86 @@
         nextSibling: V2Control;
     }
 
-    /** 默认控件基类 */
-    interface DefaultV2ControlBase extends V2ControlBase {
+    /** 公共的控件基类 */
+    interface CommonV2ControlBase extends V2ControlBase {
         /** 设计 */
         design(): void | false;
-        /** 构建 */
+        /**
+        * 初始化控件（查询或 生产主元素）
+        */
+        init(): void | false;
+        /** 
+         *  构建 HTML 代码。
+         *  @param view 视图。
+         */
         build(): void | false;
         /**
          * 渲染控件
+         * @param variable 控件全局变量
          */
         render(): void | false;
+        /**
+         * 建立属性监听。
+         * @param watch 督查
+         */
+        usb(): void | false;
         /** 就绪 */
         ready(): void | false;
-        /** 加载数据 */
+        /** 取数（仅 access 为真时，会自动调用） */
+        ajax(): void | false;
+        /**
+         * 加载数据。
+         * @param data 数据。
+         */
         load(): void | false;
+        /**
+         * 完成提交（绑定用户交互事件）
+         * @param variable 控件全局变量
+         */
+        commit(): void | false;
+    }
+
+    /** 默认控件流程 */
+    interface FlowGraph<T extends V2ControlStandard = V2ControlStandard> {
+        /** 设计 */
+        design(): void | false;
+        /**
+        * 初始化控件（查询或 生产主元素）
+        */
+        init(): void | false;
+        /** 
+         *  构建 HTML 代码。
+         *  @param view 视图。
+         */
+        build(view?: T["view"]): void | false;
+        /**
+         * 渲染控件
+         * @param variable 控件全局变量
+         */
+        render(variable?: T["variable"]): void | false;
+        /**
+         * 建立属性监听。
+         * @param watch 督查
+         */
+        usb(watch?: T["watch"]): void | false;
+        /** 就绪 */
+        ready(): void | false;
+        /** 取数（仅 access 为真时，会自动调用） */
+        ajax(): void | false;
+        /**
+         * 加载数据。
+         * @param data 数据。
+         */
+        load(data?: T["data"]): void | false;
+        /**
+         * 完成提交（绑定用户交互事件）
+         * @param variable 控件全局变量
+         */
+        commit(variable?: T["variable"]): void | false;
     }
 
     /** 尺寸 */
-    interface MeasureV2Control<TAG extends string, T extends V2ControlBase = V2ControlBase> extends V2Control<TAG, T> {
+    interface MeasureV2Control<TAG extends string, T extends V2ControlBase = CommonV2ControlBase> extends V2Control<TAG, T> {
         /** 小号 */
         xs: boolean;
         /** 中号 */
@@ -353,12 +441,12 @@ declare namespace Use {
         'modal': Modal;
     }
     /** 等待框 */
-    interface Wait extends V2Control<"wait">, DefaultV2ControlBase {
+    interface Wait extends V2Control<"wait">, FlowGraph<Wait>, CommonV2ControlBase {
         /** 风格 */
         style: 1 | 2 | 3 | 4 | 5 | 6;
     }
     /** 按钮 */
-    interface Button extends MeasureV2Control<"button"> {
+    interface Button extends MeasureV2Control<"button">, CommonV2ControlBase {
         /** 类型 */
         type: 'button' | 'submit' | 'reset';
         /** 按钮文字 */
@@ -367,7 +455,7 @@ declare namespace Use {
         html: string;
     }
     /** 模态框 */
-    interface Modal extends MeasureV2Control<"modal">, DefaultV2ControlBase {
+    interface Modal extends MeasureV2Control<"modal">, FlowGraph<Modal>, CommonV2ControlBase {
         /** 是否显示遮罩层 */
         backdrop: boolean;
         /** ESC 关闭 */
@@ -398,10 +486,11 @@ declare namespace Use {
         "form": Form;
         "tooltip": Tooltip;
         "date-picker": DatePicker;
+        "dropdown": Dropdown;
     }
 
     /** 输入框基类 */
-    interface InputBase extends DefaultV2ControlBase {
+    interface InputBase extends CommonV2ControlBase {
         /**
          * 指定渲染的HTML TAG元素。
          * @param tag 元素TAG名称。
@@ -419,7 +508,9 @@ declare namespace Use {
     }
 
     /** 提示工具 */
-    interface Tooltip extends DefaultV2ControlBase {
+    interface Tooltip extends V2Control<"tooltip">, FlowGraph<Tooltip>, CommonV2ControlBase {
+        /** 是否脱离文档显示 */
+        fixed: boolean;
         /** 提示内容 */
         content: string;
         /** 
@@ -428,11 +519,11 @@ declare namespace Use {
          */
         duration: number;
         /** 显示方位 */
-        direction: "auto" | "top-left" | "top" | "top-right" | "right" | "bottom-left" | "bottom" | "bottom-right" | "left";
+        direction: "auto" | "top-start" | "top" | "top-end" | "right" | "bottom-start" | "bottom" | "bottom-end" | "left";
     }
 
     /** 日期选择框基类 */
-    interface DatePickerBase extends DefaultV2ControlBase {
+    interface DatePickerBase extends CommonV2ControlBase {
         /**
          * 检查日期有效性
          * @param year 年
@@ -511,7 +602,7 @@ declare namespace Use {
     }
 
     /** 日期选择器 */
-    interface DatePicker extends V2Control<"date-picker">, DatePickerBase {
+    interface DatePicker extends V2Control<"date-picker">, FlowGraph<DatePicker>, DatePickerBase {
         /** 
          *  最小值
          *  @default new Date(1900, 0, 1)
@@ -539,8 +630,8 @@ declare namespace Use {
         showOkBtn: boolean;
         /** 自动关闭 */
         autoClose: boolean;
-        /** 自动实现方案 */
-        autoDemand: boolean;
+        /** 自动策划 */
+        autoScheme: boolean;
         /** 周-至周日标题 */
         week: Array<string>;
         /** 日期格式 */
@@ -548,7 +639,7 @@ declare namespace Use {
     }
 
     /** 输入框 */
-    interface Input extends MeasureV2Control<"input">, InputBase {
+    interface Input extends MeasureV2Control<"input">, FlowGraph<Input>, InputBase {
         readonly $: HTMLInputElement;
         /** 最小值限制 */
         min: number;
@@ -591,7 +682,7 @@ declare namespace Use {
     }
 
     /** 选项框 */
-    interface Input extends MeasureV2Control<"input">, InputBase {
+    interface Input extends MeasureV2Control<"input">, FlowGraph<Input>, InputBase {
         /** 类型 */
         type: "redio" | "checkbox";
         /** 是否选中 */
@@ -605,7 +696,7 @@ declare namespace Use {
     }
 
     /** 日期输入框 */
-    interface Input extends MeasureV2Control<"input">, InputBase {
+    interface Input extends MeasureV2Control<"input">, FlowGraph<Input>, InputBase {
         /** 类型 */
         type: "time" | "date" | "datetime" | "datetime-local";
         /** 
@@ -621,7 +712,7 @@ declare namespace Use {
     }
 
     /** 多行输入框 */
-    interface Textarea extends MeasureV2Control<"textarea", InputBase>, InputBase {
+    interface Textarea extends MeasureV2Control<"textarea", InputBase>, FlowGraph<Textarea>, InputBase {
         /** 最小值限制 */
         min: number;
         /** 最大值限制 */
@@ -662,8 +753,11 @@ declare namespace Use {
         cols: number;
     }
 
+    /** 选择框基类 */
+    interface SelectBase extends CommonV2ControlBase { }
+
     /** 选择框 */
-    interface Select extends MeasureV2Control<"select">, DefaultV2ControlBase {
+    interface Select extends MeasureV2Control<"select">, FlowGraph<Select>, SelectBase {
         /** 只读 */
         readonly: boolean;
         /** 禁用 */
@@ -687,7 +781,7 @@ declare namespace Use {
     }
 
     /** 表单基类 */
-    interface FormBase extends DefaultV2ControlBase {
+    interface FormBase extends CommonV2ControlBase {
         /**
          * 等待框
          * @param show 显示或隐藏等待框。
@@ -706,7 +800,7 @@ declare namespace Use {
     }
 
     /** 表单 */
-    interface Form extends MeasureV2Control<"form">, FormBase {
+    interface Form extends MeasureV2Control<"form">, FlowGraph<Form>, FormBase {
         /** 行内布局：添加【form-inline】类 */
         inline: boolean;
         /** 垂直布局：添加【form-horizontal】类 */
@@ -729,6 +823,40 @@ declare namespace Use {
         /** 按钮组 */
         buttons: Array<Button>;
     }
+
+    /** 下拉菜单基类 */
+    interface DropdownBase extends CommonV2ControlBase { }
+
+    /** 配置项 */
+    interface DropdownOption extends PlainObject<boolean | number | string> {
+        /** 显示文字 */
+        text: string;
+        /** 跳转地址 */
+        href?: string;
+    }
+
+    /** 下拉菜单 */
+    interface Dropdown extends MeasureV2Control<"dropdown">, FlowGraph<Dropdown>, DropdownBase {
+        /** 
+         *  方位 
+         *  @default bottom
+         */
+        direction: "bottom" | "top";
+        /** 自动策划 */
+        autoScheme: boolean;
+        /** 数据(从“view”中分析提取) */
+        readonly data: Array<DropdownOption>;
+        /**
+         * 视图
+         * 说明：Boolean 代表分割线。
+         *       String 代表标题。
+         *       Object 代表项数据。
+         *       Array 代码子菜单。
+         */
+        view: Array<boolean | string | DropdownOption | Array<boolean | string | DropdownOption>>;
+        /** 默认选中项 */
+        selectedIndex: number;
+    }
 }
 
 /** 静态方法 */
@@ -746,9 +874,9 @@ declare namespace Use {
         /**
          * 获取对象数据类型
          * @param obj 需要识别的对象。
-         * @returns {String} 返回对象的类型字符串。
+         * @returns {string} 返回对象的类型字符串。
          */
-        type(obj: any): typeof obj;
+        type(obj: any): "boolean" | "number" | "string" | "date" | "array" | "function" | "regex" | "error" | "object";
         /**
          * 为对象定义属性
          * @param obj 对象
@@ -844,8 +972,11 @@ declare namespace Use {
         * @param index 位置：小于 0 时，取 this.length + index 的元素。
         */
         nth(index: number): T;
-        /** 移除集合中所有元素 */
-        destroy(): void;
+        /** 
+         *  移除集合中所有元素 
+         *  @param deep 为真时，将摧毁根数据，否则仅摧毁当前集合数据，
+         */
+        destroy(deep: ?boolean): void;
     }
 
     /** 数组或对象 */
@@ -1032,6 +1163,86 @@ declare namespace Use {
     /** DOM 辅助 */
     interface V2kitStatic {
         /**
+         * 查找当前DOM下满足指定选择器的第一个元素。
+         * @param selectors 选择器
+         */
+        take(selectors: string): Element;
+        /**
+         * 查找指定上下文下满足指定选择器的第一个元素。
+         * @param selectors 选择器
+         * @param context 上下文
+         */
+        take(selectors: string, context: Element): Element;
+        /**
+         * 查找指定上下文下满足指定选择器的所有元素。
+         * @param selectors 选择器
+         * @param context 上下文
+         * @param all 查找所有
+         */
+        take(selectors: string, context: Element, all: true): Element;
+        /**
+         * 指定元素是否满足自定选择器条件。
+         * @param elem 元素
+         * @param selectors 选择器
+         */
+        match(elem: Element, selectors: string): boolean;
+        /**
+         * 为指定元素注册订阅事件。
+         * @param elem 元素
+         * @param type 类型
+         * @param listener 监听
+         */
+        subscribe<K extends keyof ElementEventMap>(elem: Element, type: K, listener: (this: Element, ev: ElementEventMap[K]) => any): void;
+        /**
+         * 为指定元素注册订阅事件。
+         * @param elem 元素
+         * @param type 类型
+         * @param listener 监听
+         */
+        subscribe(elem: Element, type: string, listener: EventListener): void;
+        /**
+         * 为DOM注册订阅事件。
+         * @param document DOM
+         * @param type 类型
+         * @param listener 监听
+         */
+        subscribe<K extends keyof DocumentEventMap>(document: Document, type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any): void;
+        /**
+        * 为DOM注册订阅事件。
+        * @param document DOM
+        * @param type 类型
+        * @param listener 监听
+        */
+        subscribe(document: Document, type: string, listener: EventListener): void;
+        /**
+         * 取消指定元素订阅事件。
+         * @param elem 元素
+         * @param type 类型
+         * @param listener 监听
+         */
+        unsubscribe<K extends keyof ElementEventMap>(elem: Element, type: K, listener: (this: Element, ev: ElementEventMap[K]) => any): void;
+        /**
+         * 取消指定元素订阅事件。
+         * @param elem 元素
+         * @param type 类型
+         * @param listener 监听
+         */
+        unsubscribe(elem: Element, type: string, listener: EventListener): void;
+        /**
+         * 取消DOM订阅事件。
+         * @param document DOM
+         * @param type 类型
+         * @param listener 监听
+         */
+        unsubscribe<K extends keyof DocumentEventMap>(document: Document, type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any): void;
+        /**
+        * 取消DOM订阅事件。
+        * @param document DOM
+        * @param type 类型
+        * @param listener 监听
+        */
+        unsubscribe(document: Document, type: string, listener: EventListener): void;
+        /**
          * 指定元素及在指定元素之后的兄弟元素集合。
          * @param elem 元素
          * @param excludeElem 排除的元素。
@@ -1108,6 +1319,16 @@ declare namespace Use {
          * @param tag TAG
          */
         GDir<TAG extends string>(tag: TAG): ArrayThen<V2Control<TAG>>;
+        /**
+         * 指定控件是否已加载。
+         * @param tag 控件
+         */
+        exists<K extends keyof V2ControlMap>(tag: K): boolean;
+        /**
+         * 指定控件是否已加载。
+         * @param tag 控件
+         */
+        exists(tag: string): boolean;
         /**
          * 注册全局配置（将在所有组件中体现）
          * @param option 配置
@@ -1204,19 +1425,20 @@ declare namespace Use {
     interface NamespaceCacheFunction<T, TOption> extends Function {
         /**
          * 获取命名空间缓存
-         * @param this 函数
-         * @param thisArg 函数的 this 对象。
          * @param name 类名
          */
-        call(this: Function, thisArg: any, name: string): T;
+        (name: string): T;
         /**
          * 设置命名空间缓存
-         * @param this 函数
-         * @param thisArg 函数的 this 对象。
-         * @param name 类名
+         * @param namespace 命名空间
          * @param option 配置信息
          */
-        call(this: Function, thisArg: any, name: string, option: TOption, ...args: any[]): void;
+        (namespace: string, option: TOption, ...args: any[]): void;
+        /**
+         * 缓存中是否存在满足指定类名的缓存信息。
+         * @param name 类名
+         */
+        exists(name: string): boolean;
     }
 
     /** 缓存 */
@@ -1290,7 +1512,7 @@ declare namespace Use {
         /**
          * 记录日志
          * @param message 消息
-         * @param type 枚举值
+         * @param type 枚举值【1~31】
          * @param logAll 为真的时候只要满足条件都记录，否则只记录首次。
          * @see var logCb = {
          *       debug: 16,
@@ -1321,12 +1543,16 @@ declare namespace Dev {
     }
 
     /** 对象组件(key是“{TAG}”) */
-    interface Options<T extends Use.V2ControlBase = Use.V2Control, TContext = V2Control<T>> extends T, TContext, Use.PlainObject<(this: TContext, ...args: any[]) => any> { }
+    interface Options<T extends Use.V2ControlBase = Use.V2Control, TContext = V2Control<T>> extends T, TContext, Use.PlainObject<(this: TContext, ...args: any[]) => any> {
+        /** requireJs 支持 */
+        (option: Options<T>): T;
+    }
 }
 
 /** 辅助开发 */
 interface Develop<TAG extends string> extends Dev.Options<Dev.V2ControlMap<TAG>[TAG]> { }
 
+/** v2轻量库 */
 declare const v2: Use.V2kitStatic;
 
 /** 字符串 */
@@ -1359,27 +1585,64 @@ interface Element {
      * @param type 事件类型（如:click）
      * @param handle 事件
      */
-    on(type: string, handle: Function): void;
+    on<K extends keyof HTMLElementEventMap>(type: K, handle: (this: Element, e: HTMLElementEventMap[K]) => any): void;
+    /**
+     * 绑定事件
+     * @param type 事件类型
+     * @param handle 事件
+     */
+    on(type: string, handle: (this: Element, e: Event) => any): void;
     /**
      * 绑定事件
      * @param type 事件类型（如:click）
      * @param selector 选择器（触发元素满足选择器时触发事件）
      * @param handle 事件
      */
-    on(type: string, selector: string, handle: Function): void;
+    on<K extends keyof HTMLElementEventMap>(type: K, selector: string, handle: (this: Element, e: HTMLElementEventMap[K]) => any): void;
+    /**
+     * 绑定事件
+     * @param type 事件类型（如:click）
+     * @param selector 选择器（触发元素满足选择器时触发事件）
+     * @param handle 事件
+     */
+    on(type: string, selector: string, handle: (this: Element, e: Event) => any): void;
     /**
      * 解绑事件
      * @param type 事件类型（如:click）
      * @param handle 事件
      */
-    off(type: string, handle: Function): void;
+    off<K extends keyof HTMLElementEventMap>(type: K, handle: (this: Element, e: HTMLElementEventMap[K]) => any): void;
+    /**
+     * 解绑事件
+     * @param type 事件类型（如:click）
+     * @param handle 事件
+     */
+    off(type: string, handle: (this: Element, e: Event) => any): void;
     /**
      * 解绑事件
      * @param type 事件类型（如:click）
      * @param selector 选择器
      * @param handle 事件
      */
-    off(type: string, selector: string, handle: Function): void;
+    off<K extends keyof HTMLElementEventMap>(type: K, selector: string, handle: (this: Element, e: HTMLElementEventMap[K]) => any): void;
+    /**
+     * 解绑事件
+     * @param type 事件类型（如:click）
+     * @param selector 选择器
+     * @param handle 事件
+     */
+    off(type: string, selector: string, handle: (this: Element, e: Event) => any): void;
+    /**
+     * 查找当前元素下满足指定选择器的第一个元素。
+     * @param selectors 选择器
+     */
+    take(selectors: string): Element;
+    /**
+     * 查找当前元素下满足指定选择器的所有元素。
+     * @param selectors 选择器
+     * @param all 查询所有
+     */
+    take(selectors: string, all: true): NodeListOf<Element>;
     /** 移除所有子节点 */
     empty(): Element;
     /**
@@ -1392,7 +1655,12 @@ interface Element {
      * @param name 属性名称
      * @param value 属性值
      */
-    styleCb(name: string, value: any): any;
+    styleCb(name: string, value: any): void;
+    /**
+     * 设置style属性值
+     * @param nameMap 属性对象
+     */
+    styleCb(nameMap: Use.PlainObject): void;
     /**
      * 获取当前元素实际数据(并转为数字)
      * @param name 属性名称
@@ -1404,4 +1672,15 @@ interface Element {
      * @param same 是否保持原数据
      */
     css(name: string, same: true): string;
+    /**
+     * 获取当前元素实际数据(并转为数字)
+     * @param names 属性名称集合
+     */
+    css(names: string[]): Use.PlainObject<number>;
+    /**
+     * 获取当前元素实际数据(原样输出)
+     * @param names 属性名称
+     * @param same 是否保持原数据
+     */
+    css(names: string[], same: true): Use.PlainObject<string>;
 }

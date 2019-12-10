@@ -558,13 +558,13 @@
             validity(this);
         },
         ready: function () {
-            var vm = this, demand = this.$core || this['$' + this.tag] || this.$;
+            var vm = this, httpContext = this.$core || this['$' + this.tag] || this.$;
 
             if (this.showIcon) {
-                demand = this.$icon;
+                httpContext = this.$icon;
             }
 
-            demand.on('stop.click', function () {
+            httpContext.on('stop.click', function () {
                 v2.GDir('date-picker').done(function (vm) {
                     vm.hide();
                 });
@@ -572,7 +572,7 @@
                 var picker, i = 0;
                 while ((picker = datePikers[i++])) {
                     if (picker.format === vm.format) {
-                        picker.demand = demand;
+                        picker.httpContext = httpContext;
                         picker.min = vm.invoke("date-min");
                         picker.max = vm.invoke("date-max");
                         picker.host = vm;
@@ -585,7 +585,6 @@
                     visible: true,
                     defaultVisible: false,
                     autoClose: true,
-                    autoDemand: false,
                     format: vm.format,
                     min: vm.invoke("date-min"),
                     max: vm.invoke("date-max"),

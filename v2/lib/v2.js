@@ -205,7 +205,8 @@
 
                 return cached[tag] = source;
             };
-        return function (string, option) {
+
+        function done(string, option) {
 
             var namespace;
 
@@ -230,6 +231,27 @@
 
             v2.error("string:" + string + ",Invalid class name space.");
         };
+
+        done.exists = function (string) {
+            var namespace;
+
+            string = v2.kebabCase(string);
+
+            while (rnamespaceGet.test(namespace = namespace || namespaceCache(string))) {
+
+                if (fnGet(namespace, string = RegExp.$2)) {
+                    return true;
+                }
+
+                namespace = RegExp.$1;
+
+                if (!namespace || namespace === "*") break;
+            }
+
+            return false;
+        };
+
+        return done;
     }
 
     function isArraylike(object) {
@@ -930,7 +952,7 @@
             }), obj;
         }
 
-        var contains = prop in obj,
+        var setter, contains = prop in obj,
             source = contains ? obj[prop] : null;
 
         if (attributes === true) {
@@ -985,8 +1007,9 @@
             }
 
             if ('set' in attributes) {
+                setter = attributes.set;
                 obj[prop + "Setter"] = function (value) {
-                    var result = attributes.set.call(this, value);
+                    var result = setter.call(this, value);
 
                     obj[prop] = result === undefined ? value : result;
 
@@ -1133,7 +1156,7 @@
                         for (var i = 0; i < this.length; i++) {
                             delete this[i];
                         }
-                    } 
+                    }
                     core_splice.call(this, 0, this.length);
                 }
 
@@ -1148,7 +1171,7 @@
             }
         });
     }
-    
+
     DOMClassList.prototype = {
         length: 0,
         add: function () {
@@ -1365,13 +1388,42 @@
         docElem.oMatchesSelector ||
         docElem.msMatchesSelector ||
         docElem.matches || function (selectors) {
-            var i = 0, element, results = (this.document || this.ownerDocument).querySelectorAll(selectors);
+            var element = this,
+                results = v2.take(selectors, this.document || this.ownerDocument, true);
 
-            while ((element = results[i++])) {
-                if (this === element) return true;
-            }
+            return v2.any(results, function (elem) { return elem === element; });
+        };
 
-            return false;
+    v2.take = function (selector, context, all) {
+
+        if (arguments.length === 2 && typeof context === 'boolean') {
+            all = context;
+            context = undefined;
+        }
+
+        context = context || document;
+
+        return all ? context.querySelectorAll(selector) : context.querySelector(selector);
+    };
+
+    v2.match = function (elem, selector) {
+        return !selector || matches.call(elem, selector);
+    };
+
+    v2.subscribe = document.addEventListener
+        ? function (context, type, handle) {
+            context.addEventListener(type, handle, false);
+        }
+        : function (context, type, handle) {
+            context.attachEvent('on' + type, handle);
+        };
+
+    v2.unsubscribe = document.addEventListener
+        ? function (context, type, handle) {
+            context.removeEventListener(type, handle, false);
+        }
+        : function (context, type, handle) {
+            context.detachEvent('on' + type, handle);
         };
 
     var rtypenamespace = /^(?:(.+)\.)?([^.]*)$/;
@@ -1390,13 +1442,7 @@
             }
 
             if (!selector && type.indexOf('.') === -1) {
-                if (this.addEventListener) {
-                    this.addEventListener(type, hanlde, false);
-                } else {
-                    this.attachEvent("on" + type, hanlde);
-                }
-
-                return;
+                return v2.subscribe(this, type, hanlde);
             }
 
             guid = this[timestamp] || (this[timestamp] = ++GLOBAL_VARIABLE_GUID);
@@ -1482,11 +1528,7 @@
                 hanlde: typeHandle
             });
 
-            if (this.addEventListener) {
-                this.addEventListener(type, typeHandle, false);
-            } else {
-                this.attachEvent("on" + type, typeHandle);
-            }
+            return v2.subscribe(this, type, typeHandle);
         },
         off: function (type, selector, hanlde) {
             var guid, namespaces, cache, match, typeCache;
@@ -1496,12 +1538,7 @@
             }
 
             if (!selector && type.indexOf('.') === -1) {
-                if (this.addEventListener) {
-                    this.removeEventListener(type, hanlde, false);
-                } else {
-                    this.detachEvent("on" + type, hanlde);
-                }
-                return;
+                return v2.unsubscribe(this, type, hanlde);
             }
 
             if (!hanlde.guid) return;
@@ -1531,11 +1568,7 @@
 
             while ((obj = typeCache[i++])) {
                 if (obj.guid === hanlde.guid && obj.namespace === namespaces && obj.selector === selector) {
-                    if (this.addEventListener) {
-                        this.removeEventListener(type, obj.hanlde, false);
-                    } else {
-                        this.detachEvent("on" + type, obj.hanlde);
-                    }
+                    return v2.unsubscribe(this, type, obj.hanlde);
                 }
             }
         }
@@ -1543,10 +1576,10 @@
 
     v2.improve(Element.prototype, {
         match: function (expr) {
-            return !expr || matches.call(this, expr);
+            return v2.match(this, expr);
         },
         take: function (selector, all) {
-            return all ? this.querySelectorAll(selector) : this.querySelector(selector);
+            return v2.take(selector, this, all);
         }
     });
 
@@ -1827,7 +1860,7 @@
     v2.extend({
         makeMap: makeMap,
         makeCache: makeCache,
-        makeNamespaceCache: namespaceCache
+        namespaceCache: namespaceCache
     });
 
     var typeCache = makeCache(function (type) {
@@ -2543,6 +2576,7 @@
                 return useConfig(tag);
             }
         },
+        exists: use.exists,
         useMap: function (tag, flowGraph) {
             switch (typeof tag) {
                 case 'string':
@@ -2803,9 +2837,9 @@
         render: 4, // 渲染
         usb: 8, // 监听
         ready: 16, // 就绪
-        ajax: 31, // 异步取数
-        load: 32, // 加载数据
-        commit: 64 // 完成提交
+        ajax: -1, // 异步取数
+        load: 64, // 加载数据
+        commit: 128 // 完成提交
     });
 
     var routeMap = {};
@@ -2883,7 +2917,7 @@
 
             this.$ = this.$$ = null;
 
-            this.demand = this.request = this.response = null;
+            this.httpContext = this.request = this.response = null;
 
             this.view = this.watch = this.data = null;
 
@@ -3003,7 +3037,7 @@
                                                 callback.call(context, context.variable, context.watch) :
                                                 value < 64 ?
                                                     callback.call(context, context.data) :
-                                                    callback.call(context, context.view, context.data);
+                                                    callback.call(context, context.variable);
 
                         context.base = base;
                         core_namespace = tmp_namespace;
@@ -3125,12 +3159,12 @@
                     tagName = tag === '*' ? 'div' : tag;
                 }
 
-                if (!(!(node = this.demand) ||
+                if (!(!(node = this.httpContext) ||
                     v2.isString(node) && !(node = this.take(node, parentNode)) ||
                     !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
                     node.version === version && (node = node.$core || node['$' + node.tag] || node.$) ||
                     !(node.nodeType === 1))) {
-                    this.demand = node;
+                    this.httpContext = node;
                 }
 
                 if (!(!(node = this.request) ||
@@ -3393,7 +3427,7 @@
                                         this[i](this.variable, this.watch) :
                                         value < 64 ?
                                             this[i](this.data) :
-                                            this[i](this.view, this.data);
+                                            this[i](this.variable);
 
                     if (falseStop && (value === false || this.sleep())) {
                         isReady = false;
@@ -3729,9 +3763,7 @@
                 context = undefined;
             }
 
-            context = context || this.$;
-
-            return all ? context.querySelectorAll(selector) : context.querySelector(selector);
+            return v2.take(selector, context || this.$, all);
         }
     };
 

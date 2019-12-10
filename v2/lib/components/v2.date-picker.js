@@ -62,8 +62,8 @@
             /** 自动关闭 */
             this.autoClose = false;
 
-            /** 自动指定需求 */
-            this.autoDemand = true;
+            /** 自动策划 */
+            this.autoScheme = false;
 
             /** 星期 */
             this.week = ["日", "一", "二", "三", "四", "五", "六"];
@@ -464,7 +464,7 @@
                         return value;
                     }
 
-                    var vm = this, ymd = value.match(/\d+/g);
+                    var vm = this, index = 0, ymd = value.match(/\d+/g);
 
                     if (ymd.length === 6) return value;
 
@@ -473,7 +473,7 @@
                             pattern === 'HH' && vm.showHour ||
                             pattern === 'mm' && vm.showMinute ||
                             pattern === 'ss' && vm.showSec) {
-                            return ymd.index = 0 | ++ymd.index, zoreFill(ymd[ymd.index]);
+                            return zoreFill(ymd[index++]);
                         }
                         return '0';
                     });
@@ -565,17 +565,13 @@
                 top = xy.top - docEl.clientTop + docEl.scrollTop,//document.documentElement.clientTop 在IE67中始终为2，其他高级点的浏览器为0
                 bottom = xy.bottom,
                 left = xy.left - docEl.clientLeft + docEl.scrollLeft,//document.documentElement.clientLeft 在IE67中始终为2，其他高级点的浏览器为0
-                right = xy.right,
-                width = xy.width || (right - left), //IE67不存在width 使用right - left获得
-                height = xy.height || (bottom - top),
-                x = (this.fixed ? doc.scrollLeft || docEl.scrollLeft : 0) + docEl.clientWidth,
+                height = this.$.offsetHeight,
                 y = (this.fixed ? doc.scrollTop || docEl.scrollTop : 0) + docEl.clientHeight,
-                l = (left + width) > x ? right - width : left,
-                t = bottom + height > y ? top - height : bottom;
+                t = (bottom + height) > y ? top - height : bottom;
 
             this.$.styleCb({
                 position: this.fixed ? 'fixed' : 'absolute',
-                left: l,
+                left: left,
                 top: t
             });
         },
@@ -798,8 +794,8 @@
                 vm.hidePicker();
             });
 
-            if (this.demand) {
-                this.demand.on('click', this.host ? function () {
+            if (this.httpContext) {
+                this.httpContext.on('click', this.host ? function () {
                     hideAll();
                     vm.min = vm.host.invoke("date-min");
                     vm.max = vm.host.invoke("date-max")
@@ -809,7 +805,7 @@
                     vm.show();
                 });
 
-            } else if (this.autoDemand && this.host) {
+            } else if (this.host && this.autoScheme) {
                 var core = this.host.$core || this.host['$' + this.host.tag] || this.host.$;
                 core.on('click', function () {
                     hideAll();
@@ -821,10 +817,10 @@
         }
     });
 
-    document.body.on('click', function (e) {
+    v2.subscribe(document, 'click', function (e) {
         var elem = e.target || e.srcElement;
         v2.each(v2.GDir('date-picker'), function (vm) {
-            var touch = vm.host && vm.host.$ || vm.demand;
+            var touch = vm.host && vm.host.$ || vm.httpContext;
 
             if (!vm.visible) return;
 
@@ -837,9 +833,11 @@
     });
 
     function hideAll() {
-        v2.GDir('date-picker').done(function (vm) {
+        v2.GDir('date-picker').when(function (vm) {
+            return vm.visible;
+        }).done(function (vm) {
             vm.hide();
-        });
+        }).destroy();
     }
 
     return function (options) {
