@@ -83,7 +83,7 @@
                     v2.log('成功注入【isClose】依赖', 3);
                 }
                 this.commit();
-                this.base.show();
+                this.base.commit();
             },
             view: view
         });

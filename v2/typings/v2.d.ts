@@ -67,13 +67,13 @@
         * @param tag TAG
         * @param options 配置信息
         */
-        create<K extends keyof V2ControlMap>(tag: K, options: Develop<K>): V2ControlMap[K];
+        create<K extends keyof V2ControlMap>(tag: K, options?: Dev.V2Control<K>): V2ControlMap[K];
         /**
          * 渲染子控件
          * @param tag TAG
          * @param options 配置信息
          */
-        create<K extends string>(tag: K, options: Develop<K>): Dev.ToDevelop<K>;
+        create<K extends string>(tag: K, options?: Dev.V2Control<K>): Dev.ToDevelop<K>;
         /**
          * 渲染子控件
          * @param tag TAG
@@ -288,13 +288,13 @@
     }
 
     /** 组件 */
-    interface V2Control<K extends string = "*", T extends V2ControlBase = V2ControlBase> extends SealedV2Control<V2ControlMap[K]>, V2ControlExtentions<V2ControlBaseMap[K], FlowGraphMap<V2ControlMap[K]>[K]>, V2ControlStandard {
+    interface V2Control<K extends string = "*"> extends SealedV2Control<V2ControlMap[K]>, V2ControlExtentions<V2ControlBaseMap[K], FlowGraphMap<V2ControlMap[K]>[K]>, V2ControlStandard {
         /** 控件TAG */
-        readonly tag: T;
+        readonly tag: K;
         /** 控件声明空间 */
-        readonly namespace: string;
+        readonly namespace: K;
         /** 基础 */
-        readonly base: T;
+        readonly base: V2ControlBase;
         /** 流程图 */
         readonly flowGraph: PlainObject<number>;
         /** 宿主插件 */
@@ -305,6 +305,15 @@
         readonly previousSibling: V2Control;
         /** 下一个控件 */
         readonly nextSibling: V2Control;
+    }
+
+    /** 基础 */
+    interface V2ControlExtendBase<K extends string> extends V2ControlExtentions<V2ControlBaseMap[K], FlowGraphMap<V2ControlMap[K]>[K]> { }
+
+    /** 继承组件 */
+    interface V2ControlExtend<K extends string = "*"> extends V2Control<K> {
+        /** 基础 */
+        readonly base: V2ControlExtendBase<K>;
     }
 
     /** 密封方法 */
@@ -622,7 +631,7 @@ declare namespace Use {
 
 /** 默认支持的控件 */
 declare namespace Use {
-    /** 组件（添加所有已开发控件，用于使用时提示） */
+    /** 组件 */
     interface V2ControlMap {
         "button": Button;
         "wait": Wait;
@@ -673,8 +682,8 @@ declare namespace Use {
         showCancel: boolean;
         /** 是否显示关闭 */
         showClose: boolean;
-
-        buttons: Array<PlainObject>;
+        /** 按钮组 */
+        buttons: Array<Button>;
     }
 }
 
@@ -825,7 +834,7 @@ declare namespace Use {
     }
 
     /** 多行输入框 */
-    interface Textarea extends V2Control<"textarea", InputBase> {
+    interface Textarea extends V2ControlExtend<"input.textarea"> {
         /** 主元素 */
         readonly $: HTMLTextAreaElement;
         /** 小号（添加“input-xs”样式） */
@@ -980,9 +989,9 @@ declare namespace Use {
     /** 控件或基础方法 */
     interface V2kitStatic {
         /** 渲染控件 */
-        <K extends keyof V2ControlMap>(tag: K, options?: Develop<K>): V2ControlMap[K];
+        <K extends keyof V2ControlMap>(tag: K, options?: Dev.V2Control<K>): V2ControlMap[K];
         /** 渲染控件 */
-        <K extends string>(tag: K, options?: Develop<K>): Dev.ToDevelop[K];
+        <K extends string>(tag: K, options?: Dev.V2Control<K>): Dev.ToDevelop[K];
         /** 控件原型 */
         readonly fn: V2Control;
         /**
@@ -1642,9 +1651,6 @@ declare namespace Use {
 
 /** 开发 */
 declare namespace Dev {
-    /** 组件 */
-    interface V2Control<K> extends Use.V2Control<K, Use.V2ControlBaseMap[K]> { }
-
     /** 待开发的控件 */
     interface ToDevelop<K> extends Use.V2Control<K> { }
 
@@ -1654,14 +1660,14 @@ declare namespace Dev {
     }
 
     /** 对象组件(key是“{TAG}”) */
-    interface Options<K extends string, T extends Use.V2ControlBase = Use.V2ControlBase> extends V2Control<K>, T, Use.PlainObject<(...args: any[]) => any> {
+    interface V2Control<K extends string> extends Use.V2ControlExtend<K>, Use.PlainObject<(...args: any[]) => any> {
         /** requireJs 支持 */
-        (option: Options<K, T>): T;
+        (option: V2Control<K>): V2ControlMap<K>[K];
     }
 }
 
 /** 辅助开发 */
-interface Develop<K extends string> extends Dev.Options<K, Dev.V2ControlMap<K>[K]> { }
+interface Develop<K extends string> extends Dev.V2Control<K> { }
 
 /** v2轻量库 */
 declare const v2: Use.V2kitStatic;
