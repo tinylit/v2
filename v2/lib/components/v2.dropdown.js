@@ -24,10 +24,10 @@
             this.direction = "bottom";
 
             /** 请求 */
-            this.httpContext = '[data-toggle="dropdown"]';
+            this.deployment = '[data-toggle="dropdown"]';
 
             /** 自动策划 */
-            this.autoScheme = false;
+            this.independent = false;
 
             /** 选中项 */
             this.selectedIndex = -1;
@@ -114,11 +114,11 @@
         commit: function () {
             var vm = this;
 
-            if (this.httpContext) {
-                this.httpContext.on('click', function () {
+            if (this.deployment) {
+                this.deployment.on('click', function () {
                     vm.toggle();
                 });
-            } else if (this.autoScheme) {
+            } else if (this.independent) {
                 this.$$.on('click', '[data-toggle="dropdown"]', function () {
                     vm.toggle();
                 });

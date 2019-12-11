@@ -59,7 +59,6 @@
                 console.log("view:", this.view === view);
                 console.log("buttons:", this.buttons === buttons);
                 this.base.build();
-                this.base.b
             },
             buttons: [{
                 text: "重置",
@@ -70,7 +69,7 @@
             }]
         };
 
-        v2('modal', {
+        v2('input', {
             variable: {
                 isClose: true
             },
@@ -83,7 +82,8 @@
                 if (isClose) {
                     v2.log('成功注入【isClose】依赖', 3);
                 }
-                this.base.commit();
+                this.commit();
+                this.base.show();
             },
             view: view
         });

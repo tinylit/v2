@@ -558,13 +558,13 @@
             validity(this);
         },
         ready: function () {
-            var vm = this, httpContext = this.$core || this['$' + this.tag] || this.$;
+            var vm = this, deployment = this.$core || this['$' + this.tag] || this.$;
 
             if (this.showIcon) {
-                httpContext = this.$icon;
+                deployment = this.$icon;
             }
 
-            httpContext.on('stop.click', function () {
+            deployment.on('stop.click', function () {
                 v2.GDir('date-picker').done(function (vm) {
                     vm.hide();
                 });
@@ -572,7 +572,7 @@
                 var picker, i = 0;
                 while ((picker = datePikers[i++])) {
                     if (picker.format === vm.format) {
-                        picker.httpContext = httpContext;
+                        picker.deployment = deployment;
                         picker.min = vm.invoke("date-min");
                         picker.max = vm.invoke("date-max");
                         picker.host = vm;
@@ -651,6 +651,7 @@
             this.$.classList.add('input-group');
         },
         usb: function () {
+
             this.base.usb();
 
             this.define('value', function (value) {

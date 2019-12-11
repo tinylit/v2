@@ -2917,7 +2917,7 @@
 
             this.$ = this.$$ = null;
 
-            this.httpContext = this.request = this.response = null;
+            this.deployment = this.request = this.response = null;
 
             this.view = this.watch = this.data = null;
 
@@ -2975,6 +2975,31 @@
             this.compile();
 
             this.flow();
+
+            this.$["component"] = this;
+
+            if (this.skipOn) return;
+
+            v2.each(this.events, function (handle, type) {
+                var context = this, match = rcontext.exec(type);
+                if (match) {
+                    do {
+                        if (match[2] ? context.like(match[2]) : !context.host) {
+                            break;
+                        }
+                    } while ((context = context.host));
+
+                    if (context === undefined || context === null) {
+                        return v2.error("未找到符合表达式条件的组件项目!");
+                    }
+
+                    type = type.slice(match[0].length);
+                }
+
+                this.$.on(type, function (e) {
+                    return handle.call(context, e);
+                });
+            }, this);
         },
         compile: function () {
             var fn,
@@ -3159,40 +3184,50 @@
                     tagName = tag === '*' ? 'div' : tag;
                 }
 
-                if (!(!(node = this.httpContext) ||
-                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
-                    !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
-                    node.version === version && (node = node.$core || node['$' + node.tag] || node.$) ||
-                    !(node.nodeType === 1))) {
-                    this.httpContext = node;
-                }
-
-                if (!(!(node = this.request) ||
-                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
-                    !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
-                    node.version === version && (node = node.$core || node['$' + node.tag] || node.$) ||
-                    !(node.nodeType === 1))) {
-                    this.request = node;
-                }
-
-                if (!(!(node = this.response) ||
-                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
-                    !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
-                    node.version === version && (node = node.$core || node['$' + node.tag] || node.$) ||
-                    !(node.nodeType === 1))) {
-                    this.response = node;
-                }
-
                 if (!(parentNode = this.$$) ||
-                    v2.isString(parentNode) && !(parentNode = this.take(parentNode, this.host ? this.host.$ : document)) ||
+                    typeof node === 'string' && !(parentNode = this.take(parentNode, this.host ? this.host.$ : document)) ||
                     !(parentNode instanceof Element) && isArraylike(parentNode) && !(parentNode = parentNode[0]) ||
                     !(parentNode.nodeType === 1)) {
 
                     parentNode = this.host ? this.host.$ : document.body;
                 }
 
+                if (
+                    !(!(node = this.deployment) ||
+                        typeof node === 'string' && !(node = this.take(node, parentNode)) ||
+                        !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
+                        node.version === version && (node = node.$core || node["$" + node.tag] || node.$) ||
+                        !(node.nodeType === 1) && (node = null)
+                    )
+                ) {
+                    this.deployment = node;
+                }
+
+
+                if (
+                    !(!(node = this.request) ||
+                        typeof node === 'string' && !(node = this.take(node, parentNode)) ||
+                        !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
+                        node.version === version && (node = node.$core || node["$" + node.tag] || node.$) ||
+                        !(node.nodeType === 1) && (node = null)
+                    )
+                ) {
+                    this.request = node;
+                }
+
+                if (
+                    !(!(node = this.response) ||
+                        typeof node === 'string' && !(node = this.take(node, parentNode)) ||
+                        !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
+                        node.version === version && (node = node.$core || node["$" + node.tag] || node.$) ||
+                        !(node.nodeType === 1) && (node = null)
+                    )
+                ) {
+                    this.response = node;
+                }
+
                 if (!(node = this.$) ||
-                    v2.isString(node) && !(node = this.take(node, parentNode)) ||
+                    typeof node === 'string' && !(node = this.take(node, parentNode)) ||
                     !(node instanceof Element) && isArraylike(node) && !(node = node[0]) ||
                     !(node.nodeType === 1)) {
 
@@ -3227,13 +3262,13 @@
                             return this.$$ = parentNode, this.$ = node;
                         break;
                     default:
-                        return v2.error("Validation of type " + type + " is not supported.");
+                        return v2.error("Validation of type “" + type + "” is not supported.");
                 }
 
                 v2.error("Components do not support elements whose NodeName is " + node.nodeName.toLowerCase() + ".");
             };
 
-            function constructor(option, highest) {
+            function done(option, highest) {
                 var tag, type;
 
                 if (!option) return option;
@@ -3270,8 +3305,8 @@
                     var option = then.always();
 
                     return {
-                        always: constructor(option),
-                        option: constructor(then.then(context), option)
+                        always: done(option),
+                        option: done(then.then(context), option)
                     };
                 })
                 .each(function (use) {
@@ -3658,7 +3693,6 @@
                 this.hide = makeInternalCall(this.hide, false);
             }
 
-
             this.define('class', {
                 get: function () {
                     return this.$.className;
@@ -3812,31 +3846,6 @@
 
             if (v2.isPlainObject(watch))
                 this.define(watch);
-        },
-        commit: function () {
-            if (this.skipOn) return;
-
-            var vm = this;
-            v2.each(this.events, function (handle, type) {
-                var context = vm, match = rcontext.exec(type);
-                if (match) {
-                    do {
-                        if (match[2] ? context.like(match[2]) : !context.host) {
-                            break;
-                        }
-                    } while ((context = context.host));
-
-                    if (context === undefined || context === null) {
-                        return v2.error("未找到符合表达式条件的组件项目!");
-                    }
-
-                    type = type.slice(match[0].length);
-                }
-
-                vm.$.on(type, function (e) {
-                    return handle.call(context, e);
-                });
-            });
         },
         invoke: function (fn) {
 
@@ -4009,7 +4018,6 @@
         },
         commit: function () {
             var vm = this;
-            this.base.commit();
             this.$.on("keyup", function (e) {
                 var code = e.keyCode || e.which;
                 if (code === 13 || code === 108) {

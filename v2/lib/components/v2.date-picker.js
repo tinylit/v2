@@ -63,7 +63,7 @@
             this.autoClose = false;
 
             /** 自动策划 */
-            this.autoScheme = false;
+            this.independent = false;
 
             /** 星期 */
             this.week = ["日", "一", "二", "三", "四", "五", "六"];
@@ -794,8 +794,8 @@
                 vm.hidePicker();
             });
 
-            if (this.httpContext) {
-                this.httpContext.on('click', this.host ? function () {
+            if (this.deployment) {
+                this.deployment.on('click', this.host ? function () {
                     hideAll();
                     vm.min = vm.host.invoke("date-min");
                     vm.max = vm.host.invoke("date-max")
@@ -805,7 +805,7 @@
                     vm.show();
                 });
 
-            } else if (this.host && this.autoScheme) {
+            } else if (this.host && this.independent) {
                 var core = this.host.$core || this.host['$' + this.host.tag] || this.host.$;
                 core.on('click', function () {
                     hideAll();
@@ -820,7 +820,7 @@
     v2.subscribe(document, 'click', function (e) {
         var elem = e.target || e.srcElement;
         v2.each(v2.GDir('date-picker'), function (vm) {
-            var touch = vm.host && vm.host.$ || vm.httpContext;
+            var touch = vm.host && vm.host.$ || vm.deployment;
 
             if (!vm.visible) return;
 
