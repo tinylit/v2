@@ -255,7 +255,7 @@
 
     /** 控件组 */
     interface V2ControlCollection extends ArrayLike<V2Control> {
-        <T extends V2ControlStandard>(host: T): V2Controls;
+        <T extends V2ControlStandard>(host: T): V2ControlCollection;
         /**
          * 添加控件。
          * @param control 控件
