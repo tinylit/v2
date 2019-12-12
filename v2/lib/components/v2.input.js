@@ -651,7 +651,6 @@
             this.$.classList.add('input-group');
         },
         usb: function () {
-
             this.base.usb();
 
             this.define('value', function (value) {

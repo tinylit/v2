@@ -17,7 +17,7 @@
         factory(global);
 })(this, function (window) {
     'use strict';
-
+    
     var
         version = "2.0.1.0",
         rtrim = /^[\x20\t\r\n\f]+|[\x20\t\r\n\f]+$/g,

@@ -1,6 +1,5 @@
 ﻿function initPage() {
     require(['components/v2.form'], function () {
-
         /** @type Develop<"form"> */
         var view = {
             tag: "form",
@@ -69,7 +68,7 @@
             }]
         };
 
-        v2('input', {
+        v2('modal', {
             variable: {
                 isClose: true
             },

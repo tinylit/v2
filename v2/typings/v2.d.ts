@@ -67,13 +67,13 @@
         * @param tag TAG
         * @param options 配置信息
         */
-        create<K extends keyof V2ControlMap>(tag: K, options?: Dev.V2Control<K>): V2ControlMap[K];
+        create<K extends keyof V2ControlMap>(tag: K, options?: V2ControlExtend<K>): V2ControlMap[K];
         /**
          * 渲染子控件
          * @param tag TAG
          * @param options 配置信息
          */
-        create<K extends string>(tag: K, options?: Dev.V2Control<K>): Dev.ToDevelop<K>;
+        create<K extends string>(tag: K, options?: V2Control<K>): V2Control<K>;
         /**
          * 渲染子控件
          * @param tag TAG
@@ -287,37 +287,14 @@
         offset(control: V2Control, offset: number): V2Control;
     }
 
-    /** 组件 */
-    interface V2Control<K extends string = "*"> extends SealedV2Control<V2ControlMap[K]>, V2ControlExtentions<V2ControlBaseMap[K], FlowGraphMap<V2ControlMap[K]>[K]>, V2ControlStandard {
-        /** 控件TAG */
-        readonly tag: K;
-        /** 控件声明空间 */
-        readonly namespace: K;
-        /** 基础 */
-        readonly base: V2ControlBase;
-        /** 流程图 */
-        readonly flowGraph: PlainObject<number>;
-        /** 宿主插件 */
-        readonly host: V2Control;
-        /** 所有子控件 */
-        readonly controls: V2ControlCollection;
-        /** 上一个控件 */
-        readonly previousSibling: V2Control;
-        /** 下一个控件 */
-        readonly nextSibling: V2Control;
-    }
+    /** 组件扩展 */
+    interface V2ControlExtentions<T extends V2ControlBase, TFlowGraph extends FlowGraph<T>> extends TFlowGraph, T { }
 
-    /** 基础 */
-    interface V2ControlExtendBase<K extends string> extends V2ControlExtentions<V2ControlBaseMap[K], FlowGraphMap<V2ControlMap[K]>[K]> { }
+    /** 基础组件 */
+    interface V2Component<K> extends V2ControlExtentions<V2ControlBaseMap[K], FlowGraphMap<Dev.Develop<K>[K]>[K]> { }
 
-    /** 继承组件 */
-    interface V2ControlExtend<K extends string = "*"> extends V2Control<K> {
-        /** 基础 */
-        readonly base: V2ControlExtendBase<K>;
-    }
-
-    /** 密封方法 */
-    interface SealedV2Control<T extends V2ControlBase> {
+    /** 组件扩展 */
+    interface V2ComponentExtend<K = "*"> extends V2ComponentExtentions<Dev.Develop<K>[K]> {
         /**
          * 判断当前控件是否类似于指定TAG名称（即当前控件继承TAG对应的控件）。
          * @param tag 名称
@@ -353,6 +330,10 @@
          * @param deep 是否深度释放插件。深度释放时，插件内属性以及属性对象包含的属性都会被释放。
          */
         destroy(deep?: false): void;
+    }
+
+    /** 组件扩展 */
+    interface V2ComponentExtentions<T> {
         /**
          * 定义属性(无参函数表示定义只读属性，且必须有返回值)
          * @param prop 属性名称。
@@ -382,8 +363,28 @@
         define(props: string): T;
     }
 
-    /** 组件扩展 */
-    interface V2ControlExtentions<T extends V2ControlBase, TFlowGraph extends FlowGraph<T>> extends T, TFlowGraph { }
+    /** 组件 */
+    interface V2Control<K = "*", T = V2ControlBase> extends V2Component<K>, V2ComponentExtend<K>, V2ControlStandard {
+        /** 控件TAG */
+        readonly tag: K;
+        /** 控件声明空间 */
+        readonly namespace: string;
+        /** 基础 */
+        readonly base: T;
+        /** 流程图 */
+        readonly flowGraph: PlainObject<number>;
+        /** 宿主插件 */
+        readonly host: V2Control;
+        /** 所有子控件 */
+        readonly controls: V2ControlCollection;
+        /** 上一个控件 */
+        readonly previousSibling: V2Control;
+        /** 下一个控件 */
+        readonly nextSibling: V2Control;
+    }
+
+    /** 继承组件 */
+    interface V2ControlExtend<K = "*", N = K> extends V2Control<K, V2Component<N>> { }
 
     /** 流程 */
     interface FlowGraph<T extends V2ControlBase = V2ControlBase> { }
@@ -426,66 +427,34 @@
          */
         commit(variable?: T["variable"]): void | false;
     }
-
-    /** 类似控件 */
-    interface V2ControlLike {
-        tag: String;
-        /** 限制高宽（采用“min-”方式） */
-        limit?: false;
-        /** 自动取数 */
-        access?: false;
-        /** 控件展示状态 */
-        visible?: true;
-        /** 默认展示状态 */
-        defaultVisible?: true;
-        /** 跳过事件绑定 */
-        skipOn?: false;
-        /** 插件主元素 */
-        $?: Element;
-        /** 插件主元素的父元素 */
-        $$?: Element;
-        /** 部署（如：事件行为） */
-        deployment?: Element;
-        /** 请求（如：获取数据） */
-        request?: Element;
-        /** 响应（如：写入数据） */
-        response?: Element;
-        /** 样式 */
-        class?: string;
-        /** 变量 */
-        variable?: PlainObject<boolean | number | string | object>;
-        /** 插件数据 */
-        data?: any;
-        /** 视图渲染 */
-        view?: any;
-        /** 监控数据变化，数据变化时，调用指定方法 */
-        watch?: PlainObject<Function>,
-        /** 事件集合 */
-        events?: PlainObject<PlainEvent>;
-        /** 方法集合 */
-        methods?: PlainObject<PlainMethod>;
-        /** 通配符 */
-        wildcards?: PlainObject<WildCard>,
-        /** 组件集合 */
-        components?: FunctionComponents | PlainComponents;
-    }
 }
 
 /** 使用约定 */
 declare namespace Use {
     /** 组件基类（可定义指定“tag”的“base”属性类型） */
     interface V2ControlBaseMap {
-        [key: string]: V2ControlBase;
+        [key: string]: Use.V2ControlBase;
     }
 
     /** 组件流程（可定义指定“tag”的控件流程） */
     interface FlowGraphMap<T> {
-        [key: string]: DefaultFlowGraph<T>;
+        [key: string]: Use.DefaultFlowGraph<T>;
     }
 
-    /** 组件（添加所有已开发控件，用于使用时提示） */
-    interface V2ControlMap {
-        [key: string]: V2ControlStandard;
+    /** 组件（可定义指定“tag”的提示控件） */
+    interface V2ControlMap { }
+}
+
+/** 开发约定（添加含命名空间的组件） */
+declare namespace Dev {
+    /** 组件基类（可定义指定“tag”的“base”属性类型） */
+    interface V2ControlBaseMap extends Use.V2ControlBaseMap {
+        "input.textarea": V2ControlBaseMap["textarea"];
+    }
+
+    /** 组件（可定义指定“tag”的提示控件） */
+    interface V2ControlMap extends Use.V2ControlMap {
+        "input.textarea": V2ControlMap["textarea"];
     }
 }
 
@@ -495,7 +464,6 @@ declare namespace Use {
     interface V2ControlBaseMap {
         "input": InputBase;
         "textarea": InputBase;
-        "input.textarea": InputBase;
         "select": SelectBase;
         "form": FormBase;
         "date-picker": DatePickerBase;
@@ -693,7 +661,6 @@ declare namespace Use {
     interface V2ControlMap {
         "input": Input;
         "textarea": Textarea;
-        "input.textarea": Textarea;
         "select": Select;
         "form": Form;
         "tooltip": Tooltip;
@@ -834,7 +801,7 @@ declare namespace Use {
     }
 
     /** 多行输入框 */
-    interface Textarea extends V2ControlExtend<"input.textarea"> {
+    interface Textarea extends V2ControlExtend<"textarea", "input"> {
         /** 主元素 */
         readonly $: HTMLTextAreaElement;
         /** 小号（添加“input-xs”样式） */
@@ -978,9 +945,7 @@ declare namespace Use {
     }
 
     /** 分页条 */
-    interface Pagingbar extends V2Control<"pagingbar"> {
-
-    }
+    interface Pagingbar extends V2Control<"pagingbar"> { }
 }
 
 /** 静态方法 */
@@ -989,17 +954,17 @@ declare namespace Use {
     /** 控件或基础方法 */
     interface V2kitStatic {
         /** 渲染控件 */
-        <K extends keyof V2ControlMap>(tag: K, options?: Dev.V2Control<K>): V2ControlMap[K];
+        <K extends keyof V2ControlMap>(tag: K, options?: V2ControlExtend<K>): V2ControlMap[K];
         /** 渲染控件 */
-        <K extends string>(tag: K, options?: Dev.V2Control<K>): Dev.ToDevelop[K];
+        <K extends string>(tag: K, options?: V2Control<K>): V2Control<K>;
         /** 控件原型 */
-        readonly fn: V2Control;
+        readonly fn: V2ControlBase;
         /**
          * 获取对象数据类型
          * @param obj 需要识别的对象。
          * @returns {string} 返回对象的类型字符串。
          */
-        type(obj: any): "boolean" | "number" | "string" | "date" | "array" | "function" | "regex" | "error" | "object";
+        type(obj: any): "boolean" | "number" | "string" | "date" | "array" | "function" | "regex" | "error" | "undefined" | "object";
         /**
          * 为对象定义属性
          * @param obj 对象
@@ -1468,7 +1433,7 @@ declare namespace Use {
         * @param tag TAG
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, option: V2ControlMap[K]): void;
+        use<K extends keyof Dev.V2ControlMap>(tag: K, option: Dev.V2ControlMap[K]): void;
         /**
          * 注册 TAG 始终需要的配置
          * @param tag TAG
@@ -1480,7 +1445,7 @@ declare namespace Use {
         * @param tag TAG
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, when: (option: V2ControlMap[K]) => boolean, option: V2ControlMap[K]): void;
+        use<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, option: Dev.V2ControlMap[K]): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
@@ -1494,7 +1459,7 @@ declare namespace Use {
         * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
         * @param option 配置
         */
-        use<K extends keyof V2ControlMap>(tag: K, when: string, option: V2ControlMap[K]): void;
+        use<K extends keyof Dev.V2ControlMap>(tag: K, when: string, option: Dev.V2ControlMap[K]): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
@@ -1507,7 +1472,7 @@ declare namespace Use {
          * @param tag TAG
          * @param resolve 解决方案
          */
-        useMvc<K extends keyof V2ControlMap>(tag: K, resolve: () => V2ControlMap[K]): V2ControlMap[K];
+        useMvc<K extends keyof Dev.V2ControlMap>(tag: K, resolve: () => Dev.V2ControlMap[K]): Dev.V2ControlMap[K];
         /**
          * 注册 TAG 组件之前或之后处理一些事情。
          * @param tag TAG
@@ -1520,14 +1485,14 @@ declare namespace Use {
          * @param when 条件过滤函数
          * @param route 新的控件TAG
          */
-        route<K extends keyof V2ControlMap>(tag: K, when: (option: V2ControlMap[K]) => boolean, route: string): void;
+        route<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, route: string): void;
         /**
          * 控件路由
          * @param tag 当前控件TAG
          * @param when 条件过滤函数
          * @param route 路由配置。
          */
-        route<K extends keyof V2ControlMap>(tag: K, when: (option: V2ControlMap[K]) => boolean, route: (option: V2ControlMap[K]) => void): void;
+        route<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, route: (option: Dev.V2ControlMap[K]) => void): void;
         /**
          * 控件路由
          * @param tag 当前控件TAG
@@ -1651,23 +1616,21 @@ declare namespace Use {
 
 /** 开发 */
 declare namespace Dev {
-    /** 待开发的控件 */
-    interface ToDevelop<K> extends Use.V2Control<K> { }
 
     /** 仅开发使用，请勿修改 */
-    interface V2ControlMap<K extends string> extends Use.V2ControlMap {
-        [key: string]: ToDevelop<K>;
+    interface Develop<K = "*"> extends V2ControlMap {
+        [key: string]: Use.V2Control<K>;
     }
 
-    /** 对象组件(key是“{TAG}”) */
-    interface V2Control<K extends string> extends Use.V2ControlExtend<K>, Use.PlainObject<(...args: any[]) => any> {
+    /** 对象组件(K是“{TAG}”) */
+    interface V2ControlExtend<K = "*"> extends Use.V2ControlExtend<K> {
         /** requireJs 支持 */
-        (option: V2Control<K>): V2ControlMap<K>[K];
+        (option: V2ControlExtend<K>): V2ControlMap<K>[K];
     }
 }
 
 /** 辅助开发 */
-interface Develop<K extends string> extends Dev.V2Control<K> { }
+interface Develop<K extends string> extends Dev.V2ControlExtend<K> { }
 
 /** v2轻量库 */
 declare const v2: Use.V2kitStatic;
