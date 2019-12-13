@@ -14,150 +14,112 @@
             } :
             factory(v2);
 }(function (/** @type Use.V2kitStatic */v2) {
-    var
-        doc = document,
-        docEl = doc.documentElement;
 
     v2.use('pagingbar', {
-        tooltip: function () {
-            // 内容
-            this.content = '';
-
-            // 持续时间
-            this.duration = 0; // 持续多久后自动关闭，大于零时有效。（单位：毫秒）
-
-            // 方位
-            this.direction = 'auto';//[auto|top-left|top|top-right|right|bottom-left|bottom|bottom-right|left]
+        pagingbar: function () {
+            /** 中号（添加“pagination-sm”样式） */
+            this.sm = false;
+            /** 中号（添加“pagination-lg”样式） */
+            this.lg = false;
+            /** 循环页码 */
+            this.paginationLoop = true;
+            /** 上一页显示文字 */
+            this.paginationPrevText = '&lsaquo;';
+            /** 下一页显示文字 */
+            this.paginationNextText = '&rsaquo;';
+            /** 数据大小 */
+            this.dataSize = 0;
+            /** 每页显示条数 */
+            this.pageSize = 10;
+            /** 当前页码 */
+            this.pageIndex = -1;
         },
         design: function () {
-            this.defaultVisible = false;
+            this.visible = this.pageIndex > -1;
         },
         render: function () {
-            this.$.classList.add('tooltip', 'fade');
+            this.$.classList.add('pagination');
+
+            if (this.lg || this.sm) {
+                this.$.classList.add(this.lg ? 'pagination-lg' : 'pagination-sm');
+            }
         },
         build: function () {
-            this.$.appendChild('.tooltip-arrow+.tooltip-inner'.htmlCoding().html());
+            this.$ul = this.appendChild('ul>(li>span[data-stamp="prev"])+li>span[data-stamp="next"]'.htmlCoding().html());
 
-            this.$inner = this.take('.tooltip-inner');
+            this.$prev = this.take('[data-stamp="prev"]', this.$ul);
+
+            this.$next = this.take('[data-stamp="next"]', this.$ul);
         },
         usb: function () {
+
             this.base.usb();
-            this.define('content', function (html) {
-                this.$inner.empty()
+
+            this.define('paginationPrevText', function (html) {
+                this.$prev.empty()
+                    .appendChild(html.html());
+            }).define('paginationNextText', function (html) {
+                this.$next.empty()
                     .appendChild(html.html());
             });
 
-            this.define('direction', function (_, direction) {
+            this.totalRows = 0;
 
-                this.$.classList.remove(direction);
+            this.define({
+                dataSize: function (index) {
+                    this.totalRows = Math.ceil(index / this.pageSize);
 
-                if (this.visible) {
-                    this.show();
+                    this.go(this.pageIndex);
+                },
+                pageSize: function (size) {
+
+                    this.totalRows = Math.ceil(this.dataSize / size);
+
+                    this.go(this.pageIndex);
                 }
             }, true);
+
+            this.define('pageIndex', function (index) {
+                this.go(index);
+            });
         },
-        show: function () {
-            var direction = this.direction.toLowerCase();
-            var x, y, vm = this,
-                elem = this.request || this.host && this.host.$ || document.body,
-                xy = elem.getBoundingClientRect(),
-                top = xy.top - docEl.clientTop + docEl.scrollTop,//document.documentElement.clientTop 在IE67中始终为2，其他高级点的浏览器为0
-                bottom = xy.bottom,
-                left = xy.left - docEl.clientLeft + docEl.scrollLeft,//document.documentElement.clientLeft 在IE67中始终为2，其他高级点的浏览器为0
-                right = xy.right,
-                width = xy.width || (right - left), //IE67不存在width 使用right - left获得
-                height = xy.height || (bottom - top);
+        go: function (index) {
+            var totalRows = this.totalRows;
 
-            this.$.classList.add(direction.indexOf('bottom') > -1 ? 'bottom' : direction.indexOf('top') > -1 ? 'top' : direction, 'in');
+            if (totalRows < 1)
+                return;
 
-            var offsetWidth = this.$.offsetWidth,
-                offsetHeight = this.$.offsetHeight;
+            index = index || this.pageIndex;
 
-            if (direction === 'auto') {
-                x = (this.fixed ? doc.scrollLeft || docEl.scrollLeft : 0) + docEl.clientWidth;
-                y = (this.fixed ? doc.scrollTop || docEl.scrollTop : 0) + docEl.clientHeight;
-
-                this.$.classList.remove(direction);
-
-                if ((bottom + offsetHeight + 10) < y) {
-                    direction = 'bottom';
-                } else if (y > (top - offsetHeight - 10)) {
-                    direction = 'top';
-                } else if ((left - offsetWidth - 10) > x) {
-                    direction = 'left';
-                } else {
-                    direction = "right";
+            if (this.paginationLoop) {
+                while (index < 0) {
+                    index += totalRows;
                 }
 
-                this.$.classList.add(direction.indexOf('bottom') > -1 ? 'bottom' : direction.indexOf('top') > -1 ? 'top' : direction);
-
-                offsetWidth = this.$.offsetWidth;
-                offsetHeight = this.$.offsetHeight;
+                while (index > totalRows) {
+                    index -= totalRows;
+                }
             }
 
-            if (this.duration > 0) {
-                setTimeout(function () {
-                    vm.hide();
-                }, this.duration);
-            }
+            if (index < 0 || index > totalRows)
+                return;
 
-            switch (direction) {
-                case 'top':
-                    return this.$.styleCb({
-                        left: left + (width - offsetWidth) / 2,
-                        top: top - offsetHeight
-                    });
-                case 'top-start':
-                    return this.$.styleCb({
-                        left: left,
-                        top: top - offsetHeight
-                    });
-                case 'top-end':
-                    return this.$.styleCb({
-                        left: right,
-                        top: top - offsetHeight
-                    });
-                case 'right':
 
-                    var result = this.$.styleCb({
-                        left: right,
-                        top: top + (height - offsetHeight) / 2
-                    });
-
-                    if (this.$.offsetHeight > offsetHeight) {
-                        return this.$.styleCb({
-                            left: right,
-                            top: top + (height - this.$.offsetHeight) / 2
-                        });
-                    }
-
-                    return result;
-
-                case 'bottom':
-                    return this.$.styleCb({
-                        left: left + (width - offsetWidth) / 2,
-                        top: bottom
-                    });
-                case 'bottom-end':
-                    return this.$.styleCb({
-                        left: right,
-                        top: bottom
-                    });
-                case 'left':
-                    return this.$.styleCb({
-                        left: left - offsetWidth,
-                        top: top + (height - offsetHeight) / 2
-                    });
-                case 'bottom-start':
-                default:
-                    return this.$.styleCb({
-                        left: left,
-                        top: bottom
-                    });
-            }
         },
-        hide: function () {
-            this.$.classList.remove('in');
+        commit: function () {
+            var vm = this;
+
+            this.$prev.on('click', function () {
+                vm.go(vm.pageIndex - 1);
+            });
+
+            this.$next.on('click', function () {
+                vm.go(vm.pageIndex + 1);
+            });
+
+            this.$.on('click', 'a', function () {
+                vm.go(+this.innerHTML);
+            });
         }
     });
 

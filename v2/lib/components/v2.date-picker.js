@@ -597,7 +597,7 @@
             }, 1200);
         },
         load: function (value) {
-            this.ymd = (value || this.valueGetter ? this.valueGetter() : this.value).match(/\d+/g);
+            this.ymd = (value || v2.usb(this, "value")).match(/\d+/g);
             if (this.showHms) {
                 this.timeView(this.ymd[3], this.ymd[4], this.ymd[5]);
             }

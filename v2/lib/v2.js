@@ -17,7 +17,7 @@
         factory(global);
 })(this, function (window) {
     'use strict';
-    
+
     var
         version = "2.0.1.0",
         rtrim = /^[\x20\t\r\n\f]+|[\x20\t\r\n\f]+$/g,
@@ -1178,7 +1178,7 @@
             var i = 0,
                 token,
                 contains,
-                value = this.valueGetter ? this.valueGetter() : this.value;
+                value = v2.usb(this, "value");
 
             while ((token = arguments[i++])) {
 
@@ -1195,11 +1195,7 @@
             }
 
             if (contains) {
-                if (this.valueSetter) {
-                    this.valueSetter(value);
-                } else {
-                    this.value = value;
-                }
+                v2.usb(this, "value", value);
             }
         },
         remove: function () {
@@ -1207,7 +1203,7 @@
                 token,
                 pattern,
                 contains,
-                value = this.valueGetter ? this.valueGetter() : this.value;
+                value = v2.usb(this, "value");
 
             while ((token = arguments[i++])) {
 
@@ -1226,11 +1222,7 @@
             }
 
             if (contains) {
-                if (this.valueSetter) {
-                    this.valueSetter(value);
-                } else {
-                    this.value = value;
-                }
+                v2.usb(this, "value", value);
             }
         },
         contains: function (value) {
@@ -1248,31 +1240,18 @@
                 return v2.error("Uncaught DOMException: Failed to execute 'toggle' on 'DOMTokenList': The token provided ('" + token + "') contains HTML space characters, which are not valid in tokens.");
 
 
-            var value = this.valueGetter ? this.valueGetter() : this.value,
+            var value = v2.usb(this, "value"),
                 pattern = classCache(token);
 
             if (arguments.length === 1) {
                 if (pattern.test(value)) {
-                    if (this.valueSetter) {
-                        this.valueSetter(value.replace(pattern, " "));
-                    } else {
-                        this.value = value.replace(pattern, " ");
-                    }
+                    v2.usb(this, "value", value.replace(pattern, " "));
                     return false;
                 }
                 return true;
             }
-            if (this.valueSetter) {
-                if (toggle) {
-                    this.valueSetter(value + " " + token);
-                } else {
-                    this.valueSetter(value.replace(pattern, " "));
-                }
-            } else if (toggle) {
-                this.value = value + " " + token;
-            } else {
-                this.value = value.replace(pattern, " ");
-            }
+
+            v2.usb(this, "value", toggle ? value + " " + token : value.replace(pattern, " "));
 
             return !!toggle;
         }
@@ -1425,6 +1404,34 @@
         : function (context, type, handle) {
             context.detachEvent('on' + type, handle);
         };
+
+    /** 兼容IE8 */
+    v2.usb = isIE8 ? function (obj, prop, value) {
+        var callback;
+        if (!obj) return obj;
+
+        if (arguments.length === 2) {
+            if (callback = obj[prop + "Getter"]) {
+                return callback.call(obj);
+            }
+            return obj[prop];
+        }
+
+        if (callback = obj[prop + "Setter"]) {
+            return callback.call(obj, value);
+        } else {
+            obj[prop] = value;
+        }
+    } : function (obj, prop, value) {
+
+        if (!obj) return obj;
+
+        if (arguments.length === 2) {
+            return obj[prop];
+        }
+
+        obj[prop] = value;
+    };
 
     var rtypenamespace = /^(?:(.+)\.)?([^.]*)$/;
 
@@ -2865,7 +2872,11 @@
 
             var component = this.components[tag = v2.kebabCase(tag)];
 
-            var isFunction = component && v2.isFunction(component);
+            var isFunction = v2.isFunction(component);
+
+            if (isFunction && v2.exists(tag)) {
+                isFunction = component = undefined;
+            }
 
             GLOBAL_VARIABLE_STARTUP_COMPLETE = false;
 
@@ -2873,7 +2884,7 @@
 
             GLOBAL_VARIABLE_STARTUP_COMPLETE = true;
 
-            if (v2.isFunction(component)) {
+            if (isFunction) {
                 var stack, complete = false, lazy = true;
 
                 component(function () {
@@ -3005,14 +3016,18 @@
             var fn,
                 timer,
                 controls,
+                root_base,
+                root_tag,
+                root_namespace,
                 sleep = false,
-                completed = false,
+                isReady = false,
                 classOld = "",
-                core_namespace = "",
+                core_namespace = "*",
                 variable = {},
                 descriptors = {},
                 callbacks = [],
                 watchStack = [],
+                functions = {},
                 context = this,
                 internalCall = true,
                 excludes = {
@@ -3025,63 +3040,107 @@
                         try {
                             applyCallback(callback, arguments, this);
 
-                            if (this.visibleSetter) {
-                                this.visibleSetter(visible);
-                            } else {
-                                this.visible = visible;
-                            }
+                            v2.usb(this, "visible", visible);
 
                         } finally {
                             internalCall = true;
                         }
                     };
                 },
-                makeCallback = function (callback, key, namespace) {
-                    if (callback.identity === context.identity)
-                        return callback;
+                makeCallback = function (callback, key, base, namespace) {
 
-                    var _callback = function () {
-                        var base = context.base,
-                            tmp_namespace = context.namespace,
+                    var _callback;
+
+                    if (callback.identity === context.identity) {
+                        if (callback.namespace === namespace || namespace > callback.namespace) {
+                            return callback;
+                        }
+
+                        _callback = function () {
+
+                            var current_base = _callback.base;
+                            var current_namespace = _callback.namespace;
+
+                            callback.namespace = _callback.namespace;
+                            callback.base = _callback.base;
+
+                            try {
+                                return applyCallback(callback, arguments);
+                            } finally {
+                                callback.base = current_base;
+                                callback.namespace = current_namespace;
+                            }
+                        };
+
+                        _callback.base = base;
+                        _callback.namespace = namespace;
+                        _callback.identity = context.identity;
+
+                        return _callback;
+
+                    }
+
+                    _callback = function () {
+                        var
+                            namespace = _callback.namespace,
+                            next_base = _callback.base,
+                            current_base = context.base,
+                            current_namespace = context.namespace,
                             value = context.flowGraph[key] >>> 0;
 
-                        context.base = base.base;
-                        core_namespace = namespace;
+                        context.base = next_base.base;
 
-                        value = value <= 1 || arguments.length > 0 ?
-                            applyCallback(callback, arguments, context) :
-                            value >= 64 ?
-                                callback.call(context) :
-                                value < 4 ?
-                                    callback.call(context, context.view) :
-                                    value < 8 ?
-                                        callback.call(context, context.variable) :
-                                        value < 16 ?
-                                            callback.call(context, context.watch) :
-                                            value < 32 ?
-                                                callback.call(context, context.variable, context.watch) :
-                                                value < 64 ?
-                                                    callback.call(context, context.data) :
-                                                    callback.call(context, context.variable);
+                        if (defineSurport) {
+                            core_namespace = namespace;
+                        } else {
+                            context.tag = namespace.split('.').pop();
+                            context.namespace = namespace;
+                        }
 
-                        context.base = base;
-                        core_namespace = tmp_namespace;
+                        try {
+                            return value <= 1 || arguments.length > 0 ?
+                                applyCallback(callback, arguments, context) :
+                                value >= 64 ?
+                                    callback.call(context) :
+                                    value < 4 ?
+                                        callback.call(context, context.view) :
+                                        value < 8 ?
+                                            callback.call(context, context.variable) :
+                                            value < 16 ?
+                                                callback.call(context, context.watch) :
+                                                value < 32 ?
+                                                    callback.call(context, context.variable, context.watch) :
+                                                    value < 64 ?
+                                                        callback.call(context, context.data) :
+                                                        callback.call(context, context.variable);
+                        } finally {
 
-                        return value;
-                    };
+                            context.base = current_base;
 
+                            if (defineSurport) {
+                                core_namespace = current_namespace;
+                            } else {
+                                context.tag = current_namespace.split('.').pop();
+                                context.namespace = current_namespace;
+                            }
+                        }
+                    }
+
+                    _callback.base = base;
+                    _callback.namespace = namespace;
                     _callback.identity = context.identity;
 
                     return _callback;
                 },
                 extendsCallback = function (base, key, value, namespace) {
                     if (base[key]) {
-                        extendsCallback(base.base = base.base || {}, key, base[key]);
+                        extendsCallback(base.base || (base.base = {}), key, base[key], namespace);
                     }
-                    base[key] = makeCallback(value, key, namespace);
+                    base[key] = makeCallback(value, key, base, namespace);
                 },
                 initControls = function (option, define, highest) {
-                    return v2.each(option, function (value, key) {
+
+                    v2.each(option, function (value, key) {
                         var match,
                             type,
                             sourceValue,
@@ -3115,6 +3174,10 @@
 
                             if (!define || type === 'function') {
 
+                                if (type === 'function') {
+                                    functions[key] = value;
+                                }
+
                                 context[key] = value;
 
                             } else {
@@ -3136,18 +3199,22 @@
                                     return;
                                 }
 
-                                return extendsCallback(context.base || (context.base = {}), key, sourceValue, core_namespace);
+                                extendsCallback(root_base || (root_base = {}), key, sourceValue, core_namespace);
+
+                                return;
                             }
 
                             excludes[key] = true;
 
-                            return descriptors[key] = {
+                            descriptors[key] = {
                                 value: sourceValue,
                                 callback: value,
                                 beforeSetting: null,
                                 conversionType: conversionType,
                                 allowFirstSet: true
                             };
+
+                            return;
                         }
 
                         if (key in context.flowGraph) {
@@ -3165,6 +3232,10 @@
                             context[key] = value;
                         }
                     });
+
+                    if (define && !highest) {
+                        core_namespace += '.' + v2.kebabCase(option.tag);
+                    }
                 };
 
             this.init = function (tag, tagName) {
@@ -3268,20 +3339,11 @@
                 v2.error("Components do not support elements whose NodeName is " + node.nodeName.toLowerCase() + ".");
             };
 
-            function done(option, highest) {
+            function done(option) {
                 var tag, type;
 
-                if (!option) return option;
-
-                tag = option.tag;
-
-                if (define && !highest) {
-                    if (core_namespace) {
-                        core_namespace += '.' + tag;
-                    } else {
-                        core_namespace = tag;
-                    }
-                }
+                if (!option)
+                    return option;
 
                 type = v2.type(option);
 
@@ -3291,6 +3353,8 @@
 
                     return option.prototype;
                 }
+
+                tag = option.tag;
 
                 if (tag && (fn = option[tag] || option[v2.camelCase(tag)]) && v2.isFunction(fn)) {
                     fn.call(context, option);
@@ -3306,7 +3370,7 @@
 
                     return {
                         always: done(option),
-                        option: done(then.then(context), option)
+                        option: done(then.then(context))
                     };
                 })
                 .each(function (use) {
@@ -3335,7 +3399,7 @@
                     if (v2.isFunction(tag)) {
                         return tag(context);
                     }
-                    return namespaces.indexOf(v2.kebabCase(tag + '')) > -1;
+                    return namespaces.indexOf(v2.kebabCase(tag)) > -1;
                 });
             };
             this.hostlike = function () {
@@ -3400,9 +3464,9 @@
             };
 
             this.flow = function (state, falseStop) {
-                var i, value, control, prevValue, isReady = true;
+                var i, value, control, prevValue, ready = true;
 
-                if (completed) return;
+                if (isReady) return;
 
                 if (typeof state === "boolean") {
                     falseStop = state;
@@ -3465,12 +3529,12 @@
                                             this[i](this.variable);
 
                     if (falseStop && (value === false || this.sleep())) {
-                        isReady = false;
+                        ready = false;
                         break;
                     }
                 }
 
-                if ((completed = isReady)) {
+                if ((isReady = ready)) {
                     this.define('visible', function (value) {
                         if (internalCall) {
                             if (value) {
@@ -3599,7 +3663,7 @@
 
                     if (defineOnly || typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue) {
                         if (contains && (attributes === true || "set" in attributes || attributes.writable === true)) {
-                            if (completed) {
+                            if (isReady) {
                                 IE8Call(function () {
                                     if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
                                         elem[name] = sourceValue;
@@ -3616,19 +3680,11 @@
                             }
                         }
                     } else if (attributes === true || "set" in attributes || attributes.writable === true) {
-                        if (completed) {
-                            if (defineSurport || !context[name + "Setter"]) {
-                                context[name] = sourceValue;
-                            } else {
-                                context[name + "Setter"](sourceValue);
-                            }
+                        if (isReady) {
+                            v2.usb(context, name, sourceValue);
                         } else {
                             watchStack.push(function () {
-                                if (defineSurport || !context[name + "Setter"]) {
-                                    context[name] = sourceValue;
-                                } else {
-                                    context[name + "Setter"](sourceValue);
-                                }
+                                v2.usb(context, name, sourceValue);
                             });
                         }
                     }
@@ -3657,7 +3713,46 @@
                 variable = wildcards = excludes = controls = callbacks = descriptors = null;
             };
 
+            if (!(context.base = root_base)) {
+
+                root_namespace = core_namespace;
+                root_tag = core_namespace.split('.').pop();
+
+                v2.each(functions, function (callback, key) {
+                    context[key] = function () {
+                        var
+                            current_tag = context.tag,
+                            current_base = context.base,
+                            current_namespace = context.namespace;
+
+                        context.base = root_base;
+
+                        if (defineSurport) {
+                            core_namespace = root_namespace;
+                        } else {
+                            context.tag = root_tag;
+                            context.namespace = root_namespace;
+                        }
+
+                        try {
+                            return applyCallback(callback, arguments, context);
+                        } finally {
+
+                            context.base = current_base;
+
+                            if (defineSurport) {
+                                core_namespace = current_namespace;
+                            } else {
+                                context.tag = current_tag;
+                                context.namespace = current_namespace;
+                            }
+                        }
+                    };
+                });
+            }
+
             if (defineSurport) {
+
                 this.define("show", function (show) {
                     return makeInternalCall(show, true);
                 });
@@ -3667,8 +3762,8 @@
                 });
 
                 this.define({
-                    completed: function () {
-                        return completed;
+                    isReady: function () {
+                        return isReady;
                     },
                     tag: function () {
                         return core_namespace.split('.').pop();
@@ -3688,7 +3783,7 @@
                 this.namespace = core_namespace;
                 this.wildcards = wildcards;
                 this.variable = variable;
-                this.completed = completed;
+                this.isReady = isReady;
                 this.show = makeInternalCall(this.show, true);
                 this.hide = makeInternalCall(this.hide, false);
             }
@@ -4120,6 +4215,7 @@
             this.$body = this.$header.nextSibling;
 
             if (this.showBtn) {
+
                 this.$footer = this.$body.nextSibling;
 
                 v2.each(this.buttons, function (button) {

@@ -68,7 +68,15 @@
             }]
         };
 
+        /** @type Dev.Develop("input">["input"] */
+        var x;
+
         v2('modal', {
+            components: {
+                form: function (resolve) {
+                    require(['components/v2.form'], resolve);
+                }
+            },
             variable: {
                 isClose: true
             },
@@ -81,7 +89,6 @@
                 if (isClose) {
                     v2.log('成功注入【isClose】依赖', 3);
                 }
-                this.commit();
                 this.base.commit();
             },
             view: view

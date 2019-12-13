@@ -60,7 +60,7 @@
         this.valueMissing = false;
     }
 
-    function validity(vm) {
+    function validity(/** @type Use.Input */vm) {
         var validity, validationMessage, core = vm.$core || vm['$' + vm.tag] || vm.$;
 
         vm.define('id name pattern min max minlength maxlength required readonly');
@@ -72,19 +72,20 @@
 
             vm.define({
                 validity: function () {
-                    var type = this.type,
-                        value = this.value;
+                    var type = v2.usb(this, "type"),
+                        value = v2.usb(this, "value");
+
                     if (value) {
                         if (type === "number") {
-                            validity.rangeOverflow = ~~value > this.max;
-                            validity.rangeUnderflow = ~~value < this.min;
+                            validity.rangeOverflow = ~~value > v2.usb(this, "max");
+                            validity.rangeUnderflow = ~~value < v2.usb(this, "min");
                         }
                         if (type in matchExpr) {
                             validity.badInput = validity.typeMismatch = !matchExpr[type].test(value);
                         }
-                        validity.tooLong = value.length > this.maxlength;
-                        validity.tooShort = value.length < this.minlength;
-                        if ((pattern = this.pattern) && (pattern = patternCache(pattern))) {
+                        validity.tooLong = value.length > v2.usb(this, "maxlength");
+                        validity.tooShort = value.length < v2.usb(this, "minlength");
+                        if ((pattern = v2.usb(this, "pattern")) && (pattern = patternCache(pattern))) {
 
                             validity.patternMismatch = true;
 
@@ -93,22 +94,22 @@
                             }
                         }
                     }
-                    validity.valueMissing = this.required && !value;
+                    validity.valueMissing = v2.usb(this, "required") && !value;
                     validity.valid = !(validity.valueMissing || validity.typeMismatch || validity.badInput || validity.patternMismatch || validity.rangeOverflow || validity.rangeUnderflow || validity.tooLong || validity.tooShort);
                     return validity;
                 },
                 validationMessage: function () {
-                    var type;
+                    var type, title;
                     if (validationMessage)
                         return validationMessage;
                     if (validity.valueMissing) {
-                        return this.title ? "请填写“" + this.title + "”字段。" : "请填写此字段。";
+                        return (title = v2.usb(this, "title")) ? "请填写“" + title + "”字段。" : "请填写此字段。";
                     }
                     if (validity.patternMismatch) {
                         return "请与所请求的格式保持一致。";
                     }
 
-                    type = this.type;
+                    type = v2.usb(this, "type");
 
                     if (validity.badInput) {
                         if (type === "number") {
@@ -120,25 +121,25 @@
                     }
                     if (type === "number") {
                         if (validity.rangeUnderflow) {
-                            return "值必须大于或等于{0}。".format(control.min);
+                            return "值必须大于或等于{0}。".format(v2.usb(this, "min"));
                         }
                         if (validity.rangeOverflow) {
-                            return "值必须小于或等于{0}。".format(control.max);
+                            return "值必须小于或等于{0}。".format(v2.usb(this, "max"));
                         }
                     }
 
                     if (validity.typeMismatch) {
                         if (type === "email") {
-                            var value = this.value,
+                            var value = v2.usb(this, "value"),
                                 index = value.indexOf("@");
                             return (index > -1 ? "请在“@”内容" + (index > 0 ? "后面" : "前面") + "输入内容。{0}内容不完整。" : "请在邮箱地址中包含“@”。{0}缺少“@”。").format(value);
                         }
                     }
                     if (validity.tooShort) {
-                        return "值必须大于或等于{0}个字符。".format(this.minlength);
+                        return "值必须大于或等于{0}个字符。".format(v2.usb(this, "minlength"));
                     }
                     if (validity.tooLong) {
-                        return "值必须小于或等于{0}个字符。".format(this.maxlength);
+                        return "值必须小于或等于{0}个字符。".format(v2.usb(this, "maxlength"));
                     }
 
                     return "";
@@ -151,10 +152,10 @@
             };
             // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
-                if (this.validityGetter) {
-                    return this.validityGetter().valid;
-                }
-                return this.validity.valid;
+
+                var validity = v2.usb(this, "validity");
+
+                return validity.valid;
             };
         } else {
             vm.define({
@@ -187,7 +188,7 @@
 
                 this.focus();
 
-                var message = this.validationMessageGetter ? this.validationMessageGetter() : this.validationMessage;
+                var message = v2.usb(this, "validationMessage");
 
                 if (tooltip) {
                     if (tooltip.contentSetter) {
@@ -297,8 +298,8 @@
             var core = this.$core || this['$' + this.tag] || this.$;
 
             this.base.usb();
-
-            if (this.tag === 'input') {
+  
+            if (!this.like('textarea')) {
                 this.define('type multiple placeholder');
             }
 
@@ -651,6 +652,7 @@
             this.$.classList.add('input-group');
         },
         usb: function () {
+
             this.base.usb();
 
             this.define('value', function (value) {
@@ -687,8 +689,8 @@
             this.base.init('textarea');
         },
         usb: function () {
-            this.base.usb();
-            this.define('rows cols placeholder');
+            this.base.usb('textarea');
+            this.define('rows cols');
         }
     });
 

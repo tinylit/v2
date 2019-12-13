@@ -102,7 +102,7 @@
                 }
 
             }).define("selectedOptions", function () {
-                return this.data[this.selectedIndexGetter ? this.selectedIndexGetter() : this.selectedIndex];
+                return this.data[v2.usb(this, "selectedIndex")];
             });
         },
         show: function () {
