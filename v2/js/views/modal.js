@@ -68,9 +68,6 @@
             }]
         };
 
-        /** @type Dev.Develop("input">["input"] */
-        var x;
-
         v2('modal', {
             components: {
                 form: function (resolve) {
@@ -89,6 +86,7 @@
                 if (isClose) {
                     v2.log('成功注入【isClose】依赖', 3);
                 }
+
                 this.base.commit();
             },
             view: view

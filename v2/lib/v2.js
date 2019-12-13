@@ -3017,17 +3017,18 @@
                 timer,
                 controls,
                 root_base,
-                root_tag,
-                root_namespace,
                 sleep = false,
                 isReady = false,
                 classOld = "",
+                namespace = "*",
                 core_namespace = "*",
+                baseMap = {},
+                namespaceGraph = {},
+                baseGraph = {},
                 variable = {},
                 descriptors = {},
                 callbacks = [],
                 watchStack = [],
-                functions = {},
                 context = this,
                 internalCall = true,
                 excludes = {
@@ -3047,7 +3048,7 @@
                         }
                     };
                 },
-                makeCallback = function (callback, key, base, namespace) {
+                makeCallback = function (callback, key, namespace) {
 
                     var _callback;
 
@@ -3058,21 +3059,17 @@
 
                         _callback = function () {
 
-                            var current_base = _callback.base;
-                            var current_namespace = _callback.namespace;
+                            var current_namespace = callback.namespace;
 
                             callback.namespace = _callback.namespace;
-                            callback.base = _callback.base;
 
                             try {
                                 return applyCallback(callback, arguments);
                             } finally {
-                                callback.base = current_base;
                                 callback.namespace = current_namespace;
                             }
                         };
 
-                        _callback.base = base;
                         _callback.namespace = namespace;
                         _callback.identity = context.identity;
 
@@ -3083,12 +3080,12 @@
                     _callback = function () {
                         var
                             namespace = _callback.namespace,
-                            next_base = _callback.base,
+                            next_base = baseMap[namespace],
                             current_base = context.base,
                             current_namespace = context.namespace,
                             value = context.flowGraph[key] >>> 0;
 
-                        context.base = next_base.base;
+                        context.base = next_base;
 
                         if (defineSurport) {
                             core_namespace = namespace;
@@ -3126,19 +3123,24 @@
                         }
                     }
 
-                    _callback.base = base;
                     _callback.namespace = namespace;
                     _callback.identity = context.identity;
 
                     return _callback;
                 },
                 extendsCallback = function (base, key, value, namespace) {
+
                     if (base[key]) {
-                        extendsCallback(base.base || (base.base = {}), key, base[key], namespace);
+                        extendsCallback(base.base || (base.base = baseMap[namespace] = {}), key, base[key], namespace);
                     }
-                    base[key] = makeCallback(value, key, base, namespace);
+
+                    base[key] = makeCallback(value, key, namespace);
                 },
                 initControls = function (option, define, highest) {
+
+                    if (define && !highest) {
+                        namespace += "." + v2.kebabCase(option.tag);
+                    }
 
                     v2.each(option, function (value, key) {
                         var match,
@@ -3175,7 +3177,12 @@
                             if (!define || type === 'function') {
 
                                 if (type === 'function') {
-                                    functions[key] = value;
+
+                                    if (!(key in baseGraph)) {
+                                        baseGraph[key] = core_namespace;
+                                    }
+
+                                    namespaceGraph[key] = namespace;
                                 }
 
                                 context[key] = value;
@@ -3199,7 +3206,13 @@
                                     return;
                                 }
 
-                                extendsCallback(root_base || (root_base = {}), key, sourceValue, core_namespace);
+                                if (!(key in baseGraph)) {
+                                    baseGraph[key] = core_namespace;
+                                }
+
+                                namespaceGraph[key] = namespace;
+
+                                extendsCallback(root_base || (root_base = baseMap[core_namespace] = {}), key, sourceValue, core_namespace);
 
                                 return;
                             }
@@ -3234,7 +3247,7 @@
                     });
 
                     if (define && !highest) {
-                        core_namespace += '.' + v2.kebabCase(option.tag);
+                        core_namespace = namespace;
                     }
                 };
 
@@ -3713,25 +3726,49 @@
                 variable = wildcards = excludes = controls = callbacks = descriptors = null;
             };
 
-            if (!(context.base = root_base)) {
+            this.define('class', {
+                get: function () {
+                    return this.$.className;
+                },
+                set: function (value) {
+                    if (classOld) {
+                        v2.each(classOld.match(rnotwhite), function (clazz) {
+                            context.$.classList.remove(clazz);
+                        });
+                    }
 
-                root_namespace = core_namespace;
-                root_tag = core_namespace.split('.').pop();
+                    if (value) {
+                        v2.each(value.match(rnotwhite), function (clazz) {
+                            context.$.classList.add(clazz);
+                        });
+                    }
 
-                v2.each(functions, function (callback, key) {
+                    classOld = value;
+                }
+            });
+
+            if ((context.base = root_base)) {
+
+                v2.each(namespaceGraph, function (namespace, key) {
+
+                    var callback = context[key],
+                        baseKey = baseGraph[key];
+
                     context[key] = function () {
+
                         var
+                            next_base = baseMap[baseKey],
                             current_tag = context.tag,
                             current_base = context.base,
                             current_namespace = context.namespace;
 
-                        context.base = root_base;
+                        context.base = next_base;
 
                         if (defineSurport) {
-                            core_namespace = root_namespace;
+                            core_namespace = namespace;
                         } else {
-                            context.tag = root_tag;
-                            context.namespace = root_namespace;
+                            context.tag = namespace.split('.').pop();
+                            context.namespace = namespace;
                         }
 
                         try {
@@ -3787,27 +3824,6 @@
                 this.show = makeInternalCall(this.show, true);
                 this.hide = makeInternalCall(this.hide, false);
             }
-
-            this.define('class', {
-                get: function () {
-                    return this.$.className;
-                },
-                set: function (value) {
-                    if (classOld) {
-                        v2.each(classOld.match(rnotwhite), function (clazz) {
-                            context.$.classList.remove(clazz);
-                        });
-                    }
-
-                    if (value) {
-                        v2.each(value.match(rnotwhite), function (clazz) {
-                            context.$.classList.add(clazz);
-                        });
-                    }
-
-                    classOld = value;
-                }
-            });
 
             if (defineSurport) {
                 this.define({
@@ -3925,6 +3941,10 @@
             this.define('disabled', function (value) {
                 this.$.classList[value ? "add" : "remove"]('disabled');
             });
+
+            if (this.test) {
+                this.test();
+            }
 
             this.define({
                 width: makeUsbDescriptor('width', function () {
@@ -4276,6 +4296,7 @@
         },
         commit: function () {
             var vm = this;
+
             if (this.keyboard) {
                 this.$.on('keyup', function (e) {
                     var code = e.keyCode || e.which;

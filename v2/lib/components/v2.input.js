@@ -298,7 +298,7 @@
             var core = this.$core || this['$' + this.tag] || this.$;
 
             this.base.usb();
-  
+
             if (!this.like('textarea')) {
                 this.define('type multiple placeholder');
             }
