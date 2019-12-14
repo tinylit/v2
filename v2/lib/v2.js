@@ -3128,6 +3128,11 @@
                             if (!define || type === 'function') {
 
                                 if (type === 'function') {
+
+                                    if (key === 'show' || key === 'hide') {
+                                        value = makeInternalCall(value, key === 'show');
+                                    }
+
                                     namespaceGraph[key] = core_namespace;
                                 }
 
@@ -3145,6 +3150,10 @@
                         if (type === 'function') {
 
                             if (conversionType === "function") {
+
+                                if (key === 'show' || key === 'hide') {
+                                    value = makeInternalCall(value, key === 'show');
+                                }
 
                                 context[key] = value;
 
@@ -3730,15 +3739,6 @@
             }
 
             if (defineSurport) {
-
-                this.define("show", function (show) {
-                    return makeInternalCall(show, true);
-                });
-
-                this.define("hide", function (hide) {
-                    return makeInternalCall(hide, false);
-                });
-
                 this.define({
                     isReady: function () {
                         return isReady;
@@ -3762,8 +3762,6 @@
                 this.wildcards = wildcards;
                 this.variable = variable;
                 this.isReady = isReady;
-                this.show = makeInternalCall(this.show, true);
-                this.hide = makeInternalCall(this.hide, false);
             }
 
             if (defineSurport) {
