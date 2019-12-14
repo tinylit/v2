@@ -1315,13 +1315,13 @@
     function IE8Call(callback) {
         if (isIE8) {
             try {
-                return callback();
+                callback();
             } catch (e) {
-                v2.log(e.message, 15);
+                v2.log(e.message, 7);
             }
+        } else {
+            callback();
         }
-
-        return callback();
     }
 
     v2.improve(Element.prototype, {
@@ -1407,7 +1407,7 @@
 
     /** 兼容IE8 */
     v2.usb = isIE8 ? function (obj, prop, value) {
-        var callback;
+        var result, callback;
         if (!obj) return obj;
 
         if (arguments.length === 2) {
@@ -1418,10 +1418,12 @@
         }
 
         if (callback = obj[prop + "Setter"]) {
-            return callback.call(obj, value);
-        } else {
-            obj[prop] = value;
+            result = callback.call(obj, value);
+            return result === undefined ? value : result;
         }
+
+        return obj[prop] = value;
+
     } : function (obj, prop, value) {
 
         if (!obj) return obj;
@@ -1430,7 +1432,7 @@
             return obj[prop];
         }
 
-        obj[prop] = value;
+        return obj[prop] = value;
     };
 
     var rtypenamespace = /^(?:(.+)\.)?([^.]*)$/;
@@ -3602,7 +3604,7 @@
                             },
                             set: contains ? IE8Callback(function (value) {
                                 if (allowFirstSet) {
-                                    if (value && !(value === Infinity || value === -Infinity)) {
+                                    if (value === 0 || value && !(value === Infinity || value === -Infinity)) {
                                         elem[name] = value;
                                     }
                                     allowFirstSet = false;
@@ -3623,25 +3625,28 @@
 
                     v2.define(context, name, attributes);
 
-                    if (defineOnly || typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue) {
-                        if (contains && (attributes === true || "set" in attributes || attributes.writable === true)) {
-                            if (isReady) {
+                    if (typeOnly || sourceValue === undefined || sourceValue === null || sourceValue === Infinity || sourceValue === -Infinity || sourceValue !== sourceValue) {
+                        return;
+                    }
+
+                    if (contains && (attributes === true || "set" in attributes || attributes.writable === true)) {
+                        if (isReady) {
+                            IE8Call(function () {
+                                elem[name] = sourceValue;
+                            });
+                        } else {
+                            watchStack.push(function () {
                                 IE8Call(function () {
-                                    if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
-                                        elem[name] = sourceValue;
-                                    }
+                                    elem[name] = sourceValue;
                                 });
-                            } else {
-                                watchStack.push(function () {
-                                    IE8Call(function () {
-                                        if (sourceValue && !(sourceValue === Infinity || sourceValue === -Infinity)) {
-                                            elem[name] = sourceValue;
-                                        }
-                                    });
-                                });
-                            }
+                            });
                         }
-                    } else if (attributes === true || "set" in attributes || attributes.writable === true) {
+                        return;
+                    }
+
+                    if (defineOnly) return;
+
+                    if (attributes === true || "set" in attributes || attributes.writable === true) {
                         if (isReady) {
                             v2.usb(context, name, sourceValue);
                         } else {
@@ -3947,11 +3952,11 @@
             } catch (_) { /* do something! */ }
         },
         "?toggle": function (toggle) {
-            if (arguments.length > 0) {
+            if (arguments.length > 0 && typeof toggle === 'boolean') {
 
-                return this.visible = !!toggle;
+                return v2.usb(this, "visible", toggle);
             }
-            return this.visible = !this.visible;
+            return v2.usb(this, "visible", !this.visible);
         },
         "&show": function () {
             var nodeName = this.$.nodeName.toLowerCase(),
@@ -3965,12 +3970,9 @@
                                 'inline' :
                                 '';
             this.$.styleCb('display', display);
-
-            this.visible = true;
         },
         "&hide": function () {
             this.$.styleCb('display', 'none');
-            this.visible = false;
         }
     });
 
