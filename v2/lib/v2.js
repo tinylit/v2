@@ -3020,11 +3020,10 @@
                 sleep = false,
                 isReady = false,
                 classOld = "",
-                namespace = "*",
+                core_tag = "*",
                 core_namespace = "*",
                 baseMap = {},
                 namespaceGraph = {},
-                baseGraph = {},
                 variable = {},
                 descriptors = {},
                 callbacks = [],
@@ -3048,99 +3047,49 @@
                         }
                     };
                 },
+                invokeCallback = function (callback, value, args) {
+                    return value <= 1 || args.length > 0 ?
+                        applyCallback(callback, args, context) :
+                        value >= 64 ?
+                            callback.call(context) :
+                            value < 4 ?
+                                callback.call(context, context.view) :
+                                value < 8 ?
+                                    callback.call(context, context.variable) :
+                                    value < 16 ?
+                                        callback.call(context, context.watch) :
+                                        value < 32 ?
+                                            callback.call(context, context.variable, context.watch) :
+                                            value < 64 ?
+                                                callback.call(context, context.data) :
+                                                callback.call(context, context.variable);
+                },
                 makeCallback = function (callback, key, namespace) {
+                    var value = +context.flowGraph[key] || 0;
 
-                    var _callback;
+                    return function () {
+                        var current_base = context.base;
 
-                    if (callback.identity === context.identity) {
-                        if (callback.namespace === namespace || namespace > callback.namespace) {
-                            return callback;
-                        }
-
-                        _callback = function () {
-
-                            var current_namespace = callback.namespace;
-
-                            callback.namespace = _callback.namespace;
-
-                            try {
-                                return applyCallback(callback, arguments);
-                            } finally {
-                                callback.namespace = current_namespace;
-                            }
-                        };
-
-                        _callback.namespace = namespace;
-                        _callback.identity = context.identity;
-
-                        return _callback;
-
-                    }
-
-                    _callback = function () {
-                        var
-                            namespace = _callback.namespace,
-                            next_base = baseMap[namespace],
-                            current_base = context.base,
-                            current_namespace = context.namespace,
-                            value = context.flowGraph[key] >>> 0;
-
-                        context.base = next_base;
-
-                        if (defineSurport) {
-                            core_namespace = namespace;
-                        } else {
-                            context.tag = namespace.split('.').pop();
-                            context.namespace = namespace;
-                        }
+                        context.base = baseMap[namespace];
 
                         try {
-                            return value <= 1 || arguments.length > 0 ?
-                                applyCallback(callback, arguments, context) :
-                                value >= 64 ?
-                                    callback.call(context) :
-                                    value < 4 ?
-                                        callback.call(context, context.view) :
-                                        value < 8 ?
-                                            callback.call(context, context.variable) :
-                                            value < 16 ?
-                                                callback.call(context, context.watch) :
-                                                value < 32 ?
-                                                    callback.call(context, context.variable, context.watch) :
-                                                    value < 64 ?
-                                                        callback.call(context, context.data) :
-                                                        callback.call(context, context.variable);
+                            return invokeCallback(callback, value, arguments);
                         } finally {
-
                             context.base = current_base;
-
-                            if (defineSurport) {
-                                core_namespace = current_namespace;
-                            } else {
-                                context.tag = current_namespace.split('.').pop();
-                                context.namespace = current_namespace;
-                            }
                         }
-                    }
-
-                    _callback.namespace = namespace;
-                    _callback.identity = context.identity;
-
-                    return _callback;
+                    };
                 },
                 extendsCallback = function (base, key, value, namespace) {
 
-                    if (base[key]) {
-                        extendsCallback(base.base || (base.base = baseMap[namespace] = {}), key, base[key], namespace);
+                    if (!(namespace in baseMap)) {
+                        baseMap[namespace] = v2.extend({}, base);
                     }
 
-                    base[key] = makeCallback(value, key, namespace);
+                    var name = namespace === '*' ? "" : namespace.slice(0, -core_tag.length - 1);
+
+                    base[key] = baseMap[namespace][key] = makeCallback(value, key, name);
                 },
                 initControls = function (option, define, highest) {
-
-                    if (define && !highest) {
-                        namespace += "." + v2.kebabCase(option.tag);
-                    }
 
                     v2.each(option, function (value, key) {
                         var match,
@@ -3177,12 +3126,7 @@
                             if (!define || type === 'function') {
 
                                 if (type === 'function') {
-
-                                    if (!(key in baseGraph)) {
-                                        baseGraph[key] = core_namespace;
-                                    }
-
-                                    namespaceGraph[key] = namespace;
+                                    namespaceGraph[key] = core_namespace;
                                 }
 
                                 context[key] = value;
@@ -3202,17 +3146,13 @@
 
                                 context[key] = value;
 
+                                namespaceGraph[key] = core_namespace;
+
                                 if (highest && highest[key] === sourceValue) {
                                     return;
                                 }
 
-                                if (!(key in baseGraph)) {
-                                    baseGraph[key] = core_namespace;
-                                }
-
-                                namespaceGraph[key] = namespace;
-
-                                extendsCallback(root_base || (root_base = baseMap[core_namespace] = {}), key, sourceValue, core_namespace);
+                                extendsCallback(root_base || (root_base = {}), key, sourceValue, core_namespace, define);
 
                                 return;
                             }
@@ -3247,7 +3187,10 @@
                     });
 
                     if (define && !highest) {
-                        core_namespace = namespace;
+
+                        core_tag = v2.kebabCase(option.tag);
+
+                        core_namespace += "." + core_tag;
                     }
                 };
 
@@ -3510,8 +3453,6 @@
 
                     if (value <= state) continue;
 
-                    if (!this[i]) continue;
-
                     prevValue = value;
 
                     if (value > 8) {
@@ -3526,6 +3467,8 @@
 
                         value = prevValue;
                     }
+
+                    if (!this[i]) continue;
 
                     value = value <= 1 || value >= 64 ?
                         this[i]() :
@@ -3546,8 +3489,14 @@
                         break;
                     }
                 }
+                if (defineSurport) {
+                    isReady = ready;
+                } else {
+                    this.isReady = isReady = ready;
+                }
 
-                if ((isReady = ready)) {
+                if (ready) {
+
                     this.define('visible', function (value) {
                         if (internalCall) {
                             if (value) {
@@ -3747,42 +3696,29 @@
                 }
             });
 
-            if ((context.base = root_base)) {
+            this.base = {};
+
+            if (root_base) {
+
+                baseMap["[native code]"] = this.base;
 
                 v2.each(namespaceGraph, function (namespace, key) {
 
-                    var callback = context[key],
-                        baseKey = baseGraph[key];
+                    var
+                        callback = context[key],
+                        value = +context.flowGraph[key] || 0;
 
                     context[key] = function () {
 
                         var
-                            next_base = baseMap[baseKey],
-                            current_tag = context.tag,
-                            current_base = context.base,
-                            current_namespace = context.namespace;
+                            current_base = context.base;
 
-                        context.base = next_base;
-
-                        if (defineSurport) {
-                            core_namespace = namespace;
-                        } else {
-                            context.tag = namespace.split('.').pop();
-                            context.namespace = namespace;
-                        }
+                        context.base = baseMap[namespace];
 
                         try {
-                            return applyCallback(callback, arguments, context);
+                            return invokeCallback(callback, value, arguments);
                         } finally {
-
                             context.base = current_base;
-
-                            if (defineSurport) {
-                                core_namespace = current_namespace;
-                            } else {
-                                context.tag = current_tag;
-                                context.namespace = current_namespace;
-                            }
                         }
                     };
                 });
@@ -3803,7 +3739,7 @@
                         return isReady;
                     },
                     tag: function () {
-                        return core_namespace.split('.').pop();
+                        return core_tag;
                     },
                     namespace: function () {
                         return core_namespace;
@@ -3816,7 +3752,7 @@
                     }
                 });
             } else {
-                this.tag = core_namespace.split('.').pop();
+                this.tag = core_tag;
                 this.namespace = core_namespace;
                 this.wildcards = wildcards;
                 this.variable = variable;

@@ -191,11 +191,7 @@
                 var message = v2.usb(this, "validationMessage");
 
                 if (tooltip) {
-                    if (tooltip.contentSetter) {
-                        tooltip.contentSetter(message);
-                    } else {
-                        tooltip.content = message;
-                    }
+                    v2.usb(tooltip, "content", message);
                     tooltip.show();
                 } else {
                     tooltip = this.create('tooltip', {

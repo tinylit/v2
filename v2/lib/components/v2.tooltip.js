@@ -42,6 +42,7 @@
         },
         usb: function () {
             this.base.usb();
+
             this.define('content', function (html) {
                 this.$inner.empty()
                     .appendChild(html.html());
