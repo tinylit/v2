@@ -856,13 +856,23 @@
         },
         makeDescriptor = function (source, callback, beforeSetting, conversionType, allowFirstSet) {
 
+            var threadGet, threadSet;
+
             conversionType = conversionType || v2.type(source);
 
             if (callback.length === 0) {
                 return {
                     configurable: true,
                     get: function () {
-                        return changeType(callback.call(this), conversionType);
+                        if (threadGet) {
+                            return source;
+                        }
+                        threadGet = true;
+                        try {
+                            return source = changeType(callback.call(this), conversionType);
+                        } finally {
+                            threadGet = false;
+                        }
                     }
                 };
             }
@@ -874,77 +884,51 @@
                 }
             };
 
-            if (callback.length === 1) {
-                attributes.set = function (value) {
-                    if (allowFirstSet) {
+            if (callback.length > 2) {
 
-                        allowFirstSet = false;
-
-                        if (source === undefined || source === null) {
-                            conversionType = v2.type(value);
-                        }
-
-                    } else {
-
-                        if (value === source) return;
-
-                        value = changeType(value, conversionType);
-
-                        if (value === source) return;
-
-                        if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
-                            return;
-                    }
-
-                    if (!beforeSetting || beforeSetting.call(this, value) !== false) {
-                        var result = callback.call(this, value);
-                        if (result === undefined) {
-                            source = value;
-                        } else {
-                            source = changeType(result, conversionType);
-                        }
-                    }
-                };
-            } else if (callback.length === 2) {
-                attributes.set = function (value) {
-
-                    if (allowFirstSet) {
-
-                        allowFirstSet = false;
-
-                        if (source === undefined || source === null) {
-                            conversionType = v2.type(value);
-                        }
-
-                    } else {
-                        if (value === source) return;
-
-                        value = changeType(value, conversionType);
-
-                        if (value === source) return;
-
-                        if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
-                            return;
-                    }
-
-                    if (!beforeSetting || beforeSetting.call(this, value) !== false) {
-                        var result = callback.call(this, value, source);
-                        if (result === undefined) {
-                            source = value;
-                        } else {
-                            source = changeType(value, conversionType);
-                        }
-                    }
-                };
-            } else {
                 v2.log("Cannot analyze a callback function with a parameter length of " + callback.length + ".", 15);
+
+                return attributes;
             }
+
+            attributes.set = function (value) {
+
+                if (allowFirstSet) {
+
+                    allowFirstSet = false;
+
+                    if (source === undefined || source === null) {
+                        conversionType = v2.type(value);
+                    }
+
+                } else {
+                    if (value === source) return;
+
+                    value = changeType(value, conversionType);
+
+                    if (value === source) return;
+
+                    if (value === null && (conversionType === 'boolean' || conversionType === 'date' || conversionType === 'number'))
+                        return;
+                }
+
+                if (!beforeSetting || beforeSetting.call(this, value) !== false) {
+                    var result = callback.call(this, value, source);
+                    if (result === undefined) {
+                        source = value;
+                    } else {
+                        source = changeType(value, conversionType);
+                    }
+                }
+            };
 
             return attributes;
         };
 
     v2.define = function (obj, prop, attributes) {
-        if (obj === null || obj === undefined) return obj;
+
+        if (obj === null || obj === undefined)
+            return obj;
 
         if (arguments.length === 2 && v2.isPlainObject(prop)) {
             return v2.each(prop, function (attributes, prop) {
@@ -952,8 +936,7 @@
             }), obj;
         }
 
-        var setter, contains = prop in obj,
-            source = contains ? obj[prop] : null;
+        var setter, source = prop in obj ? obj[prop] : null;
 
         if (attributes === true) {
             attributes = {
@@ -1009,6 +992,7 @@
             if ('set' in attributes) {
                 setter = attributes.set;
                 obj[prop + "Setter"] = function (value) {
+
                     var result = setter.call(this, value);
 
                     obj[prop] = result === undefined ? value : result;
@@ -1299,12 +1283,12 @@
     }
 
     function IE8Callback(callback) {
-        if (isIE8) {
+        if (isIE) {
             return function (value) {
                 try {
                     return callback.call(this, value);
                 } catch (e) {
-                    v2.log(e.message, 15);
+                    v2.log(e.message, isIE8 ? 7 : 15);
                 }
             };
         }
@@ -1312,15 +1296,15 @@
         return callback;
     }
 
-    function IE8Call(callback) {
-        if (isIE8) {
+    function IECall(elem, name, value) {
+        if (isIE) {
             try {
-                callback();
+                elem[name] = value;
             } catch (e) {
-                v2.log(e.message, 7);
+                v2.log("元素【{0}】的属性【{1}】赋值【{2}】，{3}".format(elem.nodeName.toLowerCase(), name, value, e.message), isIE8 ? 7 : 15);
             }
         } else {
-            callback();
+            elem[name] = value;
         }
     }
 
@@ -3038,13 +3022,14 @@
                 wildcards = this.wildcards,
                 makeInternalCall = function (callback, visible) {
                     return function () {
+                        if (internalCall) {
+                            return applyCallback(callback, arguments, this);
+                        }
                         internalCall = false;
                         try {
-                            applyCallback(callback, arguments, this);
-
-                            v2.usb(this, "visible", visible);
-
+                            return applyCallback(callback, arguments, this);
                         } finally {
+                            v2.usb(this, "visible", visible);
                             internalCall = true;
                         }
                     };
@@ -3081,10 +3066,10 @@
                         }
                     };
                 },
-                extendsCallback = function (base, key, value, namespace) {
+                extendsCallback = function (base, key, value, namespace, define) {
 
                     if (!(namespace in baseMap)) {
-                        baseMap[namespace] = v2.extend({}, base);
+                        baseMap[namespace] = define ? v2.extend({}, base) : base;
                     }
 
                     var name = namespace === '*' ? "" : namespace.slice(0, -core_tag.length - 1);
@@ -3548,11 +3533,10 @@
 
 
                 if (v2.isPlainObject(prop)) {
-                    elem = descriptor || this.$core || this['$' + this.tag] || this.$;
 
-                    return v2.each(prop, function (attributes, name) {
-                        done(name, attributes);
-                    }), this;
+                    elem = elem || descriptor || this.$core || this['$' + this.tag] || this.$;
+
+                    return v2.each(prop, done), this;
                 }
 
 
@@ -3561,14 +3545,15 @@
                 isFunction = v2.isFunction(descriptor);
 
                 return v2.each(prop.match(rnotwhite), function (name) {
-                    done(name, descriptor);
+                    done(descriptor, name);
                 }), this;
 
-                function done(name, attributes) {
+                function done(attributes, name) {
                     var contains = elem && name in elem,
                         sourceValue = context[name],
                         conversionType,
                         typeOnly,
+                        isFn = isFunction,
                         allowFirstSet = true;
 
                     if (name in excludes) {
@@ -3584,7 +3569,11 @@
                         sourceValue = elem[name];
                     }
 
-                    if (isFunction || isFunction === undefined && v2.isFunction(attributes)) {
+                    if (isFn === undefined) {
+                        isFn = v2.isFunction(attributes);
+                    }
+
+                    if (isFn) {
                         attributes = makeDescriptor(sourceValue, attributes, contains && IE8Callback(function (value) {
                             if (allowFirstSet) {
                                 if (value && !(value === Infinity || value === -Infinity)) {
@@ -3638,16 +3627,12 @@
                         return;
                     }
 
-                    if (contains && (attributes === true || "set" in attributes || attributes.writable === true)) {
+                    if (contains && isFn && (attributes === true || "set" in attributes || attributes.writable === true)) {
                         if (isReady) {
-                            IE8Call(function () {
-                                elem[name] = sourceValue;
-                            });
+                            IECall(elem, name, sourceValue);
                         } else {
                             watchStack.push(function () {
-                                IE8Call(function () {
-                                    elem[name] = sourceValue;
-                                });
+                                IECall(elem, name, sourceValue);
                             });
                         }
                         return;
@@ -3710,12 +3695,9 @@
                 }
             });
 
-            this.base = {};
+            this.base = baseMap[""] = {};
 
             if (root_base) {
-
-                baseMap["[native code]"] = this.base;
-
                 v2.each(namespaceGraph, function (namespace, key) {
 
                     var
@@ -3781,6 +3763,8 @@
             }
 
             computeWildcards(wildcards, 'function', true);
+
+            namespaceGraph = null;
         },
         lazy: function () {
             var i = 0,
@@ -3880,10 +3864,6 @@
             this.define('disabled', function (value) {
                 this.$.classList[value ? "add" : "remove"]('disabled');
             });
-
-            if (this.test) {
-                this.test();
-            }
 
             this.define({
                 width: makeUsbDescriptor('width', function () {

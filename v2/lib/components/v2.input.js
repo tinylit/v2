@@ -295,7 +295,7 @@
 
             this.base.usb();
 
-            if (!this.like('textarea')) {
+            if (this.tag === 'input') {
                 this.define('type multiple placeholder');
             }
 
@@ -677,9 +677,9 @@
     v2.use('input.textarea', {
         textarea: function () {
             /** 显示几行 */
-            this.rows = 0;
+            this.rows = Infinity;
             /** 显示几列 */
-            this.cols = 0;
+            this.cols = Infinity;
         },
         init: function () {
             this.base.init('textarea');
