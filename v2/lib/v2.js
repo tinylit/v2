@@ -856,7 +856,7 @@
         },
         makeDescriptor = function (source, callback, beforeSetting, conversionType, allowFirstSet) {
 
-            var threadGet, threadSet;
+            var threadGet = false, threadSet = false, threadValue = source;
 
             conversionType = conversionType || v2.type(source);
 
@@ -880,6 +880,9 @@
             var attributes = {
                 configurable: true,
                 get: function () {
+                    if (threadSet) {
+                        return threadValue;
+                    }
                     return source;
                 }
             };
@@ -912,8 +915,25 @@
                         return;
                 }
 
+                if (threadSet) {
+
+                }
+
+                if (threadSet && value === threadValue) return;
+
                 if (!beforeSetting || beforeSetting.call(this, value) !== false) {
-                    var result = callback.call(this, value, source);
+
+                    var result;
+
+                    threadValue = value;
+
+                    threadSet = true;
+                    try {
+                        result = callback.call(this, value, source);
+                    } finally {
+                        threadSet = false;
+                    }
+
                     if (result === undefined) {
                         source = value;
                     } else {
@@ -1473,11 +1493,12 @@
                 }
 
                 if (node.nodeType && (!e.button || e.type !== "click")) {
-                    for (; node !== this && node !== document; node = node.parentNode) {
+                    for (; node !== this && node !== self; node = node.parentNode) {
                         if (node.match(selector))
                             return done(node);
                     }
                 }
+
                 function done(elem) {
                     value = hanlde.call(elem, e);
 
@@ -1814,13 +1835,24 @@
             return this.parentNode.insertBefore(node, this.nextSibling);
         },
         after: function () {
+            if (arguments.length === 0)
+                return;
+
+            if (arguments.length === 1) {
+
+                var node = arguments[0];
+                this.parentNode.insertBefore(node.nodeType ? node : document.createTextNode(node), this.nextSibling);
+
+                return;
+            }
+
             var docFrag = safeFragment.cloneNode();
 
             v2.each(arguments, function (node) {
                 docFrag.appendChild(node.nodeType ? node : document.createTextNode(node));
             });
 
-            this.parentNode.insertBefore(docFrag, this);
+            this.parentNode.insertBefore(docFrag, this.nextSibling);
         }
     });
 
@@ -4247,6 +4279,20 @@
             view: msg
         });
     };
+
+    var KEYS_EVENTS_MAPS = {
+        '[data-toggle="dropdown"]': function () {
+
+        },
+        '[data-toggle="collapse"]': function () {
+
+        }
+    };
+
+    v2.subscribe(document, 'click', function (e) {
+
+    });
+
 
     function noop() { }
 

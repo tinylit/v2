@@ -23,6 +23,9 @@ declare namespace Use {
         "date-picker": DatePicker;
         "dropdown": Dropdown;
         "pagingbar": Pagingbar;
+        "tabbar": Tabbar;
+        "navbar": Navbar;
+        "appbar": Appbar;
     }
 
     /** 基类 */
@@ -155,6 +158,8 @@ declare namespace Use {
 
     /** 分页条基类 */
     interface PagingbarBase {
+        /** 生成分页条 */
+        pagination(): void;
         /**
          * 跳转到指定页。
          * @param index 页索引。
@@ -419,6 +424,14 @@ declare namespace Use {
         text: string;
         /** 跳转地址 */
         href?: string;
+        /** 居右显示（添加“pull-right”样式） */
+        right?: boolean;
+        /** 是否禁用（添加“disabled”样式） */
+        disabled?: boolean;
+        /** 是否是下拉列表 */
+        dropdown?: boolean;
+        /** 视图（仅下拉列表时有效） */
+        view: Array<DropdownOption | string | boolean | Array<DropdownOption | string | boolean>>;
     }
 
     /** 下拉菜单 */
@@ -439,7 +452,7 @@ declare namespace Use {
          *       Object 代表项数据。
          *       Array 代码子菜单。
          */
-        view: Array<boolean | string | DropdownOption | Array<boolean | string | DropdownOption>>;
+        view: Array<DropdownOption | string | boolean | Array<DropdownOption | string | boolean>>;
         /** 当前选中项 */
         selectedIndex: number;
         /** 当前选中的配置 */
@@ -452,6 +465,8 @@ declare namespace Use {
         sm: boolean;
         /** 大号（添加“pagination-lg”样式）*/
         lg: boolean;
+        /** 自动策划（当总页数小于1时自动隐藏，否则自动显示） */
+        independent: boolean;
         /** 页码循环 */
         paginationLoop: boolean;
         /** 上一页显示文本 */
@@ -464,5 +479,73 @@ declare namespace Use {
         pageSize: number;
         /** 当前页码（索引从0开始） */
         pageIndex: number;
+    }
+
+    /** 导航 */
+    interface Appbar extends V2Control<"appbar"> {
+        /** 类型 */
+        type: "default" | "tab" | "thumbtack";
+        /** 堆放（添加“nav-stacked”样式） */
+        stacked: boolean;
+        /**
+        * 视图
+        * 说明：Boolean 代表分割线。
+        *       String 代表标题。
+        *       Object 代表项数据。
+        *       Array 代码子菜单。
+        */
+        view: Array<DropdownOption | string | boolean | Array<DropdownOption | string | boolean>>;
+        /** 数据(从“view”中分析提取) */
+        readonly data: Array<DropdownOption>;
+        /** 当前选中项 */
+        selectedIndex: number;
+        /** 当前选中的配置 */
+        readonly selectedOptions: DropdownOption;
+    }
+
+    /** 选项卡 */
+    interface TabbarOption extends DropdownOption {
+        /** 内容 */
+        content: string | Element | V2ControlStandard;
+    }
+
+    /** 选项卡 */
+    interface Tabbar extends V2ControlExtend<"tabbar"> {
+        /** 选项卡位于内容的指定方位 */
+        direction: "top" | "right" | "bottom" | "left";
+        /** 视图 */
+        view: Array<TabbarOption>;
+        /** 数据(从“view”中分析提取) */
+        readonly data: Array<string | Element | V2ControlStandard>;
+        /** 当前选中项 */
+        selectedIndex: number;
+        /** 当前选中的配置 */
+        readonly selectedOptions: TabbarOption;
+    }
+
+    /** 导航条配置 */
+    interface NavbarOption {
+        /** 靠右显示 */
+        right?: boolean;
+        /**
+        * 视图
+        * 说明：Boolean 代表分割线。
+        *       String 代表标题。
+        *       Object 代表项数据。
+        *       Array 代码子菜单。
+        */
+        view: Array<DropdownOption | string | boolean | Array<DropdownOption | string | boolean>>
+    }
+
+    /** 导航条 */
+    interface Navbar extends V2Control<"navbar"> {
+        /** 品牌 */
+        brand: string;
+        /** 反转 */
+        inverse: boolean;
+        /** 类型 */
+        type: "default" | "top" | "fixed-top" | "fixed-bottom";
+        /** 视图 */
+        view: Array<NavbarOption | V2Controllike>;
     }
 }

@@ -59,7 +59,7 @@
         * @param tag TAG
         * @param options 配置信息
         */
-        create<K extends keyof V2ControlMap>(tag: K, options?: Develop<K>): V2ControlMap[K];
+        create<K extends keyof V2ControlMap>(tag: K, options?: V2ControlMap[K]): V2ControlMap[K];
         /**
          * 渲染子控件
          * @param tag TAG
@@ -172,6 +172,11 @@
         toggle(toggle: boolean): boolean;
     }
 
+    /** 类似控件 */
+    interface V2Controllike extends PlainObject {
+        tag?: string;
+    }
+
     /** 属性 */
     interface V2PropertyDescriptor<T> {
         configurable?: boolean;
@@ -194,6 +199,8 @@
         readonly namespace: string;
         /** 控件是否就绪 */
         readonly isReady: boolean;
+        /** 已完成执行的流程状态 */
+        readyState: number;
         /** 限制高宽（采用“min-”方式） */
         limit: false;
         /** 自动取数 */
@@ -222,14 +229,6 @@
         data: any;
         /** 视图渲染 */
         view: any;
-        /** 监控数据变化，数据变化时，调用指定方法 */
-        watch: PlainObject<Function>,
-        /** 事件集合 */
-        events: PlainObject<(this: V2ControlStandard, e: Event) => any>;
-        /** 方法集合 */
-        methods: PlainObject<(this: V2ControlStandard, ...args: any[]) => any>;
-        /** 通配符 */
-        wildcards: PlainObject<WildCard>,
         /** 组件集合 */
         components: FunctionComponents | PlainComponents;
         /** 流程图 */
@@ -245,7 +244,7 @@
     }
 
     /** 通配符 */
-    interface WildCard {
+    interface WildCard<T extends V2ControlBase = V2ControlStandard> {
         /** 支持的类型，同时支持多种类型时，以“|”分隔。 */
         type: "*" | "string" | "boolean" | "number" | "date" | "array" | "regexp" | "function" | "object";
         /** 执行的别名 */
@@ -256,7 +255,7 @@
          * @param key 属性名称
          * @param value 值
          */
-        exec(control: V2Control, key: string, value: any): any;
+        exec(control: T, key: string, value: any): any;
     }
 
     /** 控件组 */
@@ -301,6 +300,14 @@
 
     /** 组件 */
     interface V2Component<T> {
+        /** 监控数据变化，数据变化时，调用指定方法 */
+        watch: PlainObject<(this: T, ...args: any[]) => any>,
+        /** 事件集合 */
+        events: PlainObject<(this: T, e: Event) => any>;
+        /** 方法集合 */
+        methods: PlainObject<(this: T, ...args: any[]) => any>;
+        /** 通配符 */
+        wildcards: PlainObject<WildCard>,
         /**
          * 判断当前控件是否类似于指定TAG名称（即当前控件继承TAG对应的控件）。
          * @param tag 名称
@@ -620,44 +627,81 @@ declare namespace Use {
         * 判断对象中是否都满足函数条件
         * @param array 数组
         * @param callback 条件函数
+        */
+        all<T>(array: ArrayLike<T>, callback: (this: T, value: T, index?: number) => boolean): boolean;
+        /**
+        * 判断对象中是否都满足函数条件
+        * @param array 数组
+        * @param callback 条件函数
         * @param thisArg 条件函数中 this 对象
         */
-        all<T>(array: ArrayLike<T>, callback: (value: T, index: number, array) => any, thisArg?: any): boolean;
+        all<T, TContext>(array: ArrayLike<T>, callback: (this: TContext, value: T, index?: number) => boolean, thisArg: TContext): boolean;
+        /**
+         * 判断对象中是否所有属性都满足函数条件
+         * @param obj 对象
+         * @param callback 条件函数
+         */
+        all<T, K extends keyof T>(obj: T, callback: (this: T[K], value: T[K], propertyName?: K) => boolean): boolean;
         /**
          * 判断对象中是否所有属性都满足函数条件
          * @param obj 对象
          * @param callback 条件函数
          * @param thisArg 条件函数中 this 对象
          */
-        all<T, K extends keyof T>(obj: T, callback: (value: T[K], propertyName: K, obj) => boolean, thisArg?: any): boolean;
+        all<T, K extends keyof T, TContext>(obj: T, callback: (this: TContext, value: T[K], propertyName?: K) => boolean, thisArg: TContext): boolean;
         /**
         * 遍历数组集合
         * @param array 数组
         * @param callback 函数（返回 false 时终止循环）
         * @param thisArg 函数中 this 对象
         */
-        each<T>(array: ArrayLike<T>, callback: (value: T, index?: number) => any, thisArg?: any): boolean;
-        /**
-         * 判断对象集合
-         * @param obj 对象
-         * @param callback 函数（返回 false 时终止循环）
-         * @param thisArg 函数中 this 对象
-         */
-        each<T, K extends keyof T>(obj: T, callback: (value: T[K], propertyName?: K) => boolean, thisArg?: any): boolean;
+        each<T>(array: ArrayLike<T>, callback: (this: T, value: T, index?: number) => boolean | void): void;
         /**
         * 遍历数组集合
         * @param array 数组
         * @param callback 函数（返回 false 时终止循环）
         * @param thisArg 函数中 this 对象
         */
-        map<T, TResult>(array: ArrayLike<T>, callback: (value: T, index?: number) => TResult | ArrayLike<TResult>, thisArg?: any): Array<TResult>;
+        each<T, TContext>(array: ArrayLike<T>, callback: (this: TContext, value: T, index?: number) => boolean | void, thisArg: TContext): void;
+        /**
+         * 判断对象集合
+         * @param obj 对象
+         * @param callback 函数（返回 false 时终止循环）
+         */
+        each<T, K extends keyof T>(obj: T, callback: (this: T[K], value: T[K], propertyName?: K) => boolean | void): void;
         /**
          * 判断对象集合
          * @param obj 对象
          * @param callback 函数（返回 false 时终止循环）
          * @param thisArg 函数中 this 对象
          */
-        map<T, K extends keyof T, TResult>(obj: T, callback: (value: T[K], propertyName?: K) => TResult | ArrayLike<TResult>, thisArg?: any): Array<TResult>;
+        each<T, K extends keyof T, TContext>(obj: T, callback: (this: TContext, value: T[K], propertyName?: K) => boolean | void, thisArg: TContext): void;
+        /**
+        * 遍历数组集合
+        * @param array 数组
+        * @param callback 函数
+        */
+        map<T, TResult>(array: ArrayLike<T>, callback: (this: T, value: T, index?: number) => TResult | ArrayLike<TResult>): Array<TResult>;
+        /**
+        * 遍历数组集合
+        * @param array 数组
+        * @param callback 函数
+        * @param thisArg 函数中 this 对象
+        */
+        map<T, TResult, TContext>(array: ArrayLike<T>, callback: (this: TContext, value: T, index?: number) => TResult | ArrayLike<TResult>, thisArg: TContext): Array<TResult>;
+        /**
+         * 遍历数组集合
+         * @param obj 对象
+         * @param callback 函数
+         */
+        map<T, K extends keyof T, TResult>(obj: T, callback: (this: T[K], value: T[K], propertyName?: K) => TResult | ArrayLike<TResult>): Array<TResult>;
+        /**
+         * 遍历数组集合
+         * @param obj 对象
+         * @param callback 函数
+         * @param thisArg 函数中 this 对象
+         */
+        map<T, K extends keyof T, TResult, TContext>(obj: T, callback: (this: TContext, value: T[K], propertyName?: K) => TResult | ArrayLike<TResult>, thisArg: TContext): Array<TResult>;
     }
 
     /** 异常 */
@@ -954,6 +998,14 @@ declare namespace Use {
         /**
         * 注册 TAG 始终需要的配置
         * @param tag TAG
+        * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
+        * @param option 配置
+        */
+        use<K extends keyof Dev.V2ControlMap>(tag: K, when: string, option: Dev.V2ControlMap[K]): void;
+        /**
+        * 注册 TAG 始终需要的配置
+        * @param tag TAG
+        * @param when 过滤条件
         * @param option 配置
         */
         use<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, option: Dev.V2ControlMap[K]): void;
@@ -964,13 +1016,6 @@ declare namespace Use {
          * @param option 配置
          */
         use<K extends string>(tag: K, when: (option: V2Control<K>) => boolean, option: V2Control<K>);
-        /**
-        * 注册 TAG 始终需要的配置
-        * @param tag TAG
-        * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
-        * @param option 配置
-        */
-        use<K extends keyof Dev.V2ControlMap>(tag: K, when: string, option: Dev.V2ControlMap[K]): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
@@ -1121,7 +1166,7 @@ declare namespace Use {
          *       log: 1
          *   };
          */
-        log(message: string, type: number, logAll?: boolean): void;
+        log(message: any, type: number, logAll?: boolean): void;
         /**
          * 获取对象属性的值（兼容处理）。
          * @param obj 对象

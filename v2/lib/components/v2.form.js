@@ -18,8 +18,8 @@
 
     v2.use('form', {
         components: {
-            'input': function (callback) {
-                require(['components/v2.input'], callback);
+            input: function (resovle) {
+                require(['components/v2.input'], resovle);
             }
         },
         form: function () {
@@ -72,6 +72,10 @@
             }
         },
         build: function (view) {
+
+            if (view === undefined || view === null)
+                return;
+
             var elem, vm = this, group = this.lg ? '.form-group-lg' : this.sm ? '.form-group-sm' : this.xs ? '.form-group-xs' : '.form-group', type = v2.type(view);
 
             switch (type) {

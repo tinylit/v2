@@ -768,11 +768,16 @@
         usb: function () {
             this.base.usb();
 
-            this.define('multiple selectedIndex');
+            this.define('multiple');
 
-            if (this.selectedIndex > -1) {
-                this.value = this.$.value;
-            }
+            this.define('selectedIndex', function (index) {
+
+                v2.each(this.$.selectedOptions, function (option, i) {
+                    option.selected = index === i;
+                });
+
+                this.invoke('select-changed', index);
+            });
 
             this.define('value', {
                 get: function () {
@@ -793,9 +798,12 @@
                         });
 
                     } else {
-                        v2.each(this.$.options, function (option) {
-                            return !(option.selected = (option.value || option.text) === value);
-                        });
+                        v2.each(this.$.options, function (option, index) {
+                            if ((option.value || option.text) === value) {
+                                this.selectedIndex = index;
+                                return false;
+                            }
+                        }, this);
                     }
                 }
             }, true);

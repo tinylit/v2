@@ -16,25 +16,18 @@
 }(function (/** @type Use.V2kitStatic */v2) {
 
     var divider = 'li.divider'.htmlCoding(),
-        more = 'a[href=#]{更多选项}'.htmlCoding();
+        more = 'a.dropdown-toggle[href=#]{更多选项}>b.caret'.htmlCoding();
 
-    v2.use('dropdown', {
-        dropdown: function () {
-            /** 方位 */
-            this.direction = "bottom";
-
-            /** 请求 */
-            this.deployment = '[data-toggle="dropdown"]';
-
-            /** 自动策划 */
-            this.independent = false;
+    v2.use("appbar", {
+        appbar: function () {
+            /** 类型 */
+            this.type = "default";//"default" | "tab" | "thumbtack";
 
             /** 选中项 */
             this.selectedIndex = -1;
 
-            /** 设置初始状态 */
-            this.visible = false;
-            this.defaultVisible = false;
+            /** 堆放 */
+            this.stacked = false;
         },
         init: function () {
             this.base.init('ul');
@@ -57,9 +50,14 @@
                         break;
                     case "object":
                         if (view.dropdown) {
-                            htmls.push('<li class="dropdown">');
 
-                            htmls.push(view.text ? 'a[href=#]{{0}}'.format(view.text).htmlCoding() : more);
+                            if (view.right) {
+                                htmls.push('<li class="dropdown pull-right">');
+                            } else {
+                                htmls.push('<li class="dropdown">');
+                            }
+
+                            htmls.push(view.text ? 'a.dropdown-toggle[href=#]{{0}}>b.caret'.format(view.text).htmlCoding() : more);
 
                             htmls.push('<ul class="dropdown-menu">');
 
@@ -75,12 +73,15 @@
                             htmls.push('<li>');
                         }
 
-                        htmls.push('<a href="{0}" data-bit={2}>{1}</a>'.format(view.href || "#", view.text, data.push(view)));
+                        htmls.push('<a href="{0}" data-bit={2}>{1}</a>'.format(view.href || "#", view.text, data.length));
 
                         htmls.push('</li>');
+
+                        data.push(view);
+
                         break;
                     case "array":
-                        htmls.push('<li class="dropdown-submenu">', more, '<ul class="dropdown-menu">');
+                        htmls.push('<li class="dropdown">', more, '<ul class="dropdown-menu">');
                         v2.each(view, done);
                         htmls.push('</ul></li>');
                         break;
@@ -91,19 +92,37 @@
 
             this.$.empty()
                 .appendChild(htmls.join('').html());
+
+            this.dropdowns = this.when('.dropdown');
         },
         render: function () {
-            this.$$.classList.add('dropdown');
-            this.$.classList.add('dropdown-menu');
+            var clazz;
+
+            this.$.classList.add("nav");
+
+            switch (this.type) {
+                case 'tab':
+                    clazz = "nav-tabs";
+                    break;
+                case 'thumbtack':
+                    clazz = "nav-pills";
+                    break;
+            }
+
+            if (clazz) {
+                this.$.classList.add(clazz);
+            }
+
+            if (this.stacked) {
+                this.$.classList.add('nav-stacked');
+            }
         },
         usb: function () {
             this.base.usb();
 
             var vm = this, then = this.when('li');
 
-            this.define('direction', function (dir) {
-                this.$$.classList.toggle('dropup', dir === 'top');
-            }).define('selectedIndex', function (index) {
+            this.define('selectedIndex', function (index) {
 
                 var node = this.take('[data-bit="{0}"]'.format(index));
 
@@ -127,24 +146,12 @@
                 return this.data[v2.usb(this, "selectedIndex")];
             });
         },
-        show: function () {
-            this.$$.classList.add('open');
-        },
-        hide: function () {
-            this.$$.classList.remove('open');
-        },
         commit: function () {
             var vm = this;
 
-            if (this.deployment) {
-                this.deployment.on('click', function () {
-                    vm.toggle();
-                });
-            } else if (this.independent) {
-                this.$$.on('click', '[data-toggle="dropdown"]', function () {
-                    vm.toggle();
-                });
-            }
+            this.$.on('click', '.dropdown-toggle', function () {
+                this.parentNode.classList.toggle('open');
+            });
 
             this.$.on('click', "a", function () {
 
@@ -164,17 +171,19 @@
     v2.subscribe(document, 'click', function (e) {
         var elem = e.target || e.srcElement;
 
-        if (v2.match(elem, '[data-toggle="dropdown"]'))
+        if (elem.classList.contains('dropdown-toggle'))
             return false;
 
-        v2.GDir('dropdown').when(function (vm) {
+        v2.GDir('appbar').when(function (vm) {
             return vm.visible;
         }).done(function (vm) {
-            vm.hide();
+            vm.dropdowns.done(function (li) {
+                li.classList.remove('open');
+            });
         }).destroy();
     });
 
     return function (options) {
-        return v2('dropdown', options);
+        return v2('appbar', options);
     };
 }));
