@@ -62,7 +62,19 @@
         init: function () {
             this.base.init('form');
         },
-        render: function () {
+        render: function (variable) {
+
+            if (this.hostlike('navbar')) {
+
+                this.$.classList.add('navbar-form');
+
+                if (variable.right) {
+                    this.$.classList.add('navbar-right');
+                } else if (variable.left) {
+                    this.$.classList.add('navbar-left');
+                }
+            }
+
             if (this.inline) {
                 this.$.classList.add('form-inline');
             }
@@ -154,12 +166,12 @@
                 .then(function (response) {
                     vm.invoke("ajax-success", response);
                 })
-                ["catch"](function (error) {
-                    vm.invoke("ajax-fail", error);
-                })
-                ["finally"](function () {
-                    vm.wait();
-                });
+            ["catch"](function (error) {
+                vm.invoke("ajax-fail", error);
+            })
+            ["finally"](function () {
+                vm.wait();
+            });
         },
         load: function (data) {
             var

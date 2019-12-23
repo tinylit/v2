@@ -24,8 +24,8 @@ declare namespace Use {
         "dropdown": Dropdown;
         "pagingbar": Pagingbar;
         "tabbar": Tabbar;
+        "nav": Nav;
         "navbar": Navbar;
-        "appbar": Appbar;
     }
 
     /** 基类 */
@@ -441,8 +441,6 @@ declare namespace Use {
          *  @default bottom
          */
         direction: "bottom" | "top";
-        /** 自主 */
-        independent: boolean;
         /** 数据(从“view”中分析提取) */
         readonly data: Array<DropdownOption>;
         /**
@@ -482,11 +480,13 @@ declare namespace Use {
     }
 
     /** 导航 */
-    interface Appbar extends V2Control<"appbar"> {
+    interface Nav extends V2Control<"nav"> {
         /** 类型 */
         type: "default" | "tab" | "thumbtack";
         /** 堆放（添加“nav-stacked”样式） */
         stacked: boolean;
+        /** 调整（添加“nav-justified”样式） */
+        justified: boolean;
         /**
         * 视图
         * 说明：Boolean 代表分割线。
@@ -527,6 +527,8 @@ declare namespace Use {
     interface NavbarOption {
         /** 靠右显示 */
         right?: boolean;
+        /** 靠左显示 */
+        left?: boolean;
         /**
         * 视图
         * 说明：Boolean 代表分割线。
@@ -547,5 +549,11 @@ declare namespace Use {
         type: "default" | "top" | "fixed-top" | "fixed-bottom";
         /** 视图 */
         view: Array<NavbarOption | V2Controllike>;
+    }
+
+    /** 面板 */
+    interface Panel extends V2Control<"panel"> {
+        /** 类型 */
+        type: "default" | "primary" | "success" | "info" | "warning" | "danger";
     }
 }

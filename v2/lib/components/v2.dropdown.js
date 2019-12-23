@@ -26,9 +26,6 @@
             /** 请求 */
             this.deployment = '[data-toggle="dropdown"]';
 
-            /** 自动策划 */
-            this.independent = false;
-
             /** 选中项 */
             this.selectedIndex = -1;
 
@@ -140,10 +137,6 @@
                 this.deployment.on('click', function () {
                     vm.toggle();
                 });
-            } else if (this.independent) {
-                this.$$.on('click', '[data-toggle="dropdown"]', function () {
-                    vm.toggle();
-                });
             }
 
             this.$.on('click', "a", function () {
@@ -159,19 +152,6 @@
                 v2.usb(vm, "selectedIndex", bit >>> 0);
             });
         }
-    });
-
-    v2.subscribe(document, 'click', function (e) {
-        var elem = e.target || e.srcElement;
-
-        if (v2.match(elem, '[data-toggle="dropdown"]'))
-            return false;
-
-        v2.GDir('dropdown').when(function (vm) {
-            return vm.visible;
-        }).done(function (vm) {
-            vm.hide();
-        }).destroy();
     });
 
     return function (options) {

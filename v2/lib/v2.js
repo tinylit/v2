@@ -532,11 +532,11 @@
             var i = 0;
             if (isArraylike(object)) {
                 for (var len = object.length; i < len; i++) {
-                    if (callback.call(context || object, object[i], i, object) === false) break;
+                    if (callback.call(context || object[i], object[i], i, object) === false) break;
                 }
             } else {
                 for (i in object) {
-                    if (callback.call(context || object, object[i], i, object) === false) break;
+                    if (callback.call(context || object[i], object[i], i, object) === false) break;
                 }
             }
             return object;
@@ -547,7 +547,7 @@
             var i = 0;
             if (isArraylike(object)) {
                 for (var len = object.length; i < len; i++) {
-                    value = callback.call(context || object, object[i], i, object);
+                    value = callback.call(context || object[i], object[i], i, object);
 
                     if (value === undefined || value === null)
                         continue;
@@ -556,7 +556,7 @@
                 }
             } else {
                 for (i in object) {
-                    value = callback.call(context || object, object[i], i, object);
+                    value = callback.call(context || object[i], object[i], i, object);
                     if (value === undefined || value === null)
                         continue;
                     arr.push(value);
@@ -569,11 +569,11 @@
             var i = 0;
             if (isArraylike(object)) {
                 for (var len = object.length; i < len; i++) {
-                    if (!callback.call(context || object, object[i], i, object)) return false;
+                    if (!callback.call(context || object[i], object[i], i, object)) return false;
                 }
             } else {
                 for (i in object) {
-                    if (!callback.call(context || object, object[i], i, object)) return false;
+                    if (!callback.call(context || object[i], object[i], i, object)) return false;
                 }
             }
             return true;
@@ -583,11 +583,11 @@
             var i = 0;
             if (isArraylike(object)) {
                 for (var len = object.length; i < len; i++) {
-                    if (callback.call(context || object, object[i], i, object)) return true;
+                    if (callback.call(context || object[i], object[i], i, object)) return true;
                 }
             } else {
                 for (i in object) {
-                    if (callback.call(context || object, object[i], i, object)) return true;
+                    if (callback.call(context || object[i], object[i], i, object)) return true;
                 }
             }
             return false;
@@ -880,16 +880,13 @@
             var attributes = {
                 configurable: true,
                 get: function () {
-                    if (threadSet) {
-                        return threadValue;
-                    }
-                    return source;
+                    return threadSet ? threadValue : source;
                 }
             };
 
             if (callback.length > 2) {
 
-                v2.log("Cannot analyze a callback function with a parameter length of " + callback.length + ".", 15);
+                v2.log("无法分析参数长度为“" + callback.length + "”的函数！", 15);
 
                 return attributes;
             }
@@ -902,9 +899,12 @@
 
                     if (source === undefined || source === null) {
                         conversionType = v2.type(value);
+                    } else if (value === source) {
+                        source = undefined;
                     }
 
                 } else {
+
                     if (value === source) return;
 
                     value = changeType(value, conversionType);
@@ -915,10 +915,6 @@
                         return;
                 }
 
-                if (threadSet) {
-
-                }
-
                 if (threadSet && value === threadValue) return;
 
                 if (!beforeSetting || beforeSetting.call(this, value) !== false) {
@@ -926,6 +922,13 @@
                     var result;
 
                     threadValue = value;
+
+                    if (threadSet) {
+
+                        v2.log("疑似属性内出现死循环调用!", 7);
+
+                        return;
+                    }
 
                     threadSet = true;
                     try {
@@ -1803,6 +1806,23 @@
 
                 style[name] = value;
             }
+        },
+        swap: function (options, callback) {
+            var val, name,
+                map = {};
+
+            for (name in options) {
+                map[name] = this.style[name];
+                this.style[name] = options[name];
+            }
+
+            val = callback.apply(this, core_slice.call(arguments, 2));
+
+            for (name in options) {
+                this.style[name] = map[name];
+            }
+
+            return val;
         }
     });
 
@@ -2660,6 +2680,7 @@
 
                     if (callback(this.master) === false) {
                         group = callback.group;
+
                         if (group > 0) {
 
                             j = i;
@@ -2670,7 +2691,6 @@
                                     j++;
                                 }
                             }
-
                         }
                     }
 
@@ -2778,7 +2798,7 @@
     }
 
     v2.GDir = makeCache(function (tag) {
-        var fn = new Function("return function " + v2.pascalCase(tag) + "Colection(){}")();
+        var fn = new Function("return function " + v2.pascalCase(tag) + "Collection(){}")();
 
         fn.prototype = ArrayThen.prototype;
 
@@ -2902,6 +2922,8 @@
 
             GLOBAL_VARIABLE_STARTUP_COMPLETE = true;
 
+            this.controls.add(control);
+
             if (isFunction) {
                 var stack, complete = false, lazy = true;
 
@@ -2912,14 +2934,16 @@
                     }
                 });
 
-                if ((complete = lazy)) {
+                complete = lazy;
+
+                if (complete) {
                     stack = stackCache[this.identity] || new V2Stack(this);
 
                     stack.waitSatck(tag, function () {
                         control.startup();
                     });
 
-                    return this.controls.add(control);
+                    return control;
                 }
             }
 
@@ -2927,7 +2951,7 @@
                 control.startup();
             });
 
-            return this.controls.add(control);
+            return control;
         },
         width: null,
         height: null,
@@ -3142,21 +3166,20 @@
 
                         if (sourceValue === null || sourceValue === undefined) {
 
-                            if (!define || type === 'function') {
+                            if (type === 'function') {
 
-                                if (type === 'function') {
-
-                                    if (key === 'show' || key === 'hide') {
-                                        value = makeInternalCall(value, key === 'show');
-                                    }
-
-                                    namespaceGraph[key] = core_namespace;
+                                if (key === 'show' || key === 'hide') {
+                                    value = makeInternalCall(value, key === 'show');
                                 }
+
+                                namespaceGraph[key] = core_namespace;
 
                                 context[key] = value;
 
-                            } else {
+                            } else if (define) {
                                 variable[key] = value;
+                            } else {
+                                context[key] = variable[key] = value;
                             }
 
                             return;
@@ -3927,31 +3950,43 @@
             }
         },
         build: function (view) {
-            var type;
-
             if (view === null || view === undefined)
                 return;
 
-            type = v2.type(view);
+            var vm = this;
 
-            switch (type) {
-                case 'string':
-                    return this.$.appendChild(view.html());
-                case 'array':
-                    return v2.each(view, this.lazy(true, this.build));
-                case 'object':
-                    if (view.nodeType) {
-                        return this.$.appendChild(view);
-                    }
-                    if ('tag' in view) {
-                        return this.lazy(this.create, view);
-                    }
-                    return v2.each(view, this.lazy(true, this.create));
-                case 'function':
-                    return view.call(this);
-                default:
-                    return v2.error('Unsupported exception:View types are not supported.');
-            }
+            (function done(view) {
+
+                var type = v2.type(view);
+
+                switch (type) {
+                    case 'string':
+                        vm.$.appendChild(view.html());
+                        break;
+                    case 'array':
+                        v2.each(view, vm.lazy(true, done));
+                        break;
+                    case 'object':
+                        if (view.nodeType) {
+                            vm.$.appendChild(view);
+
+                            break;
+                        }
+                        if ('tag' in view) {
+                            vm.lazy(vm.create, view);
+
+                            break;
+                        }
+                        v2.each(view, vm.lazy(true, vm.create));
+                        break;
+                    case 'function':
+                        view.call(vm);
+                        break;
+                    default:
+                        v2.error('Unsupported exception:View types are not supported.');
+                        break;
+                }
+            })(view);
         }
     });
 
@@ -4280,19 +4315,110 @@
         });
     };
 
+    function takeTarget(elem) {
+        var node, selector = elem.getAttribute('data-target');
+
+        if (!selector || selector === '#') {
+            var hrefAttr = elem.getAttribute('href');
+            selector = hrefAttr && hrefAttr !== '#' ? hrefAttr.trim() : '';
+        }
+
+        if (selector) {
+            node = v2.take(selector, document);
+        }
+
+        return node;
+    }
+
+    var KEYS_AUTO_HIDDEN_MAPS = {
+        '[data-toggle="dropdown"]': function () {
+            var node = takeTarget(this) || this.parentNode,
+                component = node["component"];
+
+            if (component) {
+                component.hide();
+            } else {
+                node.classList.remove('open');
+            }
+        }
+    };
+
     var KEYS_EVENTS_MAPS = {
         '[data-toggle="dropdown"]': function () {
+            var node = takeTarget(this) || this.parentNode,
+                component = node["component"];
 
+            if (component) {
+                component.toggle();
+            } else {
+                node.classList.toggle('open');
+            }
         },
         '[data-toggle="collapse"]': function () {
+            var height, component, complete, viewport, node = takeTarget(this);
 
+            if (!node) return;
+
+            component = node["component"];
+
+            if (component) {
+                component.toggle();
+                return;
+            }
+
+            if (node.classList.contains('in')) {
+                viewport = node.getBoundingClientRect();
+                height = viewport.height || (viewport.bottom - xy.top + document.documentElement.clientTop - document.documentElement.scrollTop);
+                node.style.height = height + "px";
+                node.classList.remove('collapse', 'in');
+                node.classList.add('collapsing');
+                setTimeout(function () {
+                    node.style.height = '1px';
+                });
+                complete = function () {
+                    node.classList.remove('collapsing');
+                    node.classList.add('collapse');
+                };
+            } else {
+                node.classList.remove('collapse');
+                node.classList.add('collapsing');
+                node.style.height = node.scrollHeight + "px";
+                complete = function () {
+                    node.classList.remove('collapsing');
+                    node.classList.add('collapse', 'in');
+                    node.style.height = '';
+                };
+            }
+
+            setTimeout(complete, 355);
         }
     };
 
     v2.subscribe(document, 'click', function (e) {
 
-    });
+        var map = {}, node = e.target || e.srcElement;
 
+        if (node.nodeType && (!e.button || e.type !== "click")) {
+            for (; node !== this && node !== self; node = node.parentNode) {
+                v2.each(KEYS_EVENTS_MAPS, function (handle, selector) {
+                    if (node.match(selector)) {
+                        map[selector] = node;
+                        handle.call(node, e);
+                    }
+                });
+            }
+        }
+
+        v2.each(KEYS_AUTO_HIDDEN_MAPS, function (handle, selector) {
+            v2.each(v2.take(selector, document, true), selector in map ? function () {
+
+                if (map[selector] !== this) {
+                    handle.call(this);
+                }
+
+            } : handle);
+        });
+    });
 
     function noop() { }
 

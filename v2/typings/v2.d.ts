@@ -973,17 +973,6 @@ declare namespace Use {
          */
         exists(tag: string): boolean;
         /**
-         * 注册全局配置（将在所有组件中体现）
-         * @param option 配置
-         */
-        use(option: V2ControlStandard): void;
-        /**
-         * 获取 TAG 配置
-         * @param tag TAG
-         */
-        use(tag: string): UseThen;
-
-        /**
         * 注册 TAG 始终需要的配置
         * @param tag TAG
         * @param option 配置
@@ -995,6 +984,16 @@ declare namespace Use {
          * @param option 配置
          */
         use<K extends string>(tag: K, option: ToDevelop<K>): void;
+        /**
+         * 注册全局配置（将在所有组件中体现）
+         * @param option 配置
+         */
+        use(option: V2ControlStandard): void;
+        /**
+         * 获取 TAG 配置
+         * @param tag TAG
+         */
+        use(tag: string): UseThen;
         /**
         * 注册 TAG 始终需要的配置
         * @param tag TAG
@@ -1326,6 +1325,18 @@ interface Element {
      * @param same 是否保持原数据
      */
     css(names: string[], same: true): Use.PlainObject<string>;
+    /**
+     * 指定元素是否满足自定选择器条件。
+     * @param selectors 选择器
+     */
+    match(selectors: string): boolean;
+    /**
+     * 获取指定环境配置下，调用回调函数返回的值。
+     * @param options 环境配置（在“style”属性中体现）。
+     * @param callback 回调函数。
+     * @param args 回调函数的参数。
+     */
+    swap<T>(options: Use.PlainObject, callback: (this: Element, ...args: any[]) => T, ...args: any[]): T;
 }
 
 /** ----------------------------------------------------------------------------------- 【约定及案例】 ---------------------------------------------------------------------------- */

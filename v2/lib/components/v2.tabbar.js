@@ -24,8 +24,8 @@
             this.selectedIndex = 0;
         },
         components: {
-            appbar: function (resovle) {
-                require(['components/v2.appbar'], resovle);
+            nav: function (resovle) {
+                require(['components/v2.nav'], resovle);
             }
         },
         render: function () {
@@ -68,7 +68,7 @@
                 vm.viewports.add(viewport);
             });
 
-            this.appbar = this.create('appbar', {
+            this.nav = this.create('nav', {
                 $$: this.$,
                 $: this.$bar,
                 type: "tab",
@@ -84,9 +84,10 @@
             this.base.usb();
 
             this.define('direction', function (direction, oldDirection) {
-                if (oldDirection === 'bottom') {
+
+                if (direction === 'bottom') {
                     this.$.insertBefore(this.$content, this.$.firstChild);
-                } else if (direction === 'bottom') {
+                } else {
                     this.$.insertBefore(this.$content, this.$clearfix);
                 }
 
@@ -116,7 +117,7 @@
 
             this.define('selectedIndex', function (index) {
 
-                v2.usb(this.appbar, 'selectedIndex', index);
+                v2.usb(this.nav, 'selectedIndex', index);
 
                 this.viewports.done(function (viewport, i) {
                     if (index === i) {
@@ -138,7 +139,7 @@
                 this.invoke('select-changed', index);
 
             }).define("selectedOptions", function () {
-                return v2.usb(this.appbar, "selectedOptions");
+                return v2.usb(this.nav, "selectedOptions");
             });
         }
     });

@@ -16,10 +16,10 @@
 }(function (/** @type Use.V2kitStatic */v2) {
 
     var divider = 'li.divider'.htmlCoding(),
-        more = 'a.dropdown-toggle[href=#]{更多选项}>b.caret'.htmlCoding();
+        more = 'a.dropdown-toggle[data-toggle="dropdown"][href=#]{更多选项}>b.caret'.htmlCoding();
 
-    v2.use("appbar", {
-        appbar: function () {
+    v2.use("nav", {
+        nav: function () {
             /** 类型 */
             this.type = "default";//"default" | "tab" | "thumbtack";
 
@@ -28,6 +28,9 @@
 
             /** 堆放 */
             this.stacked = false;
+
+            /** 调整（添加“nav-justified”样式） */
+            this.justified = false;
         },
         init: function () {
             this.base.init('ul');
@@ -57,7 +60,7 @@
                                 htmls.push('<li class="dropdown">');
                             }
 
-                            htmls.push(view.text ? 'a.dropdown-toggle[href=#]{{0}}>b.caret'.format(view.text).htmlCoding() : more);
+                            htmls.push(view.text ? 'a.dropdown-toggle[data-toggle="dropdown"][href=#]{{0}}>b.caret'.format(view.text).htmlCoding() : more);
 
                             htmls.push('<ul class="dropdown-menu">');
 
@@ -95,10 +98,20 @@
 
             this.dropdowns = this.when('.dropdown');
         },
-        render: function () {
+        render: function (variable) {
             var clazz;
 
             this.$.classList.add("nav");
+
+            if (this.hostlike('navbar')) {
+                this.$.classList.add('navbar-nav');
+
+                if (variable.right) {
+                    this.$.classList.add('navbar-right');
+                } else if (variable.left) {
+                    this.$.classList.add('navbar-left');
+                }
+            }
 
             switch (this.type) {
                 case 'tab':
@@ -115,6 +128,10 @@
 
             if (this.stacked) {
                 this.$.classList.add('nav-stacked');
+            }
+
+            if (this.justified) {
+                this.$.classList.add('nav-justified');
             }
         },
         usb: function () {
@@ -149,10 +166,6 @@
         commit: function () {
             var vm = this;
 
-            this.$.on('click', '.dropdown-toggle', function () {
-                this.parentNode.classList.toggle('open');
-            });
-
             this.$.on('click', "a", function () {
 
                 var bit = this.getAttribute("data-bit");
@@ -168,22 +181,7 @@
         }
     });
 
-    v2.subscribe(document, 'click', function (e) {
-        var elem = e.target || e.srcElement;
-
-        if (elem.classList.contains('dropdown-toggle'))
-            return false;
-
-        v2.GDir('appbar').when(function (vm) {
-            return vm.visible;
-        }).done(function (vm) {
-            vm.dropdowns.done(function (li) {
-                li.classList.remove('open');
-            });
-        }).destroy();
-    });
-
     return function (options) {
-        return v2('appbar', options);
+        return v2('nav', options);
     };
 }));
