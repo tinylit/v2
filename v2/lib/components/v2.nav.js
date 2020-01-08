@@ -13,7 +13,7 @@
                 return factory(v2kit);
             } :
             factory(v2);
-}(function (/** @type Use.V2kitStatic */v2) {
+}(function (/** @type Use.V2 */v2) {
 
     var divider = 'li.divider'.htmlCoding(),
         more = 'a.dropdown-toggle[data-toggle="dropdown"][href=#]{更多选项}>b.caret'.htmlCoding();

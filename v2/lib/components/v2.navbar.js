@@ -13,7 +13,7 @@
                 return factory(v2kit);
             } :
             factory(v2);
-}(function (/** @type Use.V2kitStatic */v2) {
+}(function (/** @type Use.V2 */v2) {
     var NAV_GUID = 0;
 
     v2.use('navbar', {

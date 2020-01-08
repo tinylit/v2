@@ -26,6 +26,7 @@ declare namespace Use {
         "tabbar": Tabbar;
         "nav": Nav;
         "navbar": Navbar;
+        "table": Table;
     }
 
     /** 基类 */
@@ -35,6 +36,7 @@ declare namespace Use {
         "form": FormBase;
         "date-picker": DatePickerBase;
         "pagingbar": PagingbarBase;
+        "table": TableBase;
     }
 }
 
@@ -169,6 +171,50 @@ declare namespace Use {
         prev(): void;
         /** 下一页 */
         next(): void;
+    }
+
+    /** 表格基类 */
+    interface TableBase {
+        /**
+         * 等待框
+         * @param toggle 开关
+         */
+        wait(toggle?: boolean): void;
+        /**
+         * 更新数据。
+         * @param rowIndex 行索引
+         * @param rowValue 行数据
+         */
+        updateAt(rowIndex: number, rowValue: PlainObject): void;
+        /**
+         * 移除指定行
+         * @param rowIndex 行索引
+         */
+        deleteAt(rowIndex: number): void;
+        /**
+         * 插入指定数据
+         * @param rowIndex 行索引
+         * @param rowValue 行数据
+         */
+        insertAt(rowIndex: number, rowValue: PlainObject): void;
+        /**
+         * 选中指定行
+         * @param rowIndex 行索引
+         */
+        check(rowIndex: number): void;
+        /**
+        * 取消选中指定行
+        * @param rowIndex 行索引
+        */
+        uncheck(rowIndex: number): void;
+        /** 选中所有行 */
+        checkAll(): void;
+        /** 取消选中所有行 */
+        uncheckAll(): void;
+        /** 获取第一条选中行数据 */
+        getSelections(): PlainObject | null;
+        /** 获取所有选中的数据 */
+        getAllSelections(): ArrayThen<PlainObject>;
     }
 }
 
@@ -549,6 +595,78 @@ declare namespace Use {
         type: "default" | "top" | "fixed-top" | "fixed-bottom";
         /** 视图 */
         view: Array<NavbarOption | V2Controllike>;
+    }
+
+    /** 表头 */
+    interface TableOption {
+        /** 标题 */
+        title: string;
+        /** 字段 */
+        field: string;
+        /** 标题提示（仅“th”有效） */
+        tooltip?: string;
+        /** 宽度（仅“th”有效） */
+        width?: number | string;
+        /** 水平布局 */
+        align?: "right" | "left" | "center" | "justify" | "char";
+        /** 垂直布局 */
+        valign?: "top" | "middle" | "bottom" | "baseline";
+        /** 排序能力（仅“th”有效） */
+        sortable?: boolean;
+        /** 格式化（仅“td”有效） */
+        format?(value: any, rowIndex?: number, rowValue?: PlainObject, td?: HTMLTableDataCellElement): string | void;
+    }
+
+    /** CSS风格 */
+    interface CssStyleObject {
+        /** style 属性 */
+        css: PlainObject<string>;
+        /** 类 */
+        class: string;
+    }
+
+    /** 表格 */
+    interface Table extends V2Control<"table"> {
+        /** 标题 */
+        caption: string;
+        /** 添加“table-bordered”样式 */
+        border: boolean;
+        /** 添加“table-hover”样式 */
+        hover: boolean;
+        /** 添加“table-condensed”样式 */
+        condensed: boolean;
+        /** 添加“table-striped”样式 */
+        striped: boolean;
+        /** 复选框 */
+        checkbox: boolean;
+        /** 多表头（税率|3%,税率|7%,税率|10%，生成【税率】为一级表头，【3%】、【7%】和【10%】是二级表头） */
+        multiple: boolean;
+        /** 多选 */
+        multipleSelect: boolean;
+        /** 锁定列头 */
+        lockHead: boolean;
+        /** 锁定列数（复选框不参与计数） */
+        lockCols: number;
+        /** 行风格 */
+        rowStyle?: (rowValue: PlainObject, rowIndex: number) => CssStyleObject;
+        /** 行属性 */
+        rowAttributes?: (rowValue: PlainObject, rowIndex: number) => PlainObject<string>;
+        /** 视图（列信息） */
+        view: Array<TableOption>;
+        /** 列 */
+        readonly cols: Array<TableOption>;
+        /** 数据 */
+        data: Array<PlainObject>;
+        /** 行 */
+        readonly rows: Array<PlainObject>;
+        /** 当前页码（索引从“0”开始） */
+        pageIndex: number;
+        /** 单页数据大小 */
+        pageSize: number;
+        /** 分页条 */
+        pagination: boolean;
+        /** 循环分页 */
+        paginationLoop: boolean;
     }
 
     /** 面板 */

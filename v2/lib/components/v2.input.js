@@ -14,7 +14,7 @@
                 return factory(v2kit);
             } :
             factory(v2kit);
-}(function (/** @type Use.V2kitStatic */v2) {
+}(function (/** @type Use.V2 */v2) {
 
     var matchExpr = {
         number: /^[+-]?(0|[1-9][0-9]*)(?:\.([0-9]+))?$/,

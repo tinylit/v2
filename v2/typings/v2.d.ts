@@ -211,6 +211,10 @@
         defaultVisible: true;
         /** 跳过事件绑定 */
         skipOn: false;
+        /** 高度 */
+        height: number | string;
+        /** 宽度 */
+        width: number | string;
         /** 插件主元素 */
         $: Element;
         /** 插件主元素的父元素 */
@@ -456,7 +460,7 @@
 declare namespace Use {
 
     /** 控件或基础方法 */
-    interface V2kitStatic {
+    interface V2 {
         /** 渲染控件 */
         <K extends keyof V2ControlMap>(tag: K, options?: Develop<K>): V2ControlMap[K];
         /** 渲染控件 */
@@ -548,12 +552,22 @@ declare namespace Use {
         * 集合中元素依次执行函数
         * @param callback 函数（返回 false 时终止循环）
         */
-        done(callback: (value: T, index: number, array: ArrayThen<T>) => any): ArrayThen<T>;
+        done(callback: (value: T, index: number, array: ArrayThen<T>) => any): void;
         /**
         * 集合中元素依次执行函数
         * @param callback 函数（返回 false 时终止循环）
         */
         forEach(callback: (value: T, index: number, array: ArrayThen<T>) => any): ArrayThen<T>;
+        /**
+        * 判断数组中是否有值满足函数条件
+        * @param callback 条件函数
+        */
+        any(callback: (this: T, value: T, index?: number) => boolean): boolean;
+        /**
+        * 判断对象中是否都满足函数条件
+        * @param callback 条件函数
+        */
+        all(callback: (this: T, value: T, index?: number) => boolean): boolean;
         /**
          * 获取指定位置的元素
          * @param index 位置：小于 0 时，取 this.length + index 的元素。
@@ -564,6 +578,11 @@ declare namespace Use {
         * @param index 位置：小于 0 时，取 this.length + index 的元素。
         */
         nth(index: number): T;
+        /**
+        * 查找对象中第一个满足函数条件的元素。
+        * @param callback 条件函数
+        */
+        one(callback: (this: T, value: T, index?: number) => boolean): T | null;
         /** 
          *  移除集合中所有元素 
          *  @param deep 为真时，将摧毁根数据，否则仅摧毁当前集合数据，
@@ -572,7 +591,142 @@ declare namespace Use {
     }
 
     /** 数组或对象 */
-    interface V2kitStatic {
+    interface V2 {
+        /**
+         * 对象继承。
+         * @param callback 目标属性值和对象属性值分析。
+         * @param target 目标对象。
+         * @param obj 对象。
+         */
+        extension<T, U>(callback: <K1, K2>(targetPropertyValue: K1, objPropertyValue: K2) => K1 | K2 | void, target: T, obj: U): T & U;
+        /**
+         * 对象继承。
+         * @param callback 目标属性值和对象属性值分析。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param obj2 对象2。
+         */
+        extension<T, U, V>(callback: <K1, K2>(targetPropertyValue: K1, objPropertyValue: K2) => K1 | K2 | void, target: T, obj: U, obj2: V): T & U & V;
+        /**
+         * 对象继承。
+         * @param callback 目标属性值和对象属性值分析。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param objectN 对象组。
+         */
+        extension(callback: <K1, K2>(targetPropertyValue: K1, objPropertyValue: K2) => K1 | K2 | void, target: any, obj: any, objectN: any): any;
+        /**
+         * 对象继承。
+         * @param callback 目标属性值和对象属性值分析。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         */
+        extension<T, U>(callback: <K1, K2>(targetPropertyValue: K1, objPropertyValue: K2) => K1 | K2 | void, deep: boolean, target: T, obj: U): T & U;
+        /**
+         * 对象继承。
+         * @param callback 目标属性值和对象属性值分析。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param obj2 对象2。
+         */
+        extension<T, U, V>(callback: <K1, K2>(targetPropertyValue: K1, objPropertyValue: K2) => K1 | K2 | void, deep: boolean, target: T, obj: U, obj2: V): T & U & V;
+        /**
+         * 对象继承。
+         * @param callback 目标属性值和对象属性值分析。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param objectN 对象组。
+         */
+        extension(callback: <K1, K2>(targetPropertyValue: K1, objPropertyValue: K2) => K1 | K2 | void, deep: boolean, target: any, obj: any, objectN: any): any;
+        /**
+         * 将指定对象继承到目标对象上，替换目标对象原属性值。
+         * @param target 目标对象。
+         * @param obj 对象。
+         */
+        extend<T, U>(target: T, obj: U): T & U;
+        /**
+         * 将指定对象继承到目标对象上，替换目标对象原属性值。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param obj2 对象2。
+         */
+        extend<T, U, V>(target: T, obj: U, obj2: V): T & U & V;
+        /**
+         * 将指定对象组继承到目标对象上，替换目标对象原属性值。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param objectN 对象组。
+         */
+        extend(target: any, obj: any, ...objectN: any): any;
+        /**
+         * 将指定对象继承到目标对象上，替换目标对象原属性值。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         */
+        extend<T, U>(deep: boolean, target: T, obj: U): T & U;
+        /**
+         * 将指定对象继承到目标对象上，替换目标对象原属性值。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param obj2 对象2。
+         */
+        extend<T, U, V>(deep: boolean, target: T, obj: U, obj2: V): T & U & V;
+        /**
+         * 将指定对象组继承到目标对象上，替换目标对象原属性值。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param objectN 对象组。
+         */
+        extend(deep: boolean, target: any, obj: any, ...objectN: any): any;
+        /**
+         * 将指定对象继承到目标对象上，保留目标对象的属性值。
+         * @param target 目标对象。
+         * @param obj 对象。
+         */
+        improve<T, U>(target: T, obj: U): T & U;
+        /**
+         * 将指定对象继承到目标对象上，保留目标对象的属性值。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param obj2 对象2。
+         */
+        improve<T, U, V>(target: T, obj: U, obj2: V): T & U & V;
+        /**
+         * 将指定对象继承到目标对象上，保留目标对象的属性值。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param objectN 对象组。
+         */
+        improve(target: any, obj: any, ...objectN: any): any;
+        /**
+         * 将指定对象继承到目标对象上，保留目标对象的属性值。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         */
+        improve<T, U>(deep: boolean, target: T, obj: U): T & U;
+        /**
+         * 将指定对象继承到目标对象上，保留目标对象的属性值。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param obj2 对象2。
+         */
+        improve<T, U, V>(deep: boolean, target: T, obj: U, obj2: V): T & U & V;
+        /**
+         * 将指定对象继承到目标对象上，保留目标对象的属性值。
+         * @param deep 是否深度继承（深度继承是指当属性值为对象时，会递归执行对象的继承）。
+         * @param target 目标对象。
+         * @param obj 对象。
+         * @param objectN 对象组。
+         */
+        improve(deep: boolean, target: any, obj: any, ...objectN: any): any;
         /**
          * 生成 ArrayThen 集合
          * @param args 元素集合
@@ -605,7 +759,7 @@ declare namespace Use {
         * @param callback 条件函数
         * @param thisArg 条件函数中 this 对象
         */
-        any<T>(array: ArrayLike<T>, callback: (value: T, index: number, array) => any, thisArg?: any): boolean;
+        any<T>(array: ArrayLike<T>, callback: (value: T, index: number, array) => boolean, thisArg?: any): boolean;
         /**
          * 判断对象中是否有属性满足函数条件
          * @param obj 对象
@@ -649,6 +803,58 @@ declare namespace Use {
          * @param thisArg 条件函数中 this 对象
          */
         all<T, K extends keyof T, TContext>(obj: T, callback: (this: TContext, value: T[K], propertyName?: K) => boolean, thisArg: TContext): boolean;
+        /**
+        * 查找对象中第一个满足函数条件的元素。
+        * @param array 数组
+        * @param callback 条件函数
+        */
+        find<T>(array: ArrayLike<T>, callback: (this: T, value: T, index?: number) => boolean): T | null;
+        /**
+        * 查找对象中第一个满足函数条件的元素。
+        * @param array 数组
+        * @param callback 条件函数
+        * @param thisArg 条件函数中 this 对象
+        */
+        find<T, TContext>(array: ArrayLike<T>, callback: (this: TContext, value: T, index?: number) => boolean, thisArg: TContext): T | null;
+        /**
+         * 查找对象中第一个满足函数条件的元素。
+         * @param obj 对象
+         * @param callback 条件函数
+         */
+        find<T, K extends keyof T>(obj: T, callback: (this: T[K], value: T[K], propertyName?: K) => boolean): T | null;
+        /**
+         * 查找对象中第一个满足函数条件的元素。
+         * @param obj 对象
+         * @param callback 条件函数
+         * @param thisArg 条件函数中 this 对象
+         */
+        find<T, K extends keyof T, TContext>(obj: T, callback: (this: TContext, value: T[K], propertyName?: K) => boolean, thisArg: TContext): T | null;
+        /**
+        * 查找对象中所有满足函数条件的元素。
+        * @param array 数组
+        * @param callback 条件函数
+        */
+        filter<T>(array: ArrayLike<T>, callback: (this: T, value: T, index?: number) => boolean): Array<T>;
+        /**
+        * 查找对象中所有满足函数条件的元素。
+        * @param array 数组
+        * @param callback 条件函数
+        * @param thisArg 条件函数中 this 对象
+        */
+        filter<T, TContext>(array: ArrayLike<T>, callback: (this: TContext, value: T, index?: number) => boolean, thisArg: TContext): Array<T>;
+        /**
+         * 查找对象中所有满足函数条件的元素。
+         * @param obj 对象
+         * @param callback 条件函数
+         */
+        filter<T, K extends keyof T>(obj: T, callback: (this: T[K], value: T[K], propertyName?: K) => boolean): Array<T>;
+        /**
+         * 查找对象中所有满足函数条件的元素。
+         * @param obj 对象
+         * @param callback 条件函数
+         * @param thisArg 条件函数中 this 对象
+         */
+        filter<T, K extends keyof T, TContext>(obj: T, callback: (this: TContext, value: T[K], propertyName?: K) => boolean, thisArg: TContext): Array<T>;
         /**
         * 遍历数组集合
         * @param array 数组
@@ -705,7 +911,7 @@ declare namespace Use {
     }
 
     /** 异常 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 普通异常
          * @param message 异常消息
@@ -719,7 +925,7 @@ declare namespace Use {
     }
 
     /** 命名法 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 下划线隔开式 命名法
          * @param content 名称
@@ -750,7 +956,7 @@ declare namespace Use {
     }
 
     /** 类型判断 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 是否为空（类数组 length 为 0 也视为空）
          * @param obj 对象。
@@ -804,7 +1010,7 @@ declare namespace Use {
     }
 
     /** DOM 辅助 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 查找当前DOM下满足指定选择器的第一个元素。
          * @param selectors 选择器
@@ -951,7 +1157,7 @@ declare namespace Use {
     }
 
     /** 注册控件或获取控件配置 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 全局控件收纳器
          * @param tag TAG
@@ -1085,7 +1291,7 @@ declare namespace Use {
     }
 
     /** 缓存 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 生成映射函数（如果 name 时映射内容中独立的单词，则返回 true，否则 false。）
          * @param content 映射内容（空格分割）
@@ -1122,7 +1328,7 @@ declare namespace Use {
     }
 
     /** 注册通配符 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 注册通配符
          * @param letter 符号
@@ -1143,7 +1349,7 @@ declare namespace Use {
     }
 
     /** 辅助方法 */
-    interface V2kitStatic {
+    interface V2 {
         /**
          * 二进制的方式遍历对象中值A, 满足 (A & type) === A 时调用函数。
          * @param typeCb 集合
@@ -1423,5 +1629,5 @@ declare namespace Use {
 interface Develop<K extends string> extends Dev.Develop<Dev.DevelopMap<K>[K]> { }
 
 /** v2轻量库 */
-declare const v2: Use.V2kitStatic;
+declare const v2: Use.V2;
 

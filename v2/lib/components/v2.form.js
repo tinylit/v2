@@ -14,7 +14,7 @@
                 return factory(v2);
             } :
             factory(v2);
-}(function (/** @type Use.V2kitStatic */v2) {
+}(function (/** @type Use.V2 */v2) {
 
     v2.use('form', {
         components: {

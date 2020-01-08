@@ -2,7 +2,7 @@
  * JavaScript v2 v1.1.1
  * https://github.com/tinylit/v2
  *
- ** @author hyly
+ ** @author tinylit
  ** @date 2019-05-20
  ** @descript a valuable technology object.
  */
@@ -11,7 +11,9 @@
         module.exports = global.document ?
             factory(global) :
             function (window) {
-                if (window.document === null || window.document === undefined) throw new Error("v2 requires a window with a document");
+                if (window.document === null || window.document === undefined)
+                    throw new Error("v2 requires a window with a document");
+
                 return factory(window);
             } :
         factory(global);
@@ -122,15 +124,28 @@
         rnamespaceGet = new RegExp("^(?:(" + tag + "(?:\\.(?:" + tag + "|\\*))*" + ")\\.)?(\\*|" + tag + ")$", "i");
 
     function mergeOption(source, option) {
-        if (!source || !option || source === option) return source || option;
+        if (!source || !option || source === option)
+            return source || option;
 
-        if (!v2.isFunction(option)) return v2.extend(true, source, option);
+        if (!v2.isFunction(option))
+            return v2.extend(true, source, option);
 
-        if (!v2.isFunction(source)) return v2.extend(true, option, source);
+        if (!v2.isFunction(source))
+            return v2.extend(true, option, source);
 
         var callback = function () {
-            source.apply(this, arguments);
-            option.apply(this, arguments);
+            var sourceConfig = applyCallback(source, arguments, this);
+            var optionConfig = applyCallback(option, arguments, this);
+
+            if (sourceConfig === undefined) {
+                return optionConfig;
+            }
+
+            if (optionConfig === undefined) {
+                return sourceConfig;
+            }
+
+            return v2.extend(sourceConfig, optionConfig);
         };
 
         v2.extend(callback.prototype = source.prototype, option.prototype);
@@ -360,7 +375,23 @@
             var index = core_indexOf.call(this, item);
 
             if (index > -1) {
-                core_splice.call(this, index, 1);
+
+                if (isIE8) {
+                    for (var i = 0, length = this.length; i < length; i++) {
+                        if (index >= i)
+                            continue;
+
+                        if (i > index) {
+                            this[i - 1] = this[i];
+                        }
+                    }
+
+                    this.length--;
+
+                    delete this[this.length];
+                } else {
+                    core_splice.call(this, index, 1);
+                }
             }
 
             return index;
@@ -392,8 +423,16 @@
         all: function (callback) {
             return v2.all(this, callback);
         },
+        one: function (callback) {
+            return v2.find(this, callback);
+        },
         eq: function (index) {
-            return this[index < 0 ? index + this.length : index] || null;
+            var value = this[index < 0 ? index + this.length : index];
+
+            if (value || value === 0) {
+                return value;
+            }
+            return null;
         }
     };
 
@@ -464,7 +503,12 @@
             }
 
             for (key in option) {
-                if ((value = done(target[key], option[key], key)) !== undefined) {
+
+                value = done(target[key], option[key], key);
+
+                if (value === undefined) {
+                    delete target[key];
+                } else {
                     target[key] = value;
                 }
             }
@@ -591,6 +635,41 @@
                 }
             }
             return false;
+        },
+        find: function (object, callback, context) {
+            if (!object || !callback)
+                return undefined;
+
+            var i = 0;
+            if (isArraylike(object)) {
+                for (var len = object.length; i < len; i++) {
+                    if (callback.call(context || object[i], object[i], i, object)) return object[i];
+                }
+            } else {
+                for (i in object) {
+                    if (callback.call(context || object[i], object[i], i, object)) return object[i];
+                }
+            }
+            return undefined;
+        },
+        filter: function (object, callback, context) {
+            var results = [];
+            if (!object || !callback) return results;
+            var i = 0;
+            if (isArraylike(object)) {
+                for (var len = object.length; i < len; i++) {
+                    if (callback.call(context || object[i], object[i], i, object)) {
+                        results.push(object[i]);
+                    }
+                }
+            } else {
+                for (i in object) {
+                    if (callback.call(context || object[i], object[i], i, object)) {
+                        results.push(object[i]);
+                    }
+                }
+            }
+            return results;
         }
     });
 
@@ -1331,6 +1410,24 @@
         }
     }
 
+    function DOMNodeRemoved(node) {
+        var component;
+
+        if (v2.match(node, '[ref]')) {
+            if (component = node['component']) {
+                component.$ = undefined;
+                component.destroy();
+            }
+        }
+
+        v2.each(v2.take('[ref]', node, true), function (node) {
+            if (component = node['component']) {
+                component.$ = undefined;
+                component.destroy();
+            }
+        });
+    }
+
     v2.improve(Element.prototype, {
         remove: function () {
             if (this.parentNode) {
@@ -1418,13 +1515,13 @@
         if (!obj) return obj;
 
         if (arguments.length === 2) {
-            if (callback = obj[prop + "Getter"]) {
+            if ((callback = obj[prop + "Getter"])) {
                 return callback.call(obj);
             }
             return obj[prop];
         }
 
-        if (callback = obj[prop + "Setter"]) {
+        if ((callback = obj[prop + "Setter"])) {
             result = callback.call(obj, value);
             return result === undefined ? value : result;
         }
@@ -1602,45 +1699,86 @@
 
     v2.improve(Element.prototype, eventMap);
 
-    function getStyles(elem) {
-        var view = elem.ownerDocument.defaultView;
-
-        if (!view || !view.opener) {
-            view = window;
-        }
-
-        return view.getComputedStyle(elem);
-    }
-
+    var getStyles, curCSS;
     var rmargin = /^margin/i,
+        rposition = /^(top|right|bottom|left)$/,
         rnumnonpx = /^([+-]?(\d+\.)?\d+)(?!px)[a-z%]+$/i;
 
-    function curCSS(elem, name) {
-        var width, minWidth, maxWidth, r, style = elem.style;
+    if (docElem.currentStyle) {
+        getStyles = function (elem) {
+            return elem.currentStyle;
+        };
 
-        var computed = getStyles(elem);
-        if (computed) {
-            r = computed.getPropertyValue(name) || computed[name];
+        curCSS = function (elem, name) {
+            var left, rs, rsLeft,
+                computed = getStyles(elem),
+                r = computed ? computed[name] : undefined,
+                style = elem.style;
 
-            if (r === "" && !v2.contains(elem.ownerDocument, elem)) {
-                r = elem.styleCb(name);
+            if (r == null && style && style[name]) {
+                r = style[name];
             }
-            if (rnumnonpx.test(r) && rmargin.test(name)) {
 
-                width = style.width;
-                minWidth = style.minWidth;
-                maxWidth = style.maxWidth;
+            if (rnumnonpx.test(r) && !rposition.test(name)) {
 
-                style.minWidth = style.maxWidth = style.width = r;
-                r = computed.width;
+                left = style.left;
+                rs = elem.runtimeStyle;
+                rsLeft = rs && rs.left;
 
-                style.width = width;
-                style.minWidth = minWidth;
-                style.maxWidth = maxWidth;
+                if (rsLeft) {
+                    rs.left = elem.currentStyle.left;
+                }
+                style.left = name === "fontSize" ? "1em" : r;
+                r = style.pixelLeft + "px";
+
+                style.left = left;
+                if (rsLeft) {
+                    rs.left = rsLeft;
+                }
             }
-        }
 
-        return r === undefined ? r : r + "";
+            return r === "" ? "auto" : r;
+        };
+    }
+    else {
+        getStyles = function (elem) {
+
+            var view = elem.ownerDocument.defaultView;
+
+            if (!view || !view.opener) {
+                view = window;
+            }
+
+            return view.getComputedStyle(elem);
+        };
+
+        curCSS = function (elem, name) {
+            var width, minWidth, maxWidth, r, style = elem.style;
+
+            var computed = getStyles(elem);
+            if (computed) {
+                r = computed.getPropertyValue(name) || computed[name];
+
+                if (r === "" && !v2.contains(elem.ownerDocument, elem)) {
+                    r = elem.styleCb(name);
+                }
+                if (rnumnonpx.test(r) && rmargin.test(name)) {
+
+                    width = style.width;
+                    minWidth = style.minWidth;
+                    maxWidth = style.maxWidth;
+
+                    style.minWidth = style.maxWidth = style.width = r;
+                    r = computed.width;
+
+                    style.width = width;
+                    style.minWidth = minWidth;
+                    style.maxWidth = maxWidth;
+                }
+            }
+
+            return r === undefined ? r : r + "";
+        };
     }
 
     function adjustCSS(elem, prop, valueParts) {
@@ -2109,10 +2247,6 @@
         trim: function () {
             return v2.trim(this);
         }
-    });
-
-    v2.improve(Array.prototype, {
-        indexOf: core_indexOf
     });
 
     var
@@ -2751,8 +2885,24 @@
             var index = core_indexOf.call(this, control);
 
             if (index > -1) {
+                console.log(control);
                 control.host = undefined;
-                core_splice.call(this, index, 1);
+                if (isIE8) {
+                    for (var i = 0, length = this.length; i < length; i++) {
+                        if (index >= i)
+                            continue;
+
+                        if (i > index) {
+                            this[i - 1] = this[i];
+                        }
+                    }
+
+                    this.length--;
+
+                    delete this[this.length];
+                } else {
+                    core_splice.call(this, index, 1);
+                }
             }
 
             return index;
@@ -2807,33 +2957,48 @@
 
     function destroyObject(object, deep, excludes) {
 
-        var i, isControl, isArray;
+        var i, isControl, isArray, hasExcludes;
 
         if (!object) return null;
 
-        isControl = object.v2version === version;
-        isArray = excludes && v2.isArray(excludes);
+        isControl = object.version === version;
+        hasExcludes = !(excludes === null || excludes === undefined);
+        isArray = hasExcludes && v2.isArray(excludes);
+
+        if (object instanceof V2Controls) {
+            for (var i = 0; i < object.length; i++) {
+                done(i, object[i]);
+            }
+
+            object.length = 0;
+
+            return object = null;
+        }
 
         for (i in object) {
 
-            done(i, object[i]);
-
-            if (!(isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key])) {
-                object[i] = null;
+            if (!hasExcludes || !(isArray ? core_indexOf.call(excludes, key) > -1 : excludes[i])) {
+                done(i, object[i]);
             }
+
+            try {
+                delete object[i];
+            } catch (_) { /** do something. */ }
         }
 
-        return object[i] = null;
+        return object = null;
 
         function done(key, value) {
-            if (!value || !deep || value === object || (isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key]))
+            if (!value || !deep || value === object || hasExcludes && (isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key]))
                 return;
 
-            if (value.v2version === version) {
-                if (isControl && object.host === value)
+            if (value.version === version) {
+
+                if (isControl && value.controls && object.host === value) {
                     return value.controls.remove(object);
-                else
-                    return value.destroy && value.destroy(true);
+                }
+
+                return value.destroy && value.destroy(true);
             }
 
             if (value.nodeType) {
@@ -2844,7 +3009,7 @@
             }
 
             if (v2.isPlainObject(value) || isArraylike(value)) {
-                return destroyObject(object, excludes, true);
+                return destroyObject(value, true, excludes);
             }
         }
     }
@@ -3030,6 +3195,8 @@
             this.flow();
 
             this.$["component"] = this;
+
+            this.$.setAttribute('ref', this.tag);
 
             if (this.skipOn) return;
 
@@ -3356,9 +3523,13 @@
 
                 if (type === "function") {
 
-                    option.call(context);
+                    var config = option.call(context);
 
-                    return option.prototype;
+                    if (config === undefined) {
+                        return option.prototype;
+                    }
+
+                    return v2.improve(config, option.prototype);
                 }
 
                 tag = option.tag;
@@ -3394,12 +3565,12 @@
 
             initControls(this.option);
 
-            v2.each(core_namespace.split('.'), function (name) {
+            var namespaces = core_namespace.split('.');
+
+            v2.each(namespaces, function (name) {
                 if (rtag.test(name))
                     v2.GDir(name).add(context);
             });
-
-            var namespaces = core_namespace.split('.');
 
             this.like = function () {
                 return v2.any(arguments, function (tag) {
@@ -3709,18 +3880,20 @@
 
             this.destroy = function (deep) {
 
-                v2.each(core_namespace.split('.'), function (name) {
+                v2.each(namespaces, function (name) {
                     if (rtag.test(name))
                         v2.GDir(name).remove(context);
                 });
 
-                destroyObject(controls, true);
+                destroyObject(baseMap);
+
+                destroyObject(descriptors);
+
+                destroyObject(this.base);
 
                 destroyObject(variable, true);
 
-                destroyObject(descriptors, true);
-
-                destroyObject(this.base, true);
+                destroyObject(controls, true);
 
                 destroyObject(this, deep || arguments.length === 0, excludes);
 
@@ -3814,7 +3987,9 @@
                     }
                 });
             } else {
-                this.controls = new V2Controls(this);
+                excludes["controls"] = true;
+
+                this.controls = controls = new V2Controls(this);
             }
 
             computeWildcards(wildcards, 'function', true);
@@ -3894,7 +4069,7 @@
         rinlineTag = new RegExp('^(' + inlineTag + ")$");
 
     function makeUsbDescriptor(prop, getter, setter) {
-        name = v2.pascalCase(prop);
+        var name = v2.pascalCase(prop);
         return {
             get: function () {
                 var callback = this['get' + name];
@@ -3904,9 +4079,7 @@
             set: function (value) {
                 var callback = this['set' + name];
 
-                if (callback) {
-                    callback.call(this, value);
-                } else {
+                if (!callback || callback.call(this, value) === false) {
                     setter.call(this, value);
                 }
             }
@@ -4079,14 +4252,14 @@
             this.base.init('button');
         },
         render: function () {
-            this.$.classList.add('btn');
+            if (this.hostlike('navbar')) {
+                this.$.classList.add('navbar-btn');
+            } else {
+                this.$.classList.add('btn');
+            }
 
             if (this.lg || this.sm || this.xs) {
                 this.$.classList.add(this.lg ? 'btn-lg' : this.sm ? 'btn-sm' : 'btn-xs');
-            }
-
-            if (this.host && this.hostlike('navbar')) {
-                this.$.classList.add('navbar-btn');
             }
 
             if (this.type === 'submit') {
@@ -4275,6 +4448,7 @@
             if (this.backdrop) {
                 this.$backdrop.classList.remove('in');
             }
+
             document.body.classList.remove('modal-open');
         },
         commit: function () {
@@ -4399,9 +4573,9 @@
         var map = {}, node = e.target || e.srcElement;
 
         if (node.nodeType && (!e.button || e.type !== "click")) {
-            for (; node !== this && node !== self; node = node.parentNode) {
+            for (; node !== document && node !== self; node = node.parentNode) {
                 v2.each(KEYS_EVENTS_MAPS, function (handle, selector) {
-                    if (node.match(selector)) {
+                    if (v2.match(node, selector)) {
                         map[selector] = node;
                         handle.call(node, e);
                     }
@@ -4419,6 +4593,20 @@
             } : handle);
         });
     });
+
+    if (isIE8) {
+        var removeChild = Element.prototype.removeChild;
+        Element.prototype.removeChild = function (node) {
+
+            removeChild.call(this, node);
+
+            DOMNodeRemoved(node);
+        };
+    } else {
+        v2.subscribe(document, 'DOMNodeRemoved', function (e) {
+            DOMNodeRemoved(e.target || e.srcElement);
+        });
+    }
 
     function noop() { }
 
@@ -4489,6 +4677,29 @@
                 delete xhrCallbacks[this.xhrId];
             }
             return xhr_abort.call(this);
+        }
+    });
+
+    v2.improve(Array.prototype, {
+        map: function (callback, thisArg) {
+            var results = [];
+            for (var i = 0; i < this.length; i++) {
+                results.push(callback.call(thisArg, this[i], i, this));
+            }
+            return results;
+        },
+        indexOf: core_indexOf,
+        find: function (callback, thisArg) {
+            return v2.find(this, callback, thisArg);
+        },
+        filter: function (callback, thisArg) {
+            return v2.filter(this, callback, thisArg);
+        },
+        forEach: function (callback, thisArg) {
+            v2.each(this, callback, thisArg);
+        },
+        every: function (callback, thisArg) {
+            return v2.all(this, callback, thisArg);
         }
     });
 

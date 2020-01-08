@@ -1,0 +1,471 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>表格</title>
+    <link href="../lib/v2.css" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script data-main="../appsettings" src="../require.js" defer="defer" async></script>
+    <style type="text/css">
+       
+    </style>
+</head>
+<body>
+    <div class="table-component" style="width: 500px;">
+        <div class="table-viewport">
+            <div id="header" class="table-header">
+                <table class="table table-bordered table-hover" style="        width: 1000px;
+        min-width: 1000px
+">
+                    <thead class="">
+                        <tr>
+                            <th class="detail" rowspan="2">
+                                <div class="fht-cell"></div>
+                            </th>
+                            <th class="bs-checkbox " style="        text-align: center;
+        vertical-align: middle;
+        width: 36px;" rowspan="2" data-field="state">
+                                <div class="th-inner "><label><input name="btSelectAll" type="checkbox"><span></span></label></div><div class="fht-cell" style="width: 37px;"></div>
+                            </th>
+                            <th style="text-align: center; vertical-align: middle; " rowspan="2" data-field="id"><div class="th-inner sortable both">Item ID</div><div class="fht-cell" style="width: 206px;"></div></th>
+                            <th style="text-align: center;" colspan="3"><div class="th-inner ">Item Detail</div><div class="fht-cell"></div></th>
+                        </tr>
+                        <tr><th style="text-align: center; " data-field="name" data-not-first-th=""><div class="th-inner sortable both asc">Item Name</div><div class="fht-cell" style="width: 263px;"></div></th><th style="text-align: center; " data-field="price"><div class="th-inner sortable both">Item Price</div><div class="fht-cell" style="width: 247px;"></div></th><th style="text-align: center; " data-field="operate"><div class="th-inner ">Item Operate</div><div class="fht-cell" style="width: 255px;"></div></th></tr>
+                    </thead>
+                </table>
+                <div id="header-reference" class="table-reference">
+                    <table class="table table-bordered table-hover" style="width:1000px;min-width:1000px">
+                        <thead class="">
+                            <tr>
+                                <th class="detail" rowspan="2">
+                                    <div class="fht-cell"></div>
+                                </th>
+                                <th class="bs-checkbox " style="text-align: center; vertical-align: middle;width: 36px;" rowspan="2" data-field="state">
+                                    <div class="th-inner "><label><input name="btSelectAll" type="checkbox"><span></span></label></div><div class="fht-cell" style="width: 37px;"></div>
+                                </th>
+                                <th class="keep-layout-hidden" style="text-align: center; vertical-align: middle; " rowspan="2" data-field="id"><div class="th-inner sortable both">Item ID</div><div class="fht-cell" style="width: 206px;"></div></th>
+                                <th class="keep-layout-hidden" style="text-align: center;" colspan="3"><div class="th-inner ">Item Detail</div><div class="fht-cell"></div></th>
+                            </tr>
+                            <tr><th class="keep-layout-hidden" style="text-align: center; " data-field="name" data-not-first-th=""><div class="th-inner sortable both asc">Item Name</div><div class="fht-cell" style="width: 263px;"></div></th><th style="text-align: center; " data-field="price"><div class="th-inner sortable both">Item Price</div><div class="fht-cell" style="width: 247px;"></div></th><th style="text-align: center; " data-field="operate"><div class="th-inner ">Item Operate</div><div class="fht-cell" style="width: 255px;"></div></th></tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            <div id="container" class="table-container" style="height:150px">
+                <table id="table" data-toolbar="#toolbar" data-search="true" data-show-refresh="true" data-show-toggle="true" data-show-fullscreen="true" data-show-columns="true" data-show-columns-toggle-all="true" data-detail-view="true" data-show-export="true" data-click-to-select="true" data-detail-formatter="detailFormatter" data-minimum-count-columns="2" data-show-pagination-switch="true" data-pagination="true" data-id-field="id" data-page-list="[10, 25, 50, 100, all]" data-show-footer="true" data-side-pagination="server" data-url="https://examples.wenzhixin.net.cn/examples/bootstrap_table/data" data-response-handler="responseHandler" class="table table-bordered table-hover" style="width:1000px;min-width:1000px">
+                    <thead class="">
+                        <tr>
+                            <th class="detail" rowspan="2">
+                                <div class="fht-cell"></div>
+                            </th>
+                            <th class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; " rowspan="2" data-field="state"><div class="th-inner "><label><input name="btSelectAll" type="checkbox"><span></span></label></div><div class="fht-cell"></div></th>
+                            <th style="text-align: center; vertical-align: middle; " rowspan="2" data-field="id"><div class="th-inner sortable both">Item ID</div><div class="fht-cell"></div></th>
+                            <th style="text-align: center;" colspan="3"><div class="th-inner ">Item Detail</div><div class="fht-cell"></div></th>
+                        </tr>
+                        <tr><th style="text-align: center; " data-field="name" data-not-first-th=""><div class="th-inner sortable both asc">Item Name</div><div class="fht-cell"></div></th><th style="text-align: center; " data-field="price"><div class="th-inner sortable both">Item Price</div><div class="fht-cell"></div></th><th style="text-align: center; " data-field="operate"><div class="th-inner ">Item Operate</div><div class="fht-cell"></div></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr data-index="0" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="0" name="btSelectItem" type="checkbox" value="107">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">107</td>
+                            <td style="text-align: center;">Item 107</td>
+                            <td style="text-align: center; ">$107</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="1" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="1" name="btSelectItem" type="checkbox" value="108">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">108</td>
+                            <td style="text-align: center; ">Item 108</td>
+                            <td style="text-align: center; ">$108</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="2" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="2" name="btSelectItem" type="checkbox" value="109">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">109</td>
+                            <td style="text-align: center; ">Item 109</td>
+                            <td style="text-align: center; ">$109</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="3" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="3" name="btSelectItem" type="checkbox" value="11">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">11</td>
+                            <td style="text-align: center; ">Item 11</td>
+                            <td style="text-align: center; ">$11</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="4" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="4" name="btSelectItem" type="checkbox" value="110">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">110</td>
+                            <td style="text-align: center; ">Item 110</td>
+                            <td style="text-align: center; ">$110</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="5" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="5" name="btSelectItem" type="checkbox" value="111">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">111</td>
+                            <td style="text-align: center; ">Item 111</td>
+                            <td style="text-align: center; ">$111</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="6" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="6" name="btSelectItem" type="checkbox" value="112">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">112</td>
+                            <td style="text-align: center; ">Item 112</td>
+                            <td style="text-align: center; ">$112</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="7" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="7" name="btSelectItem" type="checkbox" value="113">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">113</td>
+                            <td style="text-align: center; ">Item 113</td>
+                            <td style="text-align: center; ">$113</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="8" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="8" name="btSelectItem" type="checkbox" value="114">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">114</td>
+                            <td style="text-align: center; ">Item 114</td>
+                            <td style="text-align: center; ">$114</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                        <tr data-index="9" data-has-detail-view="true">
+                            <td>
+                                <a class="detail-icon" href="#">
+                                    <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                </a>
+                            </td>
+                            <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                <label>
+                                    <input data-index="9" name="btSelectItem" type="checkbox" value="115">
+                                    <span></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle; ">115</td>
+                            <td style="text-align: center; ">Item 115</td>
+                            <td style="text-align: center; ">$115</td>
+                            <td style="text-align: center; "><a class="like" href="javascript:void(0)" title="Like"><i class="fa fa-heart"></i></a>  <a class="remove" href="javascript:void(0)" title="Remove"><i class="fa fa-trash"></i></a></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="detail"><div class="th-inner"></div><div class="fht-cell" style="width: 30px;"></div></td>
+                            <td style="text-align: center; vertical-align: middle; "><div class="th-inner"></div><div class="fht-cell" style="width: 6px;"></div></td>
+                            <td style="text-align: center; vertical-align: middle; "><div class="th-inner">Total</div><div class="fht-cell" style="width: 138px;"></div></td>
+                            <td style="text-align: center; "><div class="th-inner">10</div><div class="fht-cell" style="width: 176px;"></div></td>
+                            <td style="text-align: center; ">
+                                <div class="th-inner">$1010</div><div class="fht-cell" style="width: 165px;"></div>
+                            </td>
+                            <td style="text-align: center; ">
+                                <div class="th-inner"></div>
+                                <div class="fht-cell" style="width: 170px;"></div>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div id="screen" class="table-screen"></div>
+                <div id="reference" class="table-reference">
+                    <table id="reference-table" data-toolbar="#toolbar" data-search="true" data-show-refresh="true" data-show-toggle="true" data-show-fullscreen="true" data-show-columns="true" data-show-columns-toggle-all="true" data-detail-view="true" data-show-export="true" data-click-to-select="true" data-detail-formatter="detailFormatter" data-minimum-count-columns="2" data-show-pagination-switch="true" data-pagination="true" data-id-field="id" data-page-list="[10, 25, 50, 100, all]" data-show-footer="true" data-side-pagination="server" data-url="https://examples.wenzhixin.net.cn/examples/bootstrap_table/data" data-response-handler="responseHandler" class="table table-bordered table-hover" style="width:1000px;min-width:1000px">
+                        <thead class="">
+                            <tr>
+                                <th class="detail" rowspan="2">
+                                    <div class="fht-cell"></div>
+                                </th>
+                                <th class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; " rowspan="2" data-field="state"><div class="th-inner "><label><input name="btSelectAll" type="checkbox"><span></span></label></div><div class="fht-cell"></div></th>
+                                <th style="text-align: center; vertical-align: middle; " rowspan="2" data-field="id"><div class="th-inner sortable both">Item ID</div><div class="fht-cell"></div></th>
+                                <th style="text-align: center;" colspan="3"><div class="th-inner ">Item Detail</div><div class="fht-cell"></div></th>
+                            </tr>
+                            <tr><th style="text-align: center; " data-field="name" data-not-first-th=""><div class="th-inner sortable both asc">Item Name</div><div class="fht-cell"></div></th><th style="text-align: center; " data-field="price"><div class="th-inner sortable both">Item Price</div><div class="fht-cell"></div></th><th style="text-align: center; " data-field="operate"><div class="th-inner ">Item Operate</div><div class="fht-cell"></div></th></tr>
+                        </thead>
+                        <tbody>
+                            <tr data-index="0" data-has-detail-view="true">
+                                <td class="layout-show">
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox layout-show" style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="0" name="btSelectItem" type="checkbox" value="107">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td colspan="4"></td>
+                            </tr>
+                            <tr data-index="1" data-has-detail-view="true">
+                                <td class="layout-show">
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox layout-show" style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="1" name="btSelectItem" type="checkbox" value="108">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="2" data-has-detail-view="true">
+                                <td class="layout-show">
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox layout-show" style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="2" name="btSelectItem" type="checkbox" value="109">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="3" data-has-detail-view="true">
+                                <td>
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="3" name="btSelectItem" type="checkbox" value="11">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="4" data-has-detail-view="true">
+                                <td>
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="4" name="btSelectItem" type="checkbox" value="110">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="5" data-has-detail-view="true">
+                                <td>
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="5" name="btSelectItem" type="checkbox" value="111">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="6" data-has-detail-view="true">
+                                <td>
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="6" name="btSelectItem" type="checkbox" value="112">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="7" data-has-detail-view="true">
+                                <td>
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="7" name="btSelectItem" type="checkbox" value="113">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="8" data-has-detail-view="true">
+                                <td>
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="8" name="btSelectItem" type="checkbox" value="114">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                            <tr data-index="9" data-has-detail-view="true">
+                                <td>
+                                    <a class="detail-icon" href="#">
+                                        <i class="glyphicon glyphicon-plus icon-plus"></i>
+                                    </a>
+                                </td>
+                                <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; ">
+                                    <label>
+                                        <input data-index="9" name="btSelectItem" type="checkbox" value="115">
+                                        <span></span>
+                                    </label>
+                                </td>
+                                <td class="keep-layout-hidden" colspan="4"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td class="detail"><div class="th-inner"></div><div class="fht-cell" style="width: 30px;"></div></td>
+                                <td style="text-align: center; vertical-align: middle; "><div class="th-inner"></div><div class="fht-cell" style="width: 6px;"></div></td>
+                                <td class="keep-layout-hidden" style="text-align: center; vertical-align: middle; "><div class="th-inner">Total</div><div class="fht-cell" style="width: 138px;"></div></td>
+                                <td class="keep-layout-hidden" style="text-align: center; "><div class="th-inner">10</div><div class="fht-cell" style="width: 176px;"></div></td>
+                                <td class="keep-layout-hidden" style="text-align: center; ">
+                                    <div class="th-inner">$1010</div><div class="fht-cell" style="width: 165px;"></div>
+                                </td>
+                                <td class="keep-layout-hidden" style="text-align: center; ">
+                                    <div class="th-inner"></div>
+                                    <div class="fht-cell" style="width: 170px;"></div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="table-pagination">
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var screen2 = document.getElementById('screen');
+        var footer = document.getElementById('footer');
+        var header = document.getElementById('header');
+        var headerReference = document.getElementById('header-reference');
+        var container = document.getElementById('container');
+        var table = document.getElementById('table');
+        var reference = document.getElementById('reference');
+        var referenceTable = document.getElementById('reference-table');
+
+        setTimeout(function () {
+            table.style.height = 'auto';
+        });
+
+        header.style.width = screen2.offsetWidth + 'px';
+        reference.style.width = table.scrollWidth + 'px';
+
+        function wheel(e) {
+            var delta = container.scrollLeft;
+            header.scrollLeft = delta;
+            referenceTable.style.marginLeft = delta + 'px';
+            headerReference.style.marginLeft = delta + 'px';
+        }
+
+        function wheelTop(e) {
+            //var delta = container.scrollLeft;
+            //reference.scrollLeft = delta;
+        }
+
+        if (document.addEventListener)
+            container.addEventListener('scroll', wheel, false);
+        else
+            container.attachEvent('onscroll', wheel);
+
+    </script>
+</body>
+</html>
