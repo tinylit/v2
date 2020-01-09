@@ -1,8 +1,10 @@
 ﻿function initPage() {
-    require(['components/v2.table'], function (/**@type Develop<'table'>*/table) {
+    require(['axios', 'components/v2.table'], function (axios,/**@type Develop<'table'>*/table) {
         var thisYear = (new Date()).getFullYear();
 
         var data = [];
+
+        window.axios = axios;
 
         for (var i = 0, len = thisYear - 1993; i < len; i++) {
             data.push({
@@ -80,6 +82,7 @@
             checkbox: true,
             lockHead: true,
             multiple: true,
+            access: true,
             lockCols: 1,
             multipleSelect: true,
             width: 500,
@@ -111,7 +114,16 @@
                 field: "id",
                 width: 100
             }],
-            data: data
+            methods: {
+                "ajax-ready": function () {
+
+                    this.dataSize = data.length;
+                    
+                    this.load(data.slice(this.pageIndex * this.pageSize, (this.pageIndex + 1) * this.pageSize));
+
+                    return false;
+                }
+            }
         });
     });
 }

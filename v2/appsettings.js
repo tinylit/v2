@@ -5,7 +5,7 @@
     waitSeconds: 30000,
     paths: {
         v2: '/lib/v2',
-        axios: 'lib/ajax/axios',
+        axios: '/lib/ajax/axios',
         components: '/lib/components'
     }
 });

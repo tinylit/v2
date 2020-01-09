@@ -667,6 +667,8 @@ declare namespace Use {
         pageIndex: number;
         /** 单页数据大小 */
         pageSize: number;
+        /** 数据量 */
+        dataSize: number;
         /** 分页条 */
         pagination: boolean;
         /** 循环分页 */

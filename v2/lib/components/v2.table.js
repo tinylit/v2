@@ -22,6 +22,11 @@
         GLOBAL_ROWS_UNIQUNEID = 0;
 
     v2.use('table', {
+        components: {
+            pagingbar: function (resovle) {
+                require(['components/v2.pagingbar'], resovle);
+            }
+        },
         table: function () {
             /** 添加“table-bordered”样式 */
             this.border = true;
@@ -49,15 +54,16 @@
             this.pageIndex = 0;
             /** 每页条数 */
             this.pageSize = 10;
+            /** 数据量 */
+            this.dataSize = 0;
             /** 是否显示分页 */
             this.pagination = true;
             /** 是否循环分页 */
             this.paginationLoop = true;
         },
         build: function (view) {
-            var vm = this;
 
-            var htmls = ['.table-viewport>'];
+            var vm = this, htmls = ['.table-viewport>'];
 
             if (this.lockHead) {
                 htmls.push('(.table-header>table.table)+');
@@ -87,6 +93,20 @@
 
             if (this.pagination) {
                 this.$pagination = this.take('.table-pagination', this.$viewport);
+
+                this.create('pagingbar', {
+                    $$: this.$pagination,
+                    pageIndex: this.pageIndex,
+                    pageSize: this.pageSize,
+                    paginationLoop: this.paginationLoop,
+                    methods: {
+                        "paging-ajax": function (index, size) {
+                            vm.pageIndex = index;
+                            vm.pageSize = size;
+                            vm.ajax();
+                        }
+                    }
+                });
             }
 
             var thead = this.thead(view);
@@ -592,6 +612,8 @@
                     input.checked = false;
                 });
             }
+
+            this.data = data;
         },
         check: function (rowIndex) {
             if (!this.checkbox || !this.multipleSelect) return;
@@ -672,6 +694,17 @@
                 var rowIndex = +input.getAttribute('data-row');
 
                 return vm.data[rowIndex - minRowIndex];
+            });
+        },
+        usb: function () {
+            this.base.usb();
+
+            this.define('dataSize', function (size) {
+                this.controls.when(function (vm) {
+                    return vm.like('pagingbar');
+                }).done(function (vm) {
+                    vm.dataSize = size;
+                });
             });
         },
         ready: function () {

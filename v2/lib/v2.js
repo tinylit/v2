@@ -3039,8 +3039,8 @@
             accessOptions = mergeOption(accessOption, accessOptions || options);
         };
 
-        this.always = function (access) {
-            return access ? accessOptions : options;
+        this.always = function (option) {
+            return option.access ? accessOptions : options;
         };
     }
 
@@ -3065,8 +3065,8 @@
         usb: 8, // 监听
         ready: 16, // 就绪
         ajax: -1, // 异步取数
-        load: 64, // 加载数据
-        commit: 128 // 完成提交
+        load: 32, // 加载数据
+        commit: 64 // 完成提交
     });
 
     var routeMap = {};
@@ -3176,7 +3176,7 @@
             this.methods = {};
             this.components = {};
 
-            this.flowGraph = v2.extend({}, useMap.then(this) || useMap.always(this.access));
+            this.flowGraph = v2.extend({}, useMap.then(this) || useMap.always(this.option));
 
             this.wildcards = v2.extend(true, {}, baseCards);
 
@@ -3251,6 +3251,7 @@
                 core_tag = "*",
                 core_namespace = "*",
                 baseMap = {},
+                flowMap = {},
                 namespaceGraph = {},
                 variable = {},
                 descriptors = {},
@@ -3686,13 +3687,13 @@
 
                     value = +this.flowGraph[i] || 0;
 
-                    if (value <= this.readyState) continue;
+                    if (flowMap[i]) continue;
 
-                    this.readyState = value;
-
-                    if (value <= state) continue;
+                    flowMap[i] = true;
 
                     prevValue = value;
+
+                    this.readyState = value;
 
                     if (value > 8) {
 
@@ -3735,7 +3736,6 @@
                 }
 
                 if (ready) {
-
                     this.define('visible', function (value) {
                         if (internalCall) {
                             if (value) {
@@ -3916,7 +3916,7 @@
 
                 context = null;
                 core_namespace = classOld = null;
-                variable = wildcards = excludes = controls = callbacks = descriptors = null;
+                variable = wildcards = excludes = controls = callbacks = descriptors = flowMap = null;
             };
 
             this.define('class', {

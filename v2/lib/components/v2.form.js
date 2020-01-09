@@ -182,7 +182,7 @@
                 isArraylike = v2.isArraylike(data);
 
             v2.each(data, function (value, key) {
-                var control = isArraylike ? controls.eq(key) : controls.get(function (vm) { return vm.name == key; });
+                var control = isArraylike ? controls.eq(key) : controls.first(function (vm) { return vm.name == key; });
 
                 if (!control) return;
 
