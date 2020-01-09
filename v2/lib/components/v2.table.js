@@ -587,22 +587,6 @@
                 this.$header.styleCb('max-width', this.$screen.offsetWidth);
             }
 
-            if (isIE) {
-                var offset = 0, timer = setInterval(function () {
-                    if (vm.$table.style.height == '100%') {
-                        vm.$table.style.height = 'auto';
-                    } else {
-                        vm.$table.style.height = '100%';
-                    }
-
-                    offset++;
-
-                    if (offset > 20) {
-                        clearInterval(timer);
-                    }
-                }, 100);
-            }
-
             if (this.checkbox && this.multipleSelect && this.isReady) {
                 this.when('input[data-role="head"]').done(function (input) {
                     input.checked = false;
@@ -634,7 +618,7 @@
                     if (row === rowIndex) {
                         input.checked = false;
                     }
-                }).destroy(true);
+                });
 
             this.when('input[data-role="head"]').done(function (input) {
                 input.checked = false;
@@ -667,7 +651,7 @@
         getSelections: function () {
             if (!this.checkbox) return null;
 
-            var input = this.when('[data-role="row"]', this.$table).one(function (input) {
+            var input = this.when('[data-role="row"]', this.$table).first(function (input) {
                 return input.checked;
             });
 
@@ -689,6 +673,22 @@
 
                 return vm.data[rowIndex - minRowIndex];
             });
+        },
+        ready: function () {
+            var vm = this;
+            if (isIE) {
+                var timer = setInterval(function () {
+                    if (vm.$table == null) {
+                        clearInterval(timer);
+                    }
+
+                    if (vm.$table.style.height == '100%') {
+                        vm.$table.style.height = 'auto';
+                    } else {
+                        vm.$table.style.height = '100%';
+                    }
+                }, 100);
+            }
         },
         commit: function () {
             var vm = this;

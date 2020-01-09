@@ -29,6 +29,9 @@
             /** 水平布局 */
             this.horizontal = false;
 
+            /** 去除【value】空格 */
+            this.trim = true;
+
             /** 超小按钮 */
             this.xs = false;
 
@@ -193,16 +196,26 @@
             });
         },
         checkValidity: function () {
+            var that = this;
             return v2.all(this.controls, function (vm) {
                 if (vm.like('input')) {
+                    if (that.trim) {
+                        vm.value = vm.value.trim();
+                    }
                     return vm.checkValidity();
                 }
                 return true;
             });
         },
         reportValidity: function () {
+            var that = this;
             return v2.all(this.controls, function (vm) {
                 if (vm.like('input')) {
+
+                    if (that.trim) {
+                        vm.value = vm.value.trim();
+                    }
+
                     return vm.reportValidity();
                 }
                 return true;

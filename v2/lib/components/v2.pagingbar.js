@@ -130,8 +130,7 @@
             this.when('a')
                 .done(function (a) {
                     a.parentNode.remove();
-                })
-                .destroy();
+                });
 
             if (totalRows === 0) {
                 if (!this.paginationLoop) {
@@ -225,8 +224,7 @@
             this.when('[data-role="pagination"]')
                 .done(function (li, i) {
                     li.classList.toggle('active', index === i);
-                })
-                .destroy();
+                });
 
             if (this.paginationLoop)
                 return;

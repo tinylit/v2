@@ -24,7 +24,7 @@
             this.type = "default";//"default" | "tab" | "thumbtack";
 
             /** 选中项 */
-            this.selectedIndex = -1;
+            this.selectedIndex = 0;
 
             /** 堆放 */
             this.stacked = false;
@@ -140,7 +140,6 @@
             var vm = this, then = this.when('li');
 
             this.define('selectedIndex', function (index) {
-
                 var node = this.take('[data-bit="{0}"]'.format(index));
 
                 then.done(function (elem) {

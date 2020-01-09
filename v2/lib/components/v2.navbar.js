@@ -35,7 +35,7 @@
         },
         build: function (view) {
 
-            var navSharp = "nav_" + (++NAV_GUID);
+            var vm = this, navSharp = "nav_component_" + (++NAV_GUID);
 
             this.$inner = this.$.appendChild('.container-fluid>.navbar-header>button.navbar-toggle[data-toggle="collapse"][data-target="#{0}"]>span.icon-bar+span.icon-bar+span.icon-bar'
                 .format(navSharp)
@@ -54,6 +54,19 @@
             v2.each(view, function (option) {
                 option.tag = option.tag || "nav";
                 option.$$ = this.$nav;
+                option.methods = {
+                    "select-changed": function () {
+                        var that = this;
+                        vm.controls.when(function (item) {
+                            if (item === that) {
+                                return false;
+                            }
+                            return item.like('nav');
+                        }).done(function (item) {
+                            item.selectedIndex = -1;
+                        });
+                    }
+                };
                 this.base.build(option);
             }, this);
         },

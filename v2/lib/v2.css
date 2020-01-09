@@ -80,10 +80,10 @@ input[type=checkbox] {
     }
 
     input[type=checkbox]::after {
-        top: 3.2px;
-        right: 3.2px;
-        bottom: 3.2px;
-        left: 3.2px;
+        top: 3px;
+        right: 3px;
+        bottom: 3px;
+        left: 3px;
     }
 
     input[type=radio]::before,

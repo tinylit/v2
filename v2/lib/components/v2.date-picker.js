@@ -18,13 +18,6 @@
         doc = document,
         docEl = doc.documentElement;
 
-    function isLeapYear(y) {
-        return (y % 400 == 0) || (y % 4 == 0) && (y % 100 > 0);
-    }
-    function dayCount(y, m) {
-        if (m === 2) return isLeapYear(y) ? 29 : 28;
-        return (m % 2 == 0 ? m < 7 : m > 8) ? 30 : 31;
-    }
     function zoreFill(a) {
         return (a = 0 | a) ? a > 9 ? a : '0' + a : '00';
     }
@@ -244,7 +237,7 @@
         tabMonth: function (type) {//0:左、1:右
             this.hidePicker();
             var y = this.ymd[0], m = this.ymd[1] + (type ? 1 : -1), d = this.ymd[2];
-            this.dayView(m < 0 ? y -= 1 : m > 11 ? y += 1 : y, m = m < 0 ? 11 : m > 11 ? 0 : m, (d < 29 || (y = dayCount(y, m + 1)) > d) ? d : y);
+            this.dayView(m < 0 ? y -= 1 : m > 11 ? y += 1 : y, m = m < 0 ? 11 : m > 11 ? 0 : m, (d < 29 || (y = v2.date.dayCount(y, m + 1)) > d) ? d : y);
         },
         tabYear: function (type) {//0:左、1:右、2:上、3:下
             if ((type & 1) === 0) {
@@ -291,9 +284,9 @@
             g.setFullYear(vm.ymd[0], vm.ymd[1], 1);
 
             gb.FDay = g.getDay();
-            gb.PDays = dayCount(y, m);
+            gb.PDays = v2.date.dayCount(y, m);
             gb.PDay = gb.PDays - gb.FDay + 1;
-            gb.NDays = dayCount(y, m + 1);
+            gb.NDays = v2.date.dayCount(y, m + 1);
             gb.NDay = 1;
 
             this.valid = true;
@@ -837,7 +830,7 @@
             return vm.visible;
         }).done(function (vm) {
             vm.hide();
-        }).destroy();
+        });
     }
 
     return function (options) {

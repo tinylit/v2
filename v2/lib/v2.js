@@ -344,22 +344,17 @@
         });
     }
 
-    function ArrayThen(host) {
-        if (host && !(host instanceof ArrayThen)) {
-            return v2.error("无效参数!");
+    function ArrayThen() {
+        for (var i = 0; i < arguments.length; i++) {
+            this.add(arguments[i]);
         }
-        this.destroy = function (deep) {
-            core_splice.call(this, 0, this.length);
-            if (deep && host) {
-                host.destroy(deep);
-            }
-        };
     }
 
     ArrayThen.prototype = {
         length: 0,
         add: function (item) {
-            if (item === undefined) return this;
+            if (item === undefined)
+                return this;
 
             if (isArraylike(item)) {
                 return v2.merge(this, item);
@@ -404,11 +399,11 @@
                     results.push(item);
                 }
             }
-            return v2.merge(new ArrayThen(this), results);
+            return v2.merge(new ArrayThen(), results);
         },
         map: function (callback) {
             var i = -1,
-                item, results = new ArrayThen(this);
+                item, results = new ArrayThen();
             while ((item = this[++i])) {
                 results.add(callback(item, i, this));
             }
@@ -423,8 +418,25 @@
         all: function (callback) {
             return v2.all(this, callback);
         },
-        one: function (callback) {
-            return v2.find(this, callback);
+        first: function (callback) {
+            if (arguments.length > 0) {
+                return v2.find(this, callback);
+            }
+
+            return this.eq(0);
+        },
+        last: function (callback) {
+            if (arguments.length === 0) {
+                return this.eq(-1);
+            }
+
+            for (var i = this.length - 1; i > -1; i--) {
+                var item = this[i];
+                if (callback.call(item, item, i, this))
+                    return item;
+            }
+
+            return null;
         },
         eq: function (index) {
             var value = this[index < 0 ? index + this.length : index];
@@ -433,6 +445,45 @@
                 return value;
             }
             return null;
+        },
+        sum: function (callback) {
+            var i = 0, item, value, result;
+            while ((item = this[i++])) {
+                value = callback.call(item, item, i, this);
+                if (result === undefined) {
+                    result = value;
+                } else {
+                    result += value;
+                }
+            }
+            return result;
+        },
+        max: function (callback) {
+            var i = 0, item, value, result;
+            while ((item = this[i++])) {
+                value = callback.call(item, item, i, this);
+
+                if (result === undefined || value > result) {
+                    result = value;
+                }
+            }
+            return result;
+        },
+        min: function (callback) {
+            var i = 0, item, value, result;
+            while ((item = this[i++])) {
+                value = callback.call(item, item, i, this);
+
+                if (result === undefined || value < result) {
+                    result = value;
+                }
+            }
+            return result;
+        },
+        avg: function (callback) {
+            var value = this.sum(callback);
+
+            return value / this.length;
         }
     };
 
@@ -623,15 +674,15 @@
             return true;
         },
         any: function (object, callback, context) {
-            if (!object || !callback) return false;
+            if (!object) return false;
             var i = 0;
             if (isArraylike(object)) {
                 for (var len = object.length; i < len; i++) {
-                    if (callback.call(context || object[i], object[i], i, object)) return true;
+                    if (!callback || callback.call(context || object[i], object[i], i, object)) return true;
                 }
             } else {
                 for (i in object) {
-                    if (callback.call(context || object[i], object[i], i, object)) return true;
+                    if (!callback || callback.call(context || object[i], object[i], i, object)) return true;
                 }
             }
             return false;
@@ -807,16 +858,18 @@
         day: function (date) {
             return v2.date(date).getDate();
         },
-        dayWeek: function (date) {
+        dayOfWeek: function (date) {
             return v2.date(date).getDay();
         },
-        dayYear: function (date) {
+        dayOfYear: function (date) {
             date = v2.date(date);
             return Math.ceil((date - new Date(date.getFullYear(), 1, 1)) / (24 * 60 * 60 * 1000)) + 1;
         },
         dayCount: function (year, month) {
             if (arguments.length < 2) {
-                if (!v2.isDate(year)) return -1;
+                if (!v2.isDate(year))
+                    return -1;
+
                 month = year.getMonth() + 1;
                 year = year.getFullYear();
             }
@@ -829,7 +882,7 @@
             date = v2.date(date);
             return Math.ceil((date.getDate() + 6 - date.getDay()) / 7);
         },
-        weekYear: function (date) {
+        weekOfYear: function (date) {
             date = v2.date(date);
             var date2 = new Date(date.getFullYear(), 0, 1);
             var day = Math.round((date.valueOf() - date2.valueOf()) / 86400000); //24 * 60 * 60 * 1000
@@ -1412,6 +1465,8 @@
 
     function DOMNodeRemoved(node) {
         var component;
+
+        if (node.nodeType !== 1) return;
 
         if (v2.match(node, '[ref]')) {
             if (component = node['component']) {
@@ -2271,7 +2326,7 @@
             "TAG": new RegExp("^(" + characterEncoding + ")"),
             "ATTR": new RegExp("^" + attributes),
             "MULTI": new RegExp("^" + whitespace + "*\\*([1-9][0-9]*)"),
-            "TEXT": new RegExp("^\\{(.*?)\\}" + whitespace + "*(?=[+>]|\\*|$)")
+            "TEXT": new RegExp("^\\{([\\s\\S]*?)\\}" + whitespace + "*(?=[+>]|\\*|$)")
         },
         fhtmlSerializeCache = function (selector) {
             var i, arr, charAt, counter, token, type, match, matched, groups = [],
@@ -2866,7 +2921,9 @@
                 return control;
 
             if (control.host) {
-                control.host.controls.remove(control);
+                control.host
+                    .controls
+                    .remove(control);
             }
 
             control.host = host;
@@ -2878,35 +2935,8 @@
         };
     }
 
-    V2Controls.prototype = {
+    V2Controls.prototype = v2.extend({
         length: 0,
-        remove: function (control) {
-
-            var index = core_indexOf.call(this, control);
-
-            if (index > -1) {
-                console.log(control);
-                control.host = undefined;
-                if (isIE8) {
-                    for (var i = 0, length = this.length; i < length; i++) {
-                        if (index >= i)
-                            continue;
-
-                        if (i > index) {
-                            this[i - 1] = this[i];
-                        }
-                    }
-
-                    this.length--;
-
-                    delete this[this.length];
-                } else {
-                    core_splice.call(this, index, 1);
-                }
-            }
-
-            return index;
-        },
         destroy: function () {
 
             var i = 0,
@@ -2914,19 +2944,6 @@
 
             while ((control = this[i++])) {
                 control.destroy();
-            }
-        },
-        eq: function (index) {
-            return this[index < 0 ? this.length + index : index] || null;
-        },
-        get: function (fn) {
-
-            var i = 0,
-                control;
-
-            while ((control = this[i++])) {
-                if (fn(control))
-                    return control;
             }
         },
         offset: function (control, offset) {
@@ -2937,7 +2954,7 @@
 
             return this[index + offset] || null;
         }
-    };
+    }, ArrayThen.prototype);
 
     function applyCallback(callback, args, context, sliced) {
         if (!args || args.length === 0) return callback.call(context);
@@ -3146,6 +3163,8 @@
                     return identity;
                 }
             });
+
+            this.like = returnFalse;
 
             if (GLOBAL_VARIABLE_STARTUP_COMPLETE) {
                 this.startup();
@@ -3541,8 +3560,7 @@
                 return option;
             }
 
-            new ArrayThen()
-                .add(v2.use(this.tag))
+            new ArrayThen(v2.use(this.tag))
                 .map(function (then) {
                     var option = then.always();
 
@@ -3551,7 +3569,7 @@
                         option: done(then.then(context))
                     };
                 })
-                .each(function (use) {
+                .done(function (use) {
                     var always = use.always,
                         option = use.option;
 
@@ -3560,8 +3578,7 @@
                     }
                     initControls(always, true);
                     initControls(option, true, always);
-                })
-                .destroy(true);
+                });
 
             initControls(this.option);
 
@@ -4573,7 +4590,7 @@
         var map = {}, node = e.target || e.srcElement;
 
         if (node.nodeType && (!e.button || e.type !== "click")) {
-            for (; node !== document && node !== self; node = node.parentNode) {
+            for (; node !== document && node !== docElem && node !== self; node = node.parentNode) {
                 v2.each(KEYS_EVENTS_MAPS, function (handle, selector) {
                     if (v2.match(node, selector)) {
                         map[selector] = node;
@@ -4689,6 +4706,24 @@
             return results;
         },
         indexOf: core_indexOf,
+        lastIndexOf: function (item, fromIndex) {
+            if (arguments.length > 1) {
+                fromIndex = fromIndex >> 0;
+                fromIndex = fromIndex >= 0 ? Math.min(fromIndex, this.length - 1) : this.length + fromIndex;
+            } else {
+                fromIndex = this.length - 1;
+            }
+
+            for (var i = fromIndex; i >= 0; i--) {
+                if (this[i] === item)
+                    return i;
+            }
+
+            return -1;
+        },
+        includes: function (item, fromIndex) {
+            return this.indexOf(item, fromIndex) > -1;
+        },
         find: function (callback, thisArg) {
             return v2.find(this, callback, thisArg);
         },
@@ -4697,6 +4732,9 @@
         },
         forEach: function (callback, thisArg) {
             v2.each(this, callback, thisArg);
+        },
+        some: function (callback, thisArg) {
+            return v2.any(this, callback, thisArg);
         },
         every: function (callback, thisArg) {
             return v2.all(this, callback, thisArg);
@@ -4710,4 +4748,5 @@
     }
 
     window.v2 = v2;
+    window.ArrayThen = ArrayThen;
 });

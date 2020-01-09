@@ -449,6 +449,8 @@ declare namespace Use {
         readonly2span: boolean;
         /** 使用证书 */
         withCredentials: boolean;
+        /** 是否出去输入框空格 */
+        trim: boolean;
         /** 请求方式 */
         method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH";
         /**

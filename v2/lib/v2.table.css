@@ -41,13 +41,15 @@
 .table-reference > .table > thead > tr > th,
 .table-reference > .table > tbody > tr > td,
 .table-reference > .table > tfoot > tr > td {
-    border-width: 0px;
     visibility: collapse;
+    border-left-width: 0;
+    border-right-width: 0;
 }
 
 .layout-show {
-    border-width: 1px !important;
     visibility: visible !important;
+    border-left-width: 1px !important;
+    border-right-width: 1px !important;
 }
 
 .table-container {
@@ -82,10 +84,19 @@
     border-top: 1px solid #ddd;
 }
 
+
 .table-header > .table > thead > tr {
     background-color: #f0f8ff;
 }
 
-.table-header > .table-reference > .table > thead > tr {
-    background-color: #ebfbfd;
+.table-header > .table-reference {
+    bottom: 0;
 }
+
+    .table-header > .table-reference > .table {
+        height: 100%;
+    }
+
+        .table-header > .table-reference > .table > thead > tr {
+            background-color: #ebfbfd;
+        }

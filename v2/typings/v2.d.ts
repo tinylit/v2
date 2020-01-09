@@ -263,31 +263,10 @@
     }
 
     /** 控件组 */
-    interface V2ControlCollection extends ArrayLike<V2Control> {
-        <T extends V2ControlStandard>(host: T): V2ControlCollection;
-        /**
-         * 添加控件。
-         * @param control 控件
-         */
-        add<T extends V2Control>(control: T): T;
-        /**
-         * 移除控件
-         * @param control 控件
-         * @returns 返回移除控件的索引。
-         */
-        remove(control: V2Control): number;
+    interface V2ControlCollection extends ArrayThen<V2ControlStandard> {
+        <T extends V2ControlStandard>(...args: T[]): V2ControlCollection;
         /** 摧毁当前控件组中所有控件 */
         destroy(): number;
-        /**
-         * 获取指定索引位的控件。
-         * @param index 索引。小于0时，加上当前集合的长度作为索引。
-         */
-        eq(index: number): V2Control;
-        /**
-         * 获取满足函数条件的第一个元素。
-         * @param callback 回调函数。
-         */
-        get(callback: (control: V2Control) => boolean): V2Control;
         /**
          * 获取基于【control】偏移【offset】索引次的控件。
          * @param control 控件。
@@ -578,16 +557,40 @@ declare namespace Use {
         * @param index 位置：小于 0 时，取 this.length + index 的元素。
         */
         nth(index: number): T;
+        /** 第一个元素 */
+        first(): T;
         /**
         * 查找对象中第一个满足函数条件的元素。
         * @param callback 条件函数
         */
-        one(callback: (this: T, value: T, index?: number) => boolean): T | null;
-        /** 
-         *  移除集合中所有元素 
-         *  @param deep 为真时，将摧毁根数据，否则仅摧毁当前集合数据，
+        first(callback: (this: T, value: T, index?: number) => boolean): T;
+        /** 最后一个元素 */
+        last(): T;
+        /**
+        * 查找对象中最后一个满足函数条件的元素。
+        * @param callback 条件函数
+        */
+        last(callback: (this: T, value: T, index?: number) => boolean): T;
+        /**
+         * 求和
+         * @param callback 返回数据。
          */
-        destroy(deep: ?boolean): void;
+        sum(callback: (this: T, value: T, index?: number) => number): number;
+        /**
+         * 最大值
+         * @param callback 返回数据。
+         */
+        max(callback: (this: T, value: T, index?: number) => number): number;
+        /**
+         * 最小值
+         * @param callback 返回数据。
+         */
+        max(callback: (this: T, value: T, index?: number) => number): number;
+        /**
+         * 最小值
+         * @param callback 返回数据。
+         */
+        avg(callback: (this: T, value: T, index?: number) => number): number;
     }
 
     /** 数组或对象 */
@@ -972,11 +975,6 @@ declare namespace Use {
          * @param obj 对象
          */
         isNumber(obj: any): boolean;
-        /**
-         * 是否为日期
-         * @param obj 对象
-         */
-        isDate(obj: any): obj is Date;
         /**
          * 是否为字符串
          * @param obj 对象
@@ -1385,6 +1383,101 @@ declare namespace Use {
          * @param value 需要设置的属性值
          */
         usb<T, K extends keyof T, D extends T[K]>(obj: T, prop: K, value: D): void;
+    }
+}
+
+/** 日期 */
+declare namespace Use {
+    interface V2 {
+        /**
+         * 是否为日期型。
+         * @param obj 对象。
+         */
+        isDate(obj: any): obj is Date;
+        /** 日期助手 */
+        date: DateAssistant;
+    }
+
+    /** 日期助手 */
+    interface DateAssistant {
+        /** 获取当前日期 */
+        (): Date;
+        /** 
+         *  将数据分析为日期类型，未知的类型返回当前日期。
+         * @param dateLike 疑似日期。
+         */
+        (dateLike: Date | number | string | unknown): Date;
+        /**
+         * 是否为闰年。
+         * @param year 年份。
+         */
+        isLeapYear(year: number): boolean;
+        /** 返回当前月的第几天 */
+        day(): number;
+        /**
+         * 返回指定日期所在月份的第几天。
+         * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+         */
+        day(dateLike: Date | number | string | unknown): number;
+        /** 今天是星期几 */
+        dayOfWeek(): 1 | 2 | 3 | 4 | 5 | 6 | 7;
+        /**
+        * 指定日期是星期几。
+        * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+        */
+        dayOfWeek(dateLike: Date | number | string | unknown): 1 | 2 | 3 | 4 | 5 | 6 | 7;
+        /** 今天是今年的第几天 */
+        dayOfYear(): number;
+        /**
+         * 指定日期是一年中的第几天。
+         * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+         */
+        dayOfYear(dateLike: Date | number | string | unknown): number;
+        /**
+         * 指定日期月份，一共有多少天。 
+         * @param date 日期。
+         */
+        dayCount(date: Date): number;
+        /**
+         * 指定年的指定月一共有多少天。
+         * @param year 年份。
+         * @param month 月份。
+         */
+        dayCount(year: number, month: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12): number;
+        /** 今天是本月的第几周 */
+        week(): number;
+        /**
+         * 指定日期中，当前日期是指定日期月份的第几周。
+         * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+         */
+        week(dateLike: Date | number | string | unknown): number;
+        /** 今天是今年的第几周 */
+        weekOfYear(): number;
+        /**
+         * 指定日期中，当前日期是指定日期年份的第几周。
+         * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+         */
+        weekOfYear(dateLike: Date | number | string | unknown): number;
+        /** 当前月份 */
+        month(): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+        /**
+         * 指定日期中月份。
+         * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+         */
+        month(dateLike: Date | number | string | unknown): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+        /** 当前年份 */
+        year(): number;
+        /**
+         * 指定日期中年份。
+         * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+         */
+        year(dateLike: Date | number | string | unknown): number;
+        /**
+         * 按照指定格式生成字符串。
+         * @param dateLike 将数据分析为日期类型，未知的类型返回当前日期。
+         * @param fmt 格式化日期字符串，默认:yyyy-MM-dd。y:年，M:月，d:日，H:24小时制的时，h:12小时制的时，m:分，s:秒，f:毫秒。
+         */
+        format(dateLike?: Date | number | string | unknown, fmt?: string): string;
     }
 }
 
