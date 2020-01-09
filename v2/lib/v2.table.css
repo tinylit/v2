@@ -100,3 +100,7 @@
         .table-header > .table-reference > .table > thead > tr {
             background-color: #ebfbfd;
         }
+
+.table-pagination {
+    text-align: right;
+}
