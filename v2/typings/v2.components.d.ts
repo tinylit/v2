@@ -305,6 +305,8 @@ declare namespace Use {
         autofocus: boolean;
         /** 支持多个值 */
         multiple: boolean;
+        /** 是否去除空格 */
+        trim: boolean;
         /** ID */
         id: string;
         /** 名称 */
@@ -449,7 +451,7 @@ declare namespace Use {
         readonly2span: boolean;
         /** 使用证书 */
         withCredentials: boolean;
-        /** 是否出去输入框空格 */
+        /** 是否去除输入框空格 */
         trim: boolean;
         /** 请求方式 */
         method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH";

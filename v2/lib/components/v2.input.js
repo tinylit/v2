@@ -152,6 +152,10 @@
             };
             // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
+                if (this.trim) {
+                    this.value = core.value = core.value.trim();
+                }
+
                 var validity = v2.usb(this, "validity");
 
                 return validity.valid;
@@ -171,6 +175,9 @@
             };
             // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
+                if (this.trim) {
+                    this.value = core.value = core.value.trim();
+                }
                 return core.checkValidity();
             };
         }
@@ -251,6 +258,9 @@
             /** 返回/设置元素的多个属性，指示是否可能有多个值(例如，多个文件)。 */
             this.multiple = false;
 
+            /** 是否去除空格 */
+            this.trim = true;
+
             /** ID */
             this.id = "";
 
@@ -307,7 +317,16 @@
                 }
             });
 
-            this.define('value', function (value) {
+            this.define('value', function (value, oldValue) {
+                if (this.trim) {
+
+                    value = value.trim();
+
+                    if (oldValue === value) {
+                        return;
+                    }
+                }
+
                 if (this.checkValidity()) {
                     this.invoke('input-change', value);
                 }
