@@ -126,6 +126,10 @@
                 if (width) {
                     colgroup.push(' width="');
 
+                    if (width < 1) {
+                        width = (width * 100) + '%';
+                    }
+
                     colgroup.push(width);
 
                     colgroup.push('"');
@@ -145,16 +149,17 @@
                 var lockCols = this.checkbox ? this.lockCols + 1 : this.lockCols;
                 var html = '.table-reference'.htmlCoding();
                 this.references = this.tables.map(function (table, index) {
-                    var cols = 0, reference = table.cloneNode(true);
-
+                    var reference = table.cloneNode(true);
                     if (index === 0) {
-                        v2.each(v2.take('th', reference, true), function (th) {
+                        var lines = v2.take('th', reference, true);
 
-                            th.classList.add('layout-show');
+                        v2.each(lines, function (th) {
 
-                            cols += th.colSpan;
+                            var lineSpan = +th.getAttribute("linespan");
 
-                            return cols < lockCols;
+                            if (lockCols > (lineSpan + th.colSpan)) {
+                                th.classList.add('layout-show');
+                            }
                         });
                     }
 
@@ -196,7 +201,8 @@
                     len = tns.length - 1;
                 return len > -1 && tns[len].title === t ? tns[len] : null;
             }
-            v2.each(this.cols, function (col) {
+
+            v2.each(this.cols, function (col, cellIndex) {
                 var node, maxLevel = col.texts.length - 1;
                 v2.each(col.texts, function (title, index) {
 
@@ -206,7 +212,7 @@
                         return node = n;
                     }
 
-                    var tn = { level: index, maxLevel: maxLevel, title: title, colspan: 1, rowspan: 1, items: [] };
+                    var tn = { lineSpan: cellIndex, level: index, maxLevel: maxLevel, title: title, colspan: 1, rowspan: 1, items: [] };
 
                     if (node) {
                         node.items.push(tn);
@@ -267,6 +273,8 @@
                 if (index === 0 && vm.checkbox) {
                     htmls.push('<th rowspan="');
                     htmls.push(maxRowcount);
+                    htmls.push('" linespan="');
+                    htmls.push(-1);
                     htmls.push('" data-stamp="checkbox" style="vertical-align:middle;text-align:center;width:36px">');
                     if (vm.multipleSelect) {
                         htmls.push('<input data-role="head" type="checkbox"/>');
@@ -288,6 +296,9 @@
                     htmls.push(col.colspan);
                     htmls.push('" rowspan="');
                     htmls.push(col.rowspan);
+
+                    htmls.push('" linespan="');
+                    htmls.push(col.lineSpan);
 
                     htmls.push('" style="vertical-align: middle;text-align:');
 

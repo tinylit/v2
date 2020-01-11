@@ -1026,7 +1026,7 @@ declare namespace Use {
          * @param context 上下文
          * @param all 查找所有
          */
-        take(selectors: string, context: Element, all: true): Element;
+        take(selectors: string, context: Element, all: true): NodeListOf<Element>;
         /**
          * 指定元素是否满足自定选择器条件。
          * @param elem 元素

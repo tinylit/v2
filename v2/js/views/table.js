@@ -83,9 +83,9 @@
             lockHead: true,
             multiple: true,
             access: true,
-            lockCols: 1,
+            lockCols: 3,
             multipleSelect: true,
-            width: 500,
+            width: 900,
             height: 407,
             view: [{
                 title: "编号",
