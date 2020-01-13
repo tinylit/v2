@@ -105,6 +105,20 @@
                             vm.pageSize = size;
                             vm.ajax();
                         }
+                    },
+                    show: function () {
+                        this.base.show();
+
+                        if (vm.have_been_set_height) {
+                            vm.setHeight(vm.height);
+                        }
+                    },
+                    hide: function () {
+                        this.base.hide();
+
+                        if (vm.have_been_set_height) {
+                            vm.setHeight(vm.height);
+                        }
                     }
                 });
             }
@@ -386,7 +400,6 @@
         },
         setHeight: function (value) {
             if (this.lockHead || this.pagination) {
-
                 if (this.lockHead) {
                     value -= this.$header.css('height');
                 }
@@ -425,8 +438,6 @@
                             vm.references.done(function (table) {
                                 table.style.width = width;
                             });
-
-                            vm.$reference.parentNode.style.width = width;
                         }
                     }
                 }, 5);
@@ -485,7 +496,14 @@
                     .empty();
             }
 
-            var lockCols = this.checkbox ? this.lockCols + 1 : this.lockCols;
+            if (v2.isEmpty(data)) {
+                this.data = data || [];
+                return;
+            }
+
+            var lockCols = this.lockCols,
+                isCheckbox = this.checkbox,
+                isMultipleSelect = this.multipleSelect;
 
             v2.each(data, function (data, index) {
 
@@ -556,8 +574,8 @@
                     });
                 } else {
                     cels = [];
-                    if (vm.checkbox) {
-                        if (vm.multipleSelect) {
+                    if (isCheckbox) {
+                        if (isMultipleSelect) {
                             cels.push('<td style="text-align:center;"><input type="checkbox" data-row="{0}"/></td>'.format(rowIndex));
                         } else {
                             cels.push('<td style="text-align:center;"><input type="radio" name="__table_radio_{1}" data-row="{0}"/></td>'.format(rowIndex, rows_id));
@@ -594,28 +612,44 @@
 
                 vm.$body.appendChild(tr);
 
-                if (vm.lockCols > 0) {
-
-                    var cols = 0;
-
-                    var row = tr.cloneNode(true);
-
-                    v2.each(row.childNodes, function (td) {
-
-                        td.classList.add('layout-show');
-
-                        cols += td.colSpan;
-
-                        return cols < lockCols;
-                    });
-
+                if (lockCols > 0) {
                     vm.$referenceBody
-                        .appendChild(row);
+                        .appendChild(tr.cloneNode(true));
                 }
             });
 
+            if (lockCols > 0) {
+                var width = this.border ? 1 : 0,
+                    tr = this.take('tr', this.$body);
+
+                if (!isCheckbox) {
+                    lockCols -= 1;
+                }
+                v2.each(tr.childNodes, function (td, index) {
+                    if (index > lockCols) {
+                        return false;
+                    }
+
+                    width += td.offsetWidth;
+                });
+
+                this.$reference
+                    .parentNode
+                    .styleCb({ width: width });
+
+                this.$reference.styleCb({
+                    width: this.$table.offsetWidth
+                });
+            }
+
             if (this.lockHead) {
-                this.$header.styleCb('max-width', this.$screen.offsetWidth);
+                if (isIE) {
+                    setTimeout(function () {
+                        vm.$header.styleCb('max-width', vm.$screen.offsetWidth);
+                    });
+                } else {
+                    this.$header.styleCb('max-width', this.$screen.offsetWidth);
+                }
             }
 
             if (this.checkbox && this.multipleSelect && this.isReady) {
@@ -624,7 +658,21 @@
                 });
             }
 
+            if (isIE) {
+                setTimeout(function () {
+                    if (vm.$table.style.height == '100%') {
+                        vm.$table.style.height = 'auto';
+                    } else {
+                        vm.$table.style.height = '100%';
+                    }
+                });
+            }
+
             this.data = data;
+
+            if (this.dataSize == 0) {
+                this.dataSize = data.length;
+            }
         },
         check: function (rowIndex) {
             if (!this.checkbox || !this.multipleSelect) return;
@@ -718,22 +766,6 @@
                 });
             });
         },
-        ready: function () {
-            var vm = this;
-            if (isIE) {
-                var timer = setInterval(function () {
-                    if (vm.$table == null) {
-                        clearInterval(timer);
-                    }
-
-                    if (vm.$table.style.height == '100%') {
-                        vm.$table.style.height = 'auto';
-                    } else {
-                        vm.$table.style.height = '100%';
-                    }
-                }, 100);
-            }
-        },
         commit: function () {
             var vm = this;
             if (this.checkbox) {
@@ -758,15 +790,46 @@
             }
 
             if (this.lockCols > 0) {
+                var _delta = 0;
                 this.$container.on('scroll', function () {
                     var delta = vm.$container.scrollLeft;
                     if (vm.lockHead) {
                         vm.$header.scrollLeft = delta;
                     }
+
+                    var node = vm.$reference.parentNode;
+                    var width = node.offsetWidth;
+
+                    node.styleCb("width", width + delta - _delta);
+
                     vm.references.done(function (table) {
                         table.style.marginLeft = delta + 'px';
                     });
+
+                    _delta = delta;
                 });
+
+                if (this.hover) {
+
+                    var hover = function (body, toggle) {
+                        return function () {
+                            var rowIndex = this.rowIndex;
+
+                            v2.each(body.childNodes, function (tr) {
+                                if (tr.rowIndex === rowIndex) {
+                                    tr.classList.toggle('hover', toggle);
+                                    return false;
+                                }
+                            });
+                        };
+                    }
+
+                    this.$body.on('mouseover', 'tr', hover(this.$referenceBody, true));
+                    this.$body.on('mouseout', 'tr', hover(this.$referenceBody, false));
+
+                    this.$referenceBody.on('mouseover', 'tr', hover(this.$body, true));
+                    this.$referenceBody.on('mouseout', 'tr', hover(this.$body, false));
+                }
             }
         }
     });

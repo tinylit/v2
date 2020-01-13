@@ -39,8 +39,8 @@
 }
 
 .table-reference > .table > thead > tr > th,
-.table-reference > .table > tbody > tr > td,
-.table-reference > .table > tfoot > tr > td {
+.table-header > .table-reference > .table > tbody > tr > td,
+.table-header > .table-reference > .table > tfoot > tr > td {
     visibility: collapse;
     border-left-width: 0;
     border-right-width: 0;

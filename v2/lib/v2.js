@@ -1919,6 +1919,19 @@
             fontWeight: 400
         };
 
+    v2.hooks = {
+        height: {
+            get: function (elem) {
+                return Math.max(elem.clientHeight, elem.offsetHeight);
+            }
+        },
+        width: {
+            get: function (elem) {
+                return Math.max(elem.clientHeight, elem.offsetWidth);
+            }
+        }
+    };
+
     v2.extend(Element.prototype, {
         css: function (name, same) {
             var elem = this,
@@ -1935,14 +1948,20 @@
 
             function done(name) {
                 var value,
+                    hooks,
                     origName = v2.camelCase(name);
 
                 name = v2.cssProps[origName] || (v2.cssProps[origName] = vendorPropName(style, origName));
 
-                value = curCSS(elem, name);
+                hooks = v2.hooks[name] || v2.hooks[origName];
 
-                if (value === "normal" && name in cssNormalTransform) {
-                    value = cssNormalTransform[name];
+                if (!hooks || !('get' in hooks) || (value = hooks.get(elem, name)) === false) {
+
+                    value = curCSS(elem, name);
+
+                    if (value === "normal" && name in cssNormalTransform) {
+                        value = cssNormalTransform[name];
+                    }
                 }
 
                 if (same) return value;
@@ -1952,6 +1971,7 @@
         },
         styleCb: function (name, value) {
             var match,
+                hooks,
                 origName,
                 elem = this,
                 style = this.style;
@@ -1968,7 +1988,14 @@
 
                 name = v2.cssProps[name] || (v2.cssProps[name] = vendorPropName(style, name));
 
-                if (value === undefined) return style[name];
+                hooks = v2.hooks[name] || v2.hooks[origName];
+
+                if (value === undefined) {
+                    if (!hooks || !('get' in hooks) || (value = hooks.get(elem, name)) === false) {
+                        return style[name];
+                    }
+                    return value;
+                }
 
                 var type = typeof value;
 
@@ -1997,7 +2024,9 @@
                     value = "inherit";
                 }
 
-                style[name] = value;
+                if (!hooks || !('set' in hooks) || (value = hooks.set(elem, value, name)) === false) {
+                    style[name] = value;
+                }
             }
         },
         swap: function (options, callback) {
@@ -3254,6 +3283,7 @@
                 flowMap = {},
                 namespaceGraph = {},
                 variable = {},
+                variableMap = {},
                 descriptors = {},
                 callbacks = [],
                 watchStack = [],
@@ -3796,6 +3826,7 @@
                         sourceValue = context[name],
                         conversionType,
                         typeOnly,
+                        propertySetter,
                         isFn = isFunction,
                         allowFirstSet = true;
 
@@ -3861,6 +3892,18 @@
                             } : function (value) {
                                 elem.setAttribute(name, value);
                             }
+                        };
+                    }
+
+                    if ('set' in attributes) {
+                        propertySetter = attributes.set;
+
+                        attributes.set = function (value) {
+
+                            propertySetter.call(this, value);
+
+                            this["have_been_set_" + name] = true;
+
                         };
                     }
 
