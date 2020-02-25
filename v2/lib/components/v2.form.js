@@ -111,6 +111,7 @@
                     done(view);
                     break;
             }
+
             v2.each(this.buttons, this.lazy(true, function (button) {
                 vm.create('button', button);
             }));

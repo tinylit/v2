@@ -493,6 +493,7 @@
     var
         GLOBAL_VARIABLE_IDENTITY = 0, //? 唯一身份ID
         GLOBAL_VARIABLE_LOOP_GROUP = 0, //? 唯一迭代器组ID
+        GLOBAL_VARIABLE_KNOWN_NODE_REMOVED = false, //? 移除节点
         GLOBAL_VARIABLE_ON_ROUTES = false, //? 是否处于路由中
         GLOBAL_VARIABLE_STARTUP_COMPLETE = true, //? 控制是否自动提交渲染
         GLOBAL_VARIABLE_CURRENT_CONTROL = null; //? 当前渲染控件
@@ -1163,7 +1164,67 @@
     var rnative = /^[^{]+\{\s*\[native code/;
     var docElem = document.documentElement;
 
+    function destroyObject(object, deep, excludes) {
+
+        var i, isControl, isArray, hasExcludes;
+
+        if (!object) return null;
+
+        isControl = object.version === version;
+        hasExcludes = !(excludes === null || excludes === undefined);
+        isArray = hasExcludes && v2.isArray(excludes);
+
+        if (object instanceof V2Controls) {
+            for (var i = 0; i < object.length; i++) {
+                done(i, object[i]);
+            }
+
+            object.length = 0;
+
+            return object = null;
+        }
+
+        for (i in object) {
+
+            if (!hasExcludes || !(isArray ? core_indexOf.call(excludes, key) > -1 : excludes[i])) {
+                done(i, object[i]);
+            }
+
+            try {
+                delete object[i];
+            } catch (_) { /** do something. */ }
+        }
+
+        return object = null;
+
+        function done(key, value) {
+            if (!value || !deep || value === object || hasExcludes && (isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key]))
+                return;
+
+            if (value.version === version) {
+
+                if (isControl && value.controls && object.host === value) {
+                    return value.controls.remove(object);
+                }
+
+                return value.destroy && value.destroy(true);
+            }
+
+            if (value.nodeType) {
+                if (isControl && value.nodeType === 1 && object.$ === value)
+                    return value.remove();
+
+                return;
+            }
+
+            if (v2.isPlainObject(value) || isArraylike(value)) {
+                return destroyObject(value, true, excludes);
+            }
+        }
+    }
+
     v2.extend({
+        destroy: destroyObject,
         siblings: function (elem, exclude) {
             var r = [];
             for (; elem; elem = elem.nextSibling) {
@@ -1466,7 +1527,7 @@
     function DOMNodeRemoved(node) {
         var component;
 
-        if (node.nodeType !== 1) return;
+        if (node.nodeType > 1 || GLOBAL_VARIABLE_KNOWN_NODE_REMOVED) return;
 
         if (v2.match(node, '[ref]')) {
             if (component = node['component']) {
@@ -1491,9 +1552,14 @@
         }
     });
 
+    var tokenCache = {},
+        GLOBAL_VARIABLE_CLASS_TOKEN = 0;
+
     v2.each({
         classList: function () {
-            return this["class_" + timestamp] || (this["class_" + timestamp] = new DOMClassList(this));
+            var token = this['class-token'] || (this['class-token'] = ++GLOBAL_VARIABLE_CLASS_TOKEN);
+
+            return tokenCache[token] || (tokenCache[token] = new DOMClassList(this));
         },
         parentElement: function () {
             return v2.sibling(this.parentNode, "parentNode", true);
@@ -1514,10 +1580,11 @@
             return v2.sibling(this.nextSibling, "nextSibling", true);
         }
     }, function (polyfill, name) {
-        if (!(name in Element.prototype))
-            Object.defineProperty(Element.prototype, name, {
-                get: polyfill
-            });
+        if (name in Element.prototype) return;
+
+        Object.defineProperty(Element.prototype, name, {
+            get: polyfill
+        });
     });
 
     var matches = docElem.matchesSelector ||
@@ -2073,8 +2140,11 @@
 
             this.insertBefore(docFrag, this.firstChild);
         },
-        insertAfter: function (node) {
-            return this.parentNode.insertBefore(node, this.nextSibling);
+        insertAfter: function (newNode, refNode) {
+            if (refNode) {
+                return this.parentNode.insertBefore(newNode, refNode.previousSibling);
+            }
+            return this.parentNode.appendChild(newNode);
         },
         after: function () {
             if (arguments.length === 0)
@@ -2083,6 +2153,11 @@
             if (arguments.length === 1) {
 
                 var node = arguments[0];
+
+                if (node === null || node === undefined) {
+                    return;
+                }
+
                 this.parentNode.insertBefore(node.nodeType ? node : document.createTextNode(node), this.nextSibling);
 
                 return;
@@ -2091,10 +2166,24 @@
             var docFrag = safeFragment.cloneNode();
 
             v2.each(arguments, function (node) {
+                if (node === null || node === undefined) {
+                    return;
+                }
+
                 docFrag.appendChild(node.nodeType ? node : document.createTextNode(node));
             });
 
             this.parentNode.insertBefore(docFrag, this.nextSibling);
+        },
+        replaceChild: function (newNode, oldNode) {
+            if (oldNode) {
+                var node = this.parentNode.insertBefore(newNode, oldNode);
+
+                this.parentNode.removeChild(oldNode);
+
+                return node;
+            }
+            return this.parentNode.appendChild(newNode);
         }
     });
 
@@ -3001,65 +3090,6 @@
         return v2.GDir[tag + "s"] = new fn();
     }, true);
 
-    function destroyObject(object, deep, excludes) {
-
-        var i, isControl, isArray, hasExcludes;
-
-        if (!object) return null;
-
-        isControl = object.version === version;
-        hasExcludes = !(excludes === null || excludes === undefined);
-        isArray = hasExcludes && v2.isArray(excludes);
-
-        if (object instanceof V2Controls) {
-            for (var i = 0; i < object.length; i++) {
-                done(i, object[i]);
-            }
-
-            object.length = 0;
-
-            return object = null;
-        }
-
-        for (i in object) {
-
-            if (!hasExcludes || !(isArray ? core_indexOf.call(excludes, key) > -1 : excludes[i])) {
-                done(i, object[i]);
-            }
-
-            try {
-                delete object[i];
-            } catch (_) { /** do something. */ }
-        }
-
-        return object = null;
-
-        function done(key, value) {
-            if (!value || !deep || value === object || hasExcludes && (isArray ? core_indexOf.call(excludes, key) > -1 : excludes[key]))
-                return;
-
-            if (value.version === version) {
-
-                if (isControl && value.controls && object.host === value) {
-                    return value.controls.remove(object);
-                }
-
-                return value.destroy && value.destroy(true);
-            }
-
-            if (value.nodeType) {
-                if (isControl && value.nodeType === 1 && object.$ === value)
-                    return value.remove();
-
-                return;
-            }
-
-            if (v2.isPlainObject(value) || isArraylike(value)) {
-                return destroyObject(value, true, excludes);
-            }
-        }
-    }
-
     function MapThen() {
         var options, accessOptions;
 
@@ -3098,38 +3128,37 @@
         commit: 64 // 完成提交
     });
 
-    var routeMap = {};
     var routeCache = makeCache(function (tag) {
-        routeMap[tag] = true;
         return new UseThen(tag);
     });
 
     v2.fn = v2.prototype = {
         version: version,
         create: function (tag, options) {
+            var control, component, isFunction;
+
             if (v2.isPlainObject(tag)) {
                 options = tag;
                 tag = options.tag;
             }
 
+            tag = v2.kebabCase(tag);
+
             options = v2.extend(true, {}, options);
 
             options.$$ = options.$$ || this.$;
 
-            if (!this.components)
+            if (!this.components || !(component = this.components[tag]))
                 return this.controls.add(v2(tag, options));
 
-            var component = this.components[tag = v2.kebabCase(tag)];
+            isFunction = v2.isFunction(component);
 
-            var isFunction = v2.isFunction(component);
-
-            if (isFunction && v2.exists(tag)) {
-                isFunction = component = undefined;
-            }
+            if (isFunction && v2.exists(tag))
+                return this.controls.add(v2(tag, options));
 
             GLOBAL_VARIABLE_STARTUP_COMPLETE = false;
 
-            var control = !component || isFunction ? v2(tag, options) : v2(tag, v2.improve(options, component));
+            control = isFunction ? v2(tag, options) : v2(tag, v2.improve(options, component));
 
             GLOBAL_VARIABLE_STARTUP_COMPLETE = true;
 
@@ -3150,8 +3179,22 @@
                 if (complete) {
                     stack = stackCache[this.identity] || new V2Stack(this);
 
+                    var pNode = this.$, node = document.createElement('div');
+
+                    pNode.appendChild(node);
+
                     stack.waitSatck(tag, function () {
+
                         control.startup();
+
+                        GLOBAL_VARIABLE_KNOWN_NODE_REMOVED = true;
+
+                        if (pNode === control.$$) {
+                            pNode.replaceChild(control.$, node);
+                        } else {
+                            pNode.removeChild(node);
+                        }
+                        GLOBAL_VARIABLE_KNOWN_NODE_REMOVED = false;
                     });
 
                     return control;
@@ -3209,33 +3252,28 @@
 
             this.wildcards = v2.extend(true, {}, baseCards);
 
-            var tag = this.tag;
+            var route = routeCache(this.tag);
 
-            if (routeMap[tag]) {
+            var router = route.then(this);
 
-                var route = routeCache(tag);
-
-                var router = route.then(this);
-
-                if (router) {
-                    switch (v2.type(router)) {
-                        case 'string':
-                            this.tag = router;
-                            break;
-                        case 'function':
-                            GLOBAL_VARIABLE_ON_ROUTES = true;
-                            try {
-                                router.call(this);
-                            } finally {
-                                GLOBAL_VARIABLE_ON_ROUTES = false;
-                            }
-                            break;
-                        default:
-                            return v2.error('路由数据类型【' + type + '】不被支持!');
-                    }
-
-                    this.tag = v2.kebabCase(this.tag);
+            if (router) {
+                switch (v2.type(router)) {
+                    case 'string':
+                        this.tag = router;
+                        break;
+                    case 'function':
+                        GLOBAL_VARIABLE_ON_ROUTES = true;
+                        try {
+                            router.call(this);
+                        } finally {
+                            GLOBAL_VARIABLE_ON_ROUTES = false;
+                        }
+                        break;
+                    default:
+                        return v2.error('路由数据类型【' + type + '】不被支持!');
                 }
+
+                this.tag = v2.kebabCase(this.tag);
             }
 
             this.compile();
@@ -3281,10 +3319,9 @@
                 core_namespace = "*",
                 baseMap = {},
                 flowMap = {},
-                namespaceGraph = {},
                 variable = {},
-                variableMap = {},
                 descriptors = {},
+                namespaceGraph = {},
                 callbacks = [],
                 watchStack = [],
                 context = this,
@@ -3560,6 +3597,17 @@
                         return v2.error("Validation of type “" + type + "” is not supported.");
                 }
 
+                if (node.nodeName.toLowerCase() === 'div') {
+                    var elem = document.createElement(tagName);
+
+                    elem.cssText = node.cssText;
+                    elem.className = node.className;
+
+                    parentNode.replaceChild(elem, node);
+
+                    return this.$$ = parentNode, this.$ = elem;
+                }
+
                 v2.error("Components do not support elements whose NodeName is " + node.nodeName.toLowerCase() + ".");
             };
 
@@ -3614,7 +3662,6 @@
             initControls(this.option);
 
             var namespaces = core_namespace.split('.');
-
             v2.each(namespaces, function (name) {
                 if (rtag.test(name))
                     v2.GDir(name).add(context);
@@ -3833,10 +3880,16 @@
                     if (name in excludes) {
                         return v2.log('Attributes cannot be repeatedly defined(' + name + ').', 15);
                     }
+
                     if (name in descriptors) {
                         v2.log('Attributes is overridden by control definitions(' + name + ').', 7);
                     }
+
                     excludes[name] = true;
+
+                    if (contains && v2.type(elem[name]) === 'object') {
+                        contains = false;
+                    }
 
                     if (contains && (sourceValue === null || sourceValue === undefined)) {
                         typeOnly = true;
@@ -3939,7 +3992,6 @@
             };
 
             this.destroy = function (deep) {
-
                 v2.each(namespaces, function (name) {
                     if (rtag.test(name))
                         v2.GDir(name).remove(context);
@@ -4259,6 +4311,7 @@
     v2.use('wait', {
         wait: function () {
             this.style = 1;
+            this.defaultVisible = false;
         },
         render: function () {
             this.$.classList.add('wait');
@@ -4273,6 +4326,14 @@
                 this.$wait.classList.remove('animation-' + oldStyle);
                 this.$wait.classList.add('animation-' + style);
             });
+        },
+        show: function () {
+            this.$$.classList.add('modal-open');
+            this.base.show();
+        },
+        hide: function () {
+            this.base.hide();
+            this.$$.classList.remove('modal-open');
         }
     });
 

@@ -1,5 +1,4 @@
-﻿@import 'v2.table.css';
-@import 'bootstrap-3.3.7/css/bootstrap.min.css';
+﻿@import 'bootstrap-3.3.7/css/bootstrap.min.css';
 
 .ignore {
     -webkit-touch-callout: none;
@@ -118,6 +117,7 @@ input[type=checkbox] {
     input[type=checkbox]:checked::after {
         background-color: rgb(255, 126, 80);
     }
+
 /** -------------------------------------------------------------- date-picker -------------------------------------------------------------- */
 input::-webkit-calendar-picker-indicator { /*这是控制下拉小箭头的*/
     display: none;
@@ -1583,6 +1583,113 @@ textarea.form-control {
         border-radius: 0 4px 4px 0;
     }
 
+.table-component .table {
+    table-layout: fixed;
+}
+
+.table-viewport {
+    position: relative;
+    clear: both;
+    overflow: auto;
+}
+
+    .table-viewport .table {
+        max-width: none;
+        margin-bottom: 0 !important;
+    }
+
+.table-header {
+    overflow: hidden;
+    position: relative;
+}
+
+.table-viewport .table-bordered > thead > tr > td,
+.table-viewport .table-bordered > thead > tr > th {
+    border-bottom-width: 1px;
+}
+
+.table-header + .table-container > .table > thead,
+.table-header + .table-container > .table-reference > .table > thead,
+.table-container + .table-footer > .table > thead,
+.table-container + .table-footer > .table-reference > .table > thead {
+    visibility: collapse;
+}
+
+.table > thead > tr > th,
+.table > tbody > tr > td,
+.table > tfoot > tr > td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table-reference > .table > thead > tr > th,
+.table-header > .table-reference > .table > tbody > tr > td,
+.table-header > .table-reference > .table > tfoot > tr > td {
+    visibility: collapse;
+    border-left-width: 0;
+    border-right-width: 0;
+}
+
+.layout-show {
+    visibility: visible !important;
+    border-left-width: 1px !important;
+    border-right-width: 1px !important;
+}
+
+.table-container {
+    width: 100%;
+    overflow: auto;
+    position: relative;
+}
+
+.table-screen {
+    width: 100%;
+}
+
+.table-reference {
+    position: absolute;
+    top: 0;
+    overflow: hidden;
+    z-index: 15;
+}
+
+    .table-reference > .table > thead > tr,
+    .table-reference > .table > tbody > tr,
+    .table-reference > .table > tfoot > tr {
+        background-color: #f9fdfc;
+    }
+
+.table-header > .table-reference > .table > caption + thead > tr:first-child > td,
+.table-header > .table-reference > .table > caption + thead > tr:first-child > th,
+.table-header > .table-reference > .table > colgroup + thead > tr:first-child > td,
+.table-header > .table-reference > .table > colgroup + thead > tr:first-child > th,
+.table-header > .table-reference > .table > thead:first-child > tr:first-child > td,
+.table-header > .table-reference > .table > thead:first-child > tr:first-child > th {
+    border-top: 1px solid #ddd;
+}
+
+
+.table-header > .table > thead > tr {
+    background-color: #f0f8ff;
+}
+
+.table-header > .table-reference {
+    bottom: 0;
+}
+
+    .table-header > .table-reference > .table {
+        height: 100%;
+    }
+
+        .table-header > .table-reference > .table > thead > tr {
+            background-color: #ebfbfd;
+        }
+
+.table-pagination {
+    text-align: right;
+}
+
 
 .table-hover > tbody > tr:hover,
 .table-hover > tbody > tr.hover {
@@ -1601,6 +1708,7 @@ textarea.form-control {
     .table-hover > tbody > tr.active.hover > th {
         background-color: #e8e8e8;
     }
+
     .table-hover > tbody > tr > td.success:hover,
     .table-hover > tbody > tr > th.success:hover,
     .table-hover > tbody > tr.success:hover > td,
@@ -1652,3 +1760,16 @@ textarea.form-control {
     .table-hover > tbody > tr.danger.hover > th {
         background-color: #ebcccc;
     }
+
+
+.describe {
+    color: #666;
+    padding: 5px;
+    border: 1px dashed #ccc;
+}
+
+.form-annex {
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    border: none;
+}

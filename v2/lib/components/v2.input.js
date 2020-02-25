@@ -611,6 +611,128 @@
         }
     });
 
+    var
+        userAgent = window.navigator.userAgent.toLowerCase(),
+        isIE = /msie|trident/.test(userAgent),
+        GLOBAL_VARIABLE_IFRAME_ID = 0;
+
+    v2.use('input', 'type === "file"', {
+        input: function () {
+            /** 接口地址 */
+            this.action = "";
+            /** 调用方式 */
+            this.method = "POST";
+        },
+        init: function () {
+            this.base.init();
+        },
+        build: function () {
+            this.$target = this.$.appendChild('a[href="#"]{添加}'.htmlCoding().html());
+            this.$core = this.$.appendChild('input.hidden[type=file]'.htmlCoding().html());
+        },
+        render: function () {
+            this.$.classList.add('form-control', 'form-annex');
+            if (this.lg || this.sm || this.xs) {
+                this.$.classList.add(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
+            }
+
+            if (this.autofocus) {
+                this.focus();
+            }
+        },
+        upload: function () {
+            if (this.invoke('upload-ready') === false)
+                return;
+
+            var vm = this,
+                url = this.action,
+                id = "__file_upload_ifr_" + (++GLOBAL_VARIABLE_IFRAME_ID),
+                core = this.$core || this['$' + this.tag] || this.$,
+                parentNode = core.parentNode,
+                nextSibling = core.nextSibling;
+
+            url += (url.indexOf("?") >= 0 ? "&" : "?") + "r=" + (+new Date());
+
+            var ifr = document.createElement('iframe'); 
+
+            ifr.id = ifr.name = id;
+
+            if (isIE)
+                ifr.src = "javascript:false";
+
+            document.body.appendChild(ifr);
+
+            if (isIE)
+                document.frames[id].name = id;
+
+            var form = document.createElement("form");
+            form.target = id;
+            form.method = this.method;
+            form.enctype = form.encoding = "multipart/form-data";
+            form.action = url;
+
+            form.appendChild(core);
+
+            document.body.appendChild(form);
+
+            function done(callback) {
+                ifr.onload = ifr.onreadystatechange = null;
+
+                parentNode.insertBefore(core, nextSibling);
+
+                callback.call(this);
+
+                setTimeout(function () {
+                    //document.body.removeChild(ifr);
+                }, 100);
+            }
+
+            ifr.onload = ifr.onreadystatechange = function () {
+                try {
+                    if (this.contentWindow && this.contentWindow.document && (!isIE || this.contentWindow.document.readyState == "complete")) {
+                        done(function () {
+                            var result = {
+                                fileName: core.value.replace(/.*(\/|\\)/, ""),
+                                url: uploadEl.value
+                            };
+
+                            if (this.contentWindow.uploadResult) {
+                                v2.extend(result, this.contentWindow.uploadResult);
+                            };
+
+                            vm.invoke('upload-success', result);
+                        });
+                    }
+                } catch (e) {
+                    done(function () {
+                        vm.invoke('upload-fail', e);
+                    });
+                }
+            };
+
+            form.submit();
+
+            document.body.removeChild(form);
+        },
+        commit: function () {
+            var vm = this, core = this.$core || this['$' + this.tag] || this.$;
+
+            this.$target.on('click', function () {
+                core.click();
+            });
+
+            core.on("change", function (e) {
+
+                var fileName = this.value.replace(/.*(\/|\\)/, "");
+
+                if (vm.invoke('file-select', { event: e, file: fileName }) === false)
+                    return false;
+
+                vm.upload();
+            });
+        }
+    });
+
     v2.use('input', 'type === "group"', {
         input: function () {
             this.value = '';

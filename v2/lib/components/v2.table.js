@@ -93,7 +93,6 @@
 
             if (this.pagination) {
                 this.$pagination = this.take('.table-pagination', this.$viewport);
-
                 this.create('pagingbar', {
                     $$: this.$pagination,
                     pageIndex: this.pageIndex,
@@ -830,6 +829,12 @@
                     this.$referenceBody.on('mouseover', 'tr', hover(this.$body, true));
                     this.$referenceBody.on('mouseout', 'tr', hover(this.$body, false));
                 }
+            }
+
+            if (this.lockHead || this.lockCols > 0) {
+                v2.subscribe(window, 'resize', function () {
+                    vm.setWidth(vm.width);
+                });
             }
         }
     });

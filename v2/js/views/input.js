@@ -1,5 +1,5 @@
 ﻿function initPage() {
-    require(['components/v2.input'], function (input) {
+    require(['components/v2.input'], function (/**@type Develop<"input">*/input) {
         input({
             type: 'radio',
             focus: true
@@ -42,6 +42,12 @@
             selectedIndex: 1,
             template: '<option value="{{ value }}">{{ text }}</option>',
             view: [{ value: 1, text: "男" }, { value: 2, text: "女" }]
+        });
+
+        input({
+            type: "file",
+            name: "singleFile",
+            action: "http://localhost:19059/file/upload/single"
         });
     });
 }

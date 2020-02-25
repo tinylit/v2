@@ -27,6 +27,9 @@ declare namespace Use {
         "nav": Nav;
         "navbar": Navbar;
         "table": Table;
+        "panel": Panel;
+        "list": List;
+        "progressbar": ProgressBar;
     }
 
     /** 基类 */
@@ -355,6 +358,16 @@ declare namespace Use {
         showIcon: true;
     }
 
+    /** 文件输入框 */
+    interface Input {
+        /** 类型 */
+        type: "file";
+        /** 接口地址 */
+        action: string;
+        /** 请求方式 */
+        method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH";
+    }
+
     /** 多行输入框 */
     interface Textarea extends V2ControlExtend<"textarea", "input"> {
         /** 主元素 */
@@ -675,9 +688,58 @@ declare namespace Use {
         paginationLoop: boolean;
     }
 
+    /** 面板视图 */
+    interface PanelView extends PlainObject {
+        /** TAG */
+        tag: string;
+        /** 头部 */
+        head?: string | PlainObject<string>;
+        body?: string;
+        /** 底部 */
+        foot?: string;
+    }
+
     /** 面板 */
     interface Panel extends V2Control<"panel"> {
         /** 类型 */
-        type: "default" | "primary" | "success" | "info" | "warning" | "danger";
+        style: "default" | "primary" | "success" | "info" | "warning" | "danger";
+        /** 视图 */
+        view: string | PanelView;
+    }
+
+    /** 列表项 */
+    interface ListItem {
+        /** 风格 */
+        style?: "default" | "success" | "info" | "warning" | "danger";
+        /** 链接（风格为“link”时有效） */
+        href?: string;
+        /** 禁用 */
+        disabled?: boolean;
+        /** 标题 */
+        title?: string;
+        /** 文本 */
+        text: string;
+        /** 点击事件 */
+        click?: (this: List, e: Event) => any;
+    }
+
+    /** 列表 */
+    interface List extends V2Control<"list"> {
+        /** 类型 */
+        type: "default" | "link" | "button";
+        /** 视图 */
+        view: Array<string | ListItem>;
+    }
+
+    /** 进度条 */
+    interface ProgressBar extends V2Control<"progressbar"> {
+        /** 类型 */
+        style: "default" | "primary" | "success" | "info" | "warning" | "danger";
+        /** 分割线 */
+        striped: boolean;
+        /** 活动的 */
+        active: boolean;
+        /** 进度 0~100 */
+        data: number;
     }
 }
