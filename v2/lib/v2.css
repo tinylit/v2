@@ -417,6 +417,21 @@ input::-webkit-clear-button {
     margin-bottom: 5px;
 }
 
+.control-label.required {
+    position: relative;
+}
+
+    .control-label.required:before {
+        position: absolute;
+        top: 2px;
+        left: -8px;
+        bottom: 0;
+        color: red;
+        content: '*';
+        margin: auto;
+        z-index: 8;
+    }
+
 .radio label,
 .checkbox label,
 .radio-inline label,
@@ -1450,14 +1465,6 @@ textarea.form-control {
 /** ----------------------------------------------------------------- form -------------------------------------------------------------------*/
 
 /** ----------------------------------------------------------------- Modal ------------------------------------------------------------------*/
-.fade {
-    filter: alpha(opacity=0);
-}
-
-    .fade.in {
-        filter: alpha(opacity=100);
-    }
-
 .modal.fade {
     display: block;
 }

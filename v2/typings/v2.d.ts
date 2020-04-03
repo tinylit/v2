@@ -1707,6 +1707,8 @@ declare namespace Use {
         showCancel: boolean;
         /** 是否显示关闭 */
         showClose: boolean;
+        /** 一次性的（关闭时会摧毁控件） */
+        singleUse: boolean;
         /** 按钮组 */
         buttons: Array<Button>;
     }

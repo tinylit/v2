@@ -91,7 +91,10 @@
             if (view === undefined || view === null)
                 return;
 
-            var elem, vm = this, group = this.lg ? '.form-group-lg' : this.sm ? '.form-group-sm' : this.xs ? '.form-group-xs' : '.form-group', type = v2.type(view);
+            var elem,
+                vm = this,
+                group = this.lg ? '.form-group-lg.clearfix' : this.sm ? '.form-group-sm.clearfix' : this.xs ? '.form-group-xs.clearfix' : '.form-group.clearfix',
+                type = v2.type(view);
 
             switch (type) {
                 case 'array':
@@ -125,7 +128,11 @@
                             .appendChild(group.htmlCoding().html());
 
                         if (vm.label && config.label !== false) {
-                            elem.appendChild('label.control-label{{0}}'.format(config.title || config.name).htmlCoding().html());
+                            if (config.required) {
+                                elem.appendChild('label.control-label.required{{0}}'.format(config.title || config.name).htmlCoding().html());
+                            } else {
+                                elem.appendChild('label.control-label{{0}}'.format(config.title || config.name).htmlCoding().html());
+                            }
                         }
 
                         vm.create(option.tag || 'input', v2.improve({ $$: elem }, config));
@@ -135,7 +142,11 @@
                 elem = vm.$.appendChild(group.htmlCoding().html());
 
                 if (vm.label && option.label !== false) {
-                    elem.appendChild('label.control-label{{0}}'.format(option.title || option.name).htmlCoding().html());
+                    if (option.required) {
+                        elem.appendChild('label.control-label.required{{0}}'.format(option.title || config.name).htmlCoding().html());
+                    } else {
+                        elem.appendChild('label.control-label{{0}}'.format(option.title || option.name).htmlCoding().html());
+                    }
                 }
 
                 vm.create(option.tag || 'input', v2.improve({ $$: elem }, option));
@@ -153,12 +164,13 @@
             }
         },
         ajax: function () {
-            var vm = this, ajax = {
-                url: this.action,
-                method: "GET",
-                params: {},
-                data: {}
-            };
+            var vm = this,
+                ajax = {
+                    url: this.action,
+                    method: "GET",
+                    params: {},
+                    data: {}
+                };
 
             if (this.invoke("ajax-ready", ajax) === false) {
                 return;
@@ -237,11 +249,29 @@
             if (!this.reportValidity())
                 return;
 
-            var vm = this, ajax = {
-                url: this.action,
-                method: this.method,
-                data: {}
-            };
+            var vm = this,
+                data = {},
+                ajax = {
+                    url: this.action,
+                    method: this.method,
+                    data: data
+                };
+
+            (function done(vm) {
+                v2.each(vm.controls, function (control) {
+                    if (control.like('input', 'select')) {
+                        if (control.type == 'radio' || control.type == 'checkbox') {
+                            if (control.checked) {
+                                data[control.name] = control.value;
+                            }
+                        } else if (control.type == 'group') {
+                            done(control);
+                        } else {
+                            data[control.name] = control.value;
+                        }
+                    }
+                });
+            })(this);
 
             if (this.invoke("submit-ready", ajax) === false) {
                 return;
@@ -266,6 +296,8 @@
                 try {
                     vm.submit();
                 } catch (_) { }
+
+                return false;
             });
             this.$.on('stop.prev.reset', function () {
                 try {

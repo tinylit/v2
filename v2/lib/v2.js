@@ -4435,6 +4435,8 @@
             this.showCancel = true;
             /** 显示关闭按钮 */
             this.showClose = true;
+            /** 一次性的，在关闭时摧毁控件。 */
+            this.singleUse = true;
             /** 按钮组 */
             this.buttons = [];
 
@@ -4572,6 +4574,10 @@
 
             document.body.classList.remove('modal-open');
         },
+        close: function () {
+            this.hide();
+            this.destroy(true);
+        },
         commit: function () {
             var vm = this;
 
@@ -4579,23 +4585,24 @@
                 this.$.on('keyup', function (e) {
                     var code = e.keyCode || e.which;
                     if (code === 27) {
-                        vm.hide();
-                    }
-                });
-            }
-
-            if (this.backdrop) {
-                this.$backdrop.on('click', function () {
-                    if (vm.visible) {
-                        vm.hide();
+                        if (vm.singleUse) {
+                            vm.close();
+                        } else {
+                            vm.hide();
+                        }
                     }
                 });
             }
 
             if (this.showClose) {
-                this.$header.take('[data-dismiss="modal"]').on('click', function () {
+                this.$header.on('click', '[data-dismiss="modal"]', function () {
                     if (vm.invoke('close-event') !== false) {
-                        vm.hide();
+                        if (vm.singleUse) {
+                            vm.close();
+                        }
+                        else {
+                            vm.hide();
+                        }
                     }
                 });
             }

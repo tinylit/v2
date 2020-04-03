@@ -33,6 +33,7 @@
                     view: [{
                         type: 'radio',
                         value: 0,
+                        checked: true,
                         description: "禁用"
                     }, {
                         type: 'radio',
