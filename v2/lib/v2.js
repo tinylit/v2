@@ -2434,7 +2434,6 @@
         rchild = new RegExp("^" + whitespace + "*>"),
         rgroup = new RegExp("^" + whitespace + "*\\("),
         rcombinators = new RegExp("^" + combinator),
-        rreturn = new RegExp("\\breturn" + whitespace + "+"),
         rfixcombinators = new RegExp(combinator + '(' + combinator + ')+', 'gm'),
         rsingleTag = /area|br|col|embed|hr|img|input|link|meta|param/i,
         rboolean = /^(?:checked|selected|autofocus|autoplay|async|controls|defer|disabled|hidden|loop|multiple|open|readonly|required|scoped)$/i,
@@ -2548,7 +2547,9 @@
             } else {
                 html.push('>');
                 html.push(content);
-                if (relative === ">") html.push(xhtml);
+                if (relative === ">") {
+                    html.push(xhtml);
+                }
                 html.push('</' + tag + '>');
             }
             html = html.join('');
@@ -2638,8 +2639,9 @@
 
     var rcompile = new RegExp('`\\$\\{(.+?)\\}`|\\$\\{' + whitespace + '*(.+?)' + whitespace + '*\\}|\\{' + whitespace + '*\\{' + whitespace + '*([^\\{].+?)' + whitespace + '*\\}' + whitespace + '*\\}', 'gm'); // /`\$\{(.*)?\}`/gm;
     var word = '[_a-z][_a-z0-9]*',
+        rreturn = new RegExp("^(\\b|" + whitespace + "+)return" + whitespace + "+"),
         rquotes = new RegExp("\\$(['\"])(?:\\\\.|[^\\\\])*?\\1", 'gm'),
-        rbraceCode = new RegExp('\\{([^\\{\\}]+?)\\}', 'g'),
+        rbraceCode = new RegExp('\\{([^\\{]+?)\\}', 'g'),
         rternaryCode = new RegExp('^((?:\\w+\\.)?\\w+(?:\\(.*?\\))?)' + whitespace + '*([?!]{1,2})' + whitespace + '*([^:]+?)$'),
         tryCode = word + '(?:\\??(?:\\.' + word + '|\\[.+?\\]))*',
         rtryCode = new RegExp(tryCode, 'img'),
@@ -2647,8 +2649,8 @@
         rforin = new RegExp('\\bfor' + whitespace + '*\\(' + whitespace + '*(?:var' + whitespace + '+)?(' + word + ')(?:<(' + word + ')>)?' + whitespace + '+in' + whitespace + '+(' + tryCode + ')' + whitespace + '*\\)', 'ig'),
         rword = new RegExp('\\b' + word + '\\b', 'gi'),
         rkey = new RegExp('^' + word + '$', 'i'),
-        rif = new RegExp('\\bif' + whitespace + '*\\(.+?\\)' + whitespace + '*\\{' + whitespace + "*(.+)"),
-        relse = new RegExp('\\belse' + whitespace + '*\\{' + whitespace + "*(.+)"),
+        rif = new RegExp('\\bif' + whitespace + '*\\(.+?\\)' + whitespace + '*\\{' + whitespace + '*(.+)\\}', 'g'),
+        relse = new RegExp('\\belse' + whitespace + '*\\{' + whitespace + '*(.+)\\}', 'g'),
         rinject = new RegExp("^" + whitespace + "*(" + word + ")\\(((" + whitespace + "*" + word + whitespace + "*,)*" + whitespace + "*" + word + ")?" + whitespace + "*\\)" + whitespace + "*$", "i");
 
     var tryCodeFn = makeCache(function (string) {
@@ -4219,8 +4221,9 @@
                 })
             });
 
-            if (v2.isPlainObject(watch))
+            if (v2.isPlainObject(watch)) {
                 this.define(watch);
+            }
         },
         invoke: function (fn) {
 
