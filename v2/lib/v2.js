@@ -2636,7 +2636,7 @@
         return string;
     };
 
-    var rcompile = new RegExp('`\\$\\{(.+?)\\}`|\\$\\{' + whitespace + '*([^\\{\\}].+?)' + whitespace + '*\\}|\\{' + whitespace + '*\\{' + whitespace + '*([^\\{\\}].+?)' + whitespace + '*\\}' + whitespace + '*\\}', 'gm'); // /`\$\{(.*)?\}`/gm;
+    var rcompile = new RegExp('`\\$\\{(.+?)\\}`|\\$\\{' + whitespace + '*(.+?)' + whitespace + '*\\}|\\{' + whitespace + '*\\{' + whitespace + '*([^\\{].+?)' + whitespace + '*\\}' + whitespace + '*\\}', 'gm'); // /`\$\{(.*)?\}`/gm;
     var word = '[_a-z][_a-z0-9]*',
         rquotes = new RegExp("\\$(['\"])(?:\\\\.|[^\\\\])*?\\1", 'gm'),
         rbraceCode = new RegExp('\\{([^\\{\\}]+?)\\}', 'g'),
