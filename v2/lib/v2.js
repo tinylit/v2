@@ -2636,7 +2636,7 @@
         return string;
     };
 
-    var rcompile = new RegExp('(`\\$\\{(.+?)\\}`|\\{' + whitespace + '*\\{' + whitespace + '*([^\\{].+?)' + whitespace + '*\\}' + whitespace + '*\\})', 'gm'); // /`\$\{(.*)?\}`/gm;
+    var rcompile = new RegExp('`\\$\\{(.+?)\\}`|\\$\\{' + whitespace + '*([^\\{\\}].+?)' + whitespace + '*\\}|\\{' + whitespace + '*\\{' + whitespace + '*([^\\{\\}].+?)' + whitespace + '*\\}' + whitespace + '*\\}', 'gm'); // /`\$\{(.*)?\}`/gm;
     var word = '[_a-z][_a-z0-9]*',
         rquotes = new RegExp("\\$(['\"])(?:\\\\.|[^\\\\])*?\\1", 'gm'),
         rbraceCode = new RegExp('\\{([^\\{\\}]+?)\\}', 'g'),
@@ -2787,10 +2787,10 @@
     });
 
     String.prototype.withCb = function (json) {
-        return this.replace(rcompile, function (_, _2, lamda, simple) {
+        return this.replace(rcompile, function (_, lamda, dollarSimple, braceSimple) {
             var callback = lamda
                 ? compileCache(lamda)
-                : simpleCache(simple);
+                : simpleCache(dollarSimple || braceSimple);
 
             return callback(json);
         });
