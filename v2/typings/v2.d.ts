@@ -29,7 +29,7 @@
     }
 
     /** 普通组件(key是“{TAG}”) */
-    interface PlainComponents extends PlainObject<PlainObject>, V2ControlStandard { }
+    interface PlainComponents extends PlainObject, V2ControlStandard { }
 
     /** 同步方法组件(key是“{TAG}”) */
     interface FunctionComponents extends PlainObject<(resolve: () => void) => void> { }
@@ -193,8 +193,6 @@
         readonly identity: number;
         /** 版本号 */
         readonly v2version: string;
-        /** TAG */
-        readonly tag: string;
         /** 控件声明空间 */
         readonly namespace: string;
         /** 控件是否就绪 */
@@ -233,6 +231,8 @@
         data: any;
         /** 视图渲染 */
         view: any;
+        /** 监视器 */
+        watch: PlainObject<Function>;
         /** 组件集合 */
         components: FunctionComponents | PlainComponents;
         /** 流程图 */
@@ -248,7 +248,7 @@
     }
 
     /** 通配符 */
-    interface WildCard<T extends V2ControlBase = V2ControlStandard> {
+    interface WildCard<T extends V2ControlStandard = V2ControlStandard> {
         /** 支持的类型，同时支持多种类型时，以“|”分隔。 */
         type: "*" | "string" | "boolean" | "number" | "date" | "array" | "regexp" | "function" | "object";
         /** 执行的别名 */
@@ -276,15 +276,14 @@
     }
 
     /** 组件扩展 */
-    interface V2ComponentExtentions<TContext, T extends {}, TFlowGraph extends FlowGraph<TContext>> extends T, TFlowGraph, V2ControlBase { }
+    // @ts-ignore
+    interface V2ComponentExtention<TContext extends V2ControlStandard, T extends V2EmptyBase, TFlowGraph extends FlowGraph<TContext>> extends T, TFlowGraph { }
 
     /** 扩展组件 */
-    interface V2ComponentExtend<K, TContext> extends V2ComponentExtentions<TContext, V2ControlBaseMap[K], FlowGraphMap<TContext>[K]> { }
+    interface V2ComponentExtend<K extends string, TContext extends V2ControlStandard> extends V2ComponentExtention<TContext, V2ControlBaseMap[K], FlowGraphMap<TContext>[K]>, V2ControlStandard { }
 
     /** 组件 */
-    interface V2Component<T> {
-        /** 监控数据变化，数据变化时，调用指定方法 */
-        watch: PlainObject<(this: T, ...args: any[]) => any>,
+    interface V2Component<T extends V2ControlStandard> {
         /** 事件集合 */
         events: PlainObject<(this: T, e: Event) => any>;
         /** 方法集合 */
@@ -332,7 +331,7 @@
          * @param descriptor 设置属性值的方法。
          * @param defineOnly 仅定义，不触发函数。
          */
-        define<K extends string>(prop: K, descriptor: (this: T, value?: T[K], oldValue?: T[K]) => T[K] | void, defineOnly?: true): T;
+        define<K extends keyof T>(prop: K, descriptor: (this: T, value?: T[K], oldValue?: T[K]) => T[K] | void, defineOnly?: true): T;
         /**
          * 定义多个属性
          * @param map 属性对象
@@ -360,7 +359,7 @@
     }
 
     /** 拓展 */
-    interface V2Extend<K, T> {
+    interface V2Extend<K extends string, T extends V2ControlStandard> {
         /** TAG */
         readonly tag: K;
         /** 基础 */
@@ -368,13 +367,13 @@
     }
 
     /** 待开发控件扩展 */
-    interface ToDevelopExtend<K, TContext = ToDevelop<K>> extends V2Component<TContext>, V2ComponentExtentions<TContext, V2EmptyBase, DefaultFlowGraph<TContext>> { }
+    interface ToDevelopExtend<K extends string = "*", TContext extends V2ControlStandard = V2ControlMap[K]> extends V2Component<TContext>, V2ComponentExtention<TContext, V2EmptyBase, DefaultFlowGraph<TContext>> { }
 
     /** 已开发组件 */
-    interface Develop<K, TContext = V2ControlMap[K]> extends V2ControlExtend<K, K, TContext, TContext> { }
+    interface Develop<K extends string, TContext extends V2ControlStandard = V2ControlMap[K]> extends V2ControlExtend<K, K, TContext, TContext> { }
 
     /** 待开发的组件 */
-    interface ToDevelop<K = "*"> extends ToDevelopExtend<K>, V2ControlStandard {
+    interface ToDevelop<K extends string = "*"> extends ToDevelopExtend<K> {
         /** TAG */
         readonly tag: K;
         /** 基础 */
@@ -382,7 +381,7 @@
     }
 
     /** 组件 */
-    interface V2Control<K = "*", TContext = V2ControlMap[K]> extends V2Component<TContext>, V2ComponentExtend<K, TContext>, V2ControlStandard {
+    interface V2Control<K extends string = "*", TContext extends V2ControlStandard = V2ControlMap[K]> extends V2Component<TContext>, V2ComponentExtend<K, TContext>, V2ControlStandard {
         /** TAG */
         readonly tag: K;
         /** 基础 */
@@ -390,13 +389,14 @@
     }
 
     /** 有继承关系的组件【K】：当前控件TAG，【P】：父控件“TAG” */
-    interface V2ControlExtend<K = "*", P = K, TContext = V2ControlMap[K], THost = V2ControlMap[P]> extends V2Component<TContext>, V2Extend<K, THost>, V2ComponentExtend<K, TContext>, THost, V2ControlStandard { }
+    // @ts-ignore
+    interface V2ControlExtend<K extends string, P extends string = K, TContext extends V2ControlStandard = V2ControlMap[K], THost extends V2ControlStandard = V2ControlMap[P]> extends V2Component<TContext>, V2Extend<K, THost>, V2ComponentExtend<K, TContext>, THost { }    // @ts-ignore
 
     /** 流程 */
-    interface FlowGraph<T extends V2ControlBase = V2ControlBase> { }
+    interface FlowGraph<T> { }
 
     /** 流程 */
-    interface DefaultFlowGraph<T extends V2ControlBase = V2ControlBase> extends FlowGraph<T> {
+    interface DefaultFlowGraph<T extends V2ControlStandard = V2ControlStandard> extends FlowGraph<T> {
         /** 设计 */
         design?: () => void | false;
         /**
@@ -441,7 +441,7 @@ declare namespace Use {
     /** 控件或基础方法 */
     interface V2 {
         /** 渲染控件 */
-        <K extends keyof V2ControlMap>(tag: K, options?: Develop<K>): V2ControlMap[K];
+        <K extends keyof V2ControlMap>(tag: K, options?: V2ControlMap[K]): V2ControlMap[K];
         /** 渲染控件 */
         <K extends string>(tag: K, options?: ToDevelop<K>): ToDevelop<K>;
         /** 控件原型 */
@@ -762,14 +762,14 @@ declare namespace Use {
         * @param callback 条件函数
         * @param thisArg 条件函数中 this 对象
         */
-        any<T>(array: ArrayLike<T>, callback: (value: T, index: number, array) => boolean, thisArg?: any): boolean;
+        any<T>(array: ArrayLike<T>, callback: (value: T, index: number, array: ArrayLike<T>) => boolean, thisArg?: any): boolean;
         /**
          * 判断对象中是否有属性满足函数条件
          * @param obj 对象
          * @param callback 条件函数
          * @param thisArg 条件函数中 this 对象
          */
-        any<T, K extends keyof T>(obj: T, callback: (value: T[K], propertyName: K, obj) => boolean, thisArg?: any): boolean;
+        any<T, K extends keyof T>(obj: T, callback: (value: T[K], propertyName: K, obj: T) => boolean, thisArg?: any): boolean;
         /**
         * 判断对象中是否都满足函数条件
         * @param array 数组
@@ -1218,14 +1218,14 @@ declare namespace Use {
          * @param when 条件过滤函数
          * @param option 配置
          */
-        use<K extends string>(tag: K, when: (option: V2Control<K>) => boolean, option: V2Control<K>);
+        use<K extends string>(tag: K, when: (option: V2Control<K>) => boolean, option: V2Control<K>): void;
         /**
          * 注册 TAG 条件配置
          * @param tag TAG
          * @param when 条件过滤字符串 => new Function("vm", "try{  with(vm){ with(option) { return " + when + "; } } }catch(_){ return false; }")
          * @param option 配置
          */
-        use<K extends string>(tag: K, when: string, option: ToDevelop<K>);
+        use<K extends string>(tag: K, when: string, option: ToDevelop<K>): void;
         /**
          * 注册 TAG 组件之前或之后处理一些事情。
          * @param tag TAG
@@ -1483,14 +1483,8 @@ declare namespace Use {
 
 /** 开发 */
 declare namespace Dev {
-
-    /** 仅开发使用，请勿修改 */
-    interface DevelopMap<K = "*"> extends V2ControlMap {
-        [key: string]: Use.ToDevelop<K>;
-    }
-
     /** 开发者 */
-    interface Develop<TContext extends Use.V2ControlBase> extends TContext {
+    interface Develop<TContext extends Use.V2ControlStandard> {
         /** requireJs 支持 */
         (option: TContext): TContext;
     }
@@ -1647,12 +1641,14 @@ declare namespace Use {
     }
 
     /** 组件流程（可定义指定“tag”的控件流程） */
-    interface FlowGraphMap<T> {
+    interface FlowGraphMap<T extends V2ControlStandard> {
         [key: string]: DefaultFlowGraph<T>;
     }
 
     /** 组件（可定义指定“tag”的提示控件） */
-    interface V2ControlMap { }
+    interface V2ControlMap {
+        [key: string]: any;
+    }
 }
 
 declare namespace Use {
@@ -1721,7 +1717,7 @@ declare namespace Use {
  *  
  *  @example \/** @type Develop<"button"> *\/ var button; // 使用“button”时，将会出现“button”组件的相关语法提示。
  */
-interface Develop<K extends string> extends Dev.Develop<Dev.DevelopMap<K>[K]> { }
+interface Develop<K extends string> extends Dev.Develop<Dev.V2ControlMap[K]> { }
 
 /** v2轻量库 */
 declare const v2: Use.V2;

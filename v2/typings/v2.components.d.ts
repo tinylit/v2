@@ -7,14 +7,14 @@ declare namespace Dev {
 
     /** 组件（可定义指定“tag”的提示控件） */
     interface V2ControlMap extends Use.V2ControlMap {
-        "input.textarea": V2ControlMap["textarea"];
+        "input.textarea": Use.V2ControlMap["textarea"];
     }
 }
 
 /** 可能支持的控件 */
 declare namespace Use {
     /** 插件 */
-    interface V2ControlMap {
+    interface V2ControlMap{
         "input": Input;
         "textarea": Textarea;
         "select": Select;
@@ -315,7 +315,7 @@ declare namespace Use {
         /** 名称 */
         name: string;
         /** 类型 */
-        type: "text" | "number" | "tel" | "email" | "url" | "search" | "hidden" | "password" | "color" | "month" | "week" | "range" | "file";
+        type: "text" | "number" | "tel" | "email" | "url" | "search" | "hidden" | "password" | "color" | "month" | "week" | "range" | "file" | "redio" | "checkbox" | "time" | "date" | "datetime" | "datetime-local" | "file";
         /** 值 */
         value: string;
         /** 初始值 */
@@ -330,8 +330,6 @@ declare namespace Use {
 
     /** 选项框 */
     interface Input {
-        /** 类型 */
-        type: "redio" | "checkbox";
         /** 是否选中 */
         checked: false;
         /** 初始选中状态 */
@@ -344,8 +342,6 @@ declare namespace Use {
 
     /** 日期输入框 */
     interface Input {
-        /** 类型 */
-        type: "time" | "date" | "datetime" | "datetime-local";
         /** 
          * 日期格式。
          * @example yyyy-MM-dd HH:mm:ss
@@ -360,8 +356,6 @@ declare namespace Use {
 
     /** 文件输入框 */
     interface Input {
-        /** 类型 */
-        type: "file";
         /** 接口地址 */
         action: string;
         /** 请求方式 */
@@ -482,7 +476,7 @@ declare namespace Use {
     }
 
     /** 配置项 */
-    interface DropdownOption extends PlainObject<boolean | number | string> {
+    interface DropdownOption extends PlainObject<boolean | number | string | any> {
         /** 显示文字 */
         text: string;
         /** 跳转地址 */
@@ -573,7 +567,7 @@ declare namespace Use {
     }
 
     /** 选项卡 */
-    interface Tabbar extends V2ControlExtend<"tabbar"> {
+    interface Tabbar extends V2Control<"tabbar"> {
         /** 选项卡位于内容的指定方位 */
         direction: "top" | "right" | "bottom" | "left";
         /** 视图 */
