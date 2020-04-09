@@ -2640,7 +2640,7 @@
     var word = '[_a-z][_a-z0-9]*',
         rquotes = new RegExp("\\$(['\"])(?:\\\\.|[^\\\\])*?\\1", 'gm'),
         rbraceCode = new RegExp('\\{([^\\{\\}]+?)\\}', 'g'),
-        rternaryCode = new RegExp('^(((?:\\w+\\.)?\\w+(?:\\(.*?\\))?)' + whitespace + '*([?!]{1,2})' + whitespace + '*([^:]+?))$'),
+        rternaryCode = new RegExp('^((?:\\w+\\.)?\\w+(?:\\(.*?\\))?)' + whitespace + '*([?!]{1,2})' + whitespace + '*([^:]+?)$'),
         tryCode = word + '(?:\\??(?:\\.' + word + '|\\[.+?\\]))*',
         rtryCode = new RegExp(tryCode, 'img'),
         rtry = new RegExp('(' + word + '|\\])\\?(?=(\\.|\\[))', 'i'),
@@ -2705,19 +2705,20 @@
             return quote + '+ (' + code.replace(rternaryCode, ternaryCode) + ') +' + quote;
         });
     }
-    function ternaryCode(_, _2, left, symbol, right) {
+    function ternaryCode(_, left, symbol, right) {
         switch (symbol) {
             case '?':
+                return left + ' ? ' + right + ' : ""';
             case '!!':
-                return left + '?' + right + ':""';
+                return '(' + left + ' ||' + left + ' === 0 ) ? (' + right + ' || ' + right + ' === 0) ? ' + left + ' : ""';
             case '??':
-                return left + '== null ?' + left + ':' + right;
+                return left + ' == null ? ' + right + ' == null ? "" :' + right + ' : ' + left;
             case '?!':
-                return left + '&& !' + right + '?' + left + ':' + right;
+                return '(' + left + ' == null || ' + right + ' || ' + right + ' === 0) ? "" : ' + left;
             case '!?':
-                return '!' + left + '&&' + right + '?' + left + ':' + right;
+                return '(' + left + ' || ' + left + ' === 0) && (' + right + ' == null) ? "" : ' + right;
             default:
-                return left + '? "" :' + right;
+                return left + ' ? "" :' + right;
         }
     }
     var compileCache = makeCache(function (value) {
