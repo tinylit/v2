@@ -136,7 +136,7 @@ var requirejs, require, define;
     }
 
     function scripts() {
-        return document.getElementsByTagName('script');
+        return 'scripts' in document ? document.scripts : document.getElementsByTagName('script');
     }
 
     function defaultOnError(err) {
@@ -1280,7 +1280,6 @@ var requirejs, require, define;
              * @param {Object} cfg config object to integrate.
              */
             configure: function (cfg) {
-                if (cfg.min) config.min = true;
                 //Make sure the baseUrl ends in a slash.
                 if (cfg.baseUrl) {
                     if (cfg.baseUrl.charAt(cfg.baseUrl.length - 1) !== '/') {
@@ -1672,15 +1671,12 @@ var requirejs, require, define;
 
                     //Join the path parts together, then figure out if baseUrl is needed.
                     url = syms.join('/');
-                    if (ext || !(skipExt || /^data\:|^blob\:|\?/.test(url))) {
-                        url += (config.min ? '.min' : '') + (ext || '.js');
-                    }
+                    url += (ext || (/^data\:|^blob\:|\?/.test(url) || skipExt ? '' : '.js'));
                     url = (url.charAt(0) === '/' || url.match(/^[\w\+\.\-]+:/) ? '' : config.baseUrl) + url;
                 }
 
                 return config.urlArgs && !/^blob\:/.test(url) ?
-                    url + config.urlArgs(moduleName, url) :
-                    url;
+                    url + config.urlArgs(moduleName, url) : url;
             },
 
             //Delegates to req.load. Broken out as a separate function to
@@ -1882,7 +1878,7 @@ var requirejs, require, define;
             document.createElement('script');
         node.type = config.scriptType || 'text/javascript';
         node.charset = 'utf-8';
-
+        node.async = true;
         return node;
     };
 
@@ -2024,6 +2020,30 @@ var requirejs, require, define;
             if (dataMain) {
                 //Preserve dataMain in case it is a path (i.e. contains '?')
                 mainScript = dataMain;
+
+                if ('attributes' in script) {
+                    eachReverse(script.attributes, function (attr) {
+                        var name = attr.name || attr.nodeName, value;
+
+                        if (name.indexOf('data-') === 0) {
+                            name = name.slice(5).replace(/-([a-z])/g, function (_, letter) {
+                                return letter.toUpperCase();
+                            });
+
+                            value = attr.value || attr.nodeValue;
+
+                            if (name === 'urlArgs') {
+                                if (value === '?') {
+                                    value = location.search.slice(1);
+                                } else if (value === '!') {
+                                    value = top.location.search.slice(1);
+                                }
+                            }
+
+                            cfg[name] = value;
+                        }
+                    });
+                }
 
                 //Set final baseUrl if there is not already an explicit one,
                 //but only do so if the data-main value is not a loader plugin

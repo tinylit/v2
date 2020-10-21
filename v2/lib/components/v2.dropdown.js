@@ -24,25 +24,34 @@
             this.direction = "bottom";
 
             /** 请求 */
-            this.deployment = '[data-toggle="dropdown"]';
+            this.deployment = ''; //'[data-toggle="dropdown"]';
 
             /** 选中项 */
             this.selectedIndex = -1;
-
+        },
+        design: function () {
             /** 设置初始状态 */
             this.visible = false;
+            /** 默认隐藏 */
             this.defaultVisible = false;
         },
         init: function () {
             this.base.init('ul');
         },
         build: function (view) {
-            if (view === null || view === undefined)
-                return;
 
             var data = [], htmls = [];
 
+            if (v2.isEmpty(view)) {
+                view = [{
+                    value: "",
+                    disabled: true,
+                    text: "无匹配数据！"
+                }];
+            }
+
             v2.each(view, function done(view) {
+
                 switch (v2.type(view)) {
                     case "string":
                         htmls.push('<li class="nav-header">', view, "</li>");
@@ -72,7 +81,25 @@
                             htmls.push('<li>');
                         }
 
-                        htmls.push('<a href="{0}" data-bit={2}>{1}</a>'.format(view.href || "#", view.text, data.push(view)));
+                        var option = {
+                            href: 'href' in view ? view.href : "#"
+                        };
+
+                        if ('text' in view) {
+                            option.text = view.text;
+                        } else {
+                            option.text = view.name;
+                        }
+
+                        if ('value' in view) {
+                            option.value = view.value;
+                        } else {
+                            option.value = (view.id || view.id === 0) ? view.id : (view.value || view.value === 0) ? view.value : "";
+                        }
+
+                        htmls.push('<a href="{0}" data-bit={2}>{1}</a>'.format(option.href || "#", option.text, data.length));
+
+                        data.push(option);
 
                         htmls.push('</li>');
                         break;
@@ -94,34 +121,60 @@
             this.$.classList.add('dropdown-menu');
         },
         usb: function () {
-            this.base.usb();
+            var selectedIndex = this.selectedIndex;
 
-            var vm = this, then = this.when('li');
+            this.base.usb();
 
             this.define('direction', function (dir) {
                 this.$$.classList.toggle('dropup', dir === 'top');
-            }).define('selectedIndex', function (index) {
-
-                var node = this.take('[data-bit="{0}"]'.format(index));
-
-                then.done(function (elem) {
-                    elem.classList.remove('active');
-                });
-
-                if (!node) return -1;
-
-                while ((node = node.parentNode)) {
-                    if (node.nodeName.toLowerCase() === 'li') {
-                        node.classList.add('active');
-                    } else if (node === vm.$) {
-                        break;
-                    }
-                }
-
-                this.invoke('select-changed', index);
-
             }).define("selectedOptions", function () {
-                return this.data[v2.usb(this, "selectedIndex")];
+                return this.data[selectedIndex];
+            });
+
+            this.define('selectedIndex', {
+                get: function () { return selectedIndex; },
+                set: function (index) {
+
+                    this.when('li')
+                        .done(function (elem) {
+                            elem.classList.remove('active');
+                        });
+
+                    if (v2.isEmpty(this.data)) {
+                        return selectedIndex = -1;
+                    }
+
+                    var len = this.data.length;
+
+                    if (index < 0 || index >= len) {
+                        return selectedIndex = - 1;
+                    }
+
+                    var node = this.take('[data-bit="{0}"]'.format(index));
+
+                    if (!node) return selectedIndex = -1;
+
+                    while ((node = node.parentNode)) {
+                        if (node.nodeName.toLowerCase() === 'li') {
+                            if (node.classList.contains('disabled')) {
+
+                                if (selectedIndex === -1) {
+                                    return -1;
+                                }
+
+                                index = -1;
+
+                                break;
+                            }
+
+                            node.classList.add('active');
+                        } else if (node === this.$) {
+                            break;
+                        }
+                    }
+
+                    this.invoke('select-changed', selectedIndex = index);
+                }
             });
         },
         show: function () {

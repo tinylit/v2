@@ -49,16 +49,14 @@
                 if (v2.isString(head)) {
                     this.$head.appendChild(head.html());;
                 } else {
-                    for (var i in head) {
-                        this.$head.appendChild('{0}.panel-title{{1}}'.format(i, head[i]).htmlCoding().html());
-                    }
+                    this.$head.appendChild('{{tagName}}.panel-title{{{text}}}'.withCb(head).htmlCoding().html());
                 }
             }
 
             if (body) {
                 this.$body = this.$.appendChild('.panel-body'.htmlCoding().html());
 
-                this.$body.appendChild(body.html());
+                this.base.build(body, this.$body);
             }
 
             if ('tag' in view) {
@@ -68,7 +66,7 @@
             if (foot) {
                 this.$foot = this.$.appendChild('.panel-footer'.htmlCoding().html());
 
-                this.$foot.appendChild(foot.html());
+                this.base.build(foot, this.$foot);
             }
         },
         render: function () {

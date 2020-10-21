@@ -1,4 +1,4 @@
-﻿function initPage() {
+﻿define(["v2"], function () {
     wait.show();
 
     setTimeout(function () {
@@ -8,4 +8,4 @@
     setTimeout(function () {
         wait.hide();
     }, 6000);
-}
+});

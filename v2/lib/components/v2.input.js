@@ -63,7 +63,7 @@
     function validity(/** @type Use.Input */vm) {
         var validity, validationMessage, core = vm.$core || vm['$' + vm.tag] || vm.$;
 
-        vm.define('id name pattern min max minlength maxlength required readonly');
+        vm.define('id name pattern min max minlength maxlength required readonly', core);
 
         if (core.validity === null || core.validity === undefined) {
 
@@ -130,8 +130,9 @@
 
                     if (validity.typeMismatch) {
                         if (type === "email") {
-                            var value = v2.usb(this, "value"),
+                            var value = core.value,
                                 index = value.indexOf("@");
+
                             return (index > -1 ? "请在“@”内容" + (index > 0 ? "后面" : "前面") + "输入内容。{0}内容不完整。" : "请在邮箱地址中包含“@”。{0}缺少“@”。").format(value);
                         }
                     }
@@ -152,6 +153,7 @@
             };
             // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
             vm.checkValidity = function () {
+
                 if (this.trim) {
                     this.value = core.value = core.value.trim();
                 }
@@ -161,31 +163,11 @@
                 return validity.valid;
             };
         } else {
-            vm.define({
-                validity: function () {
-                    return core.validity;
-                },
-                validationMessage: function () {
-                    return core.validationMessage;
-                }
-            });
-            // 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。
-            vm.setCustomValidity = function (message) {
-                core.setCustomValidity(message);
-            };
-            // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
-            vm.checkValidity = function () {
-                if (this.trim) {
-                    this.value = core.value = core.value.trim();
-                }
-                return core.checkValidity();
-            };
+            vm.define('validity validationMessage setCustomValidity checkValidity', core);
         }
 
         if (v2.isFunction(core.reportValidity)) {
-            vm.reportValidity = function () {
-                return core.reportValidity();
-            };
+            vm.define('reportValidity', core);
         } else {
             var tooltip;
             vm.reportValidity = function () {
@@ -250,7 +232,7 @@
             /** 禁用 */
             this.disabled = false;
             /** 返回/设置元素的自动完成属性，指示控件的值是否可以由浏览器自动完成。如果类型属性的值隐藏、复选框、单选、文件或按钮类型(按钮、提交、重置、图像)，则忽略该属性。可能的值是:“打开”:浏览器可以使用先前存储的值自动完成该值 */
-            this.autocomplete = true;
+            this.autocomplete = false;
 
             /** 返回/设置元素的autofocus属性，该属性指定窗体控件在加载页面时应该具有输入焦点，除非用户覆盖它，例如输入另一个控件。文档中只有一个表单元素可以具有autofocus属性。如果type属性被设置为hidden(也就是说，您不能自动将焦点设置为隐藏控件)，则无法应用该属性。 */
             this.autofocus = false;
@@ -269,6 +251,9 @@
 
             /** 按钮类型 */
             this.type = "text";//[text|number|tel|email|url|search]
+
+            /** 步长 */
+            this.step = 1;
 
             /** 按钮名称 */
             this.value = "";
@@ -304,9 +289,11 @@
 
             this.base.usb();
 
-            if (this.tag === 'input') {
-                this.define('type multiple placeholder');
+            if (this.type === 'number') {
+                this.define('step', core);
             }
+
+            this.define('type multiple placeholder', core);
 
             this.define('autocomplete', {
                 get: function () {
@@ -321,26 +308,31 @@
                 if (this.trim) {
 
                     value = value.trim();
+                }
 
-                    if (oldValue === value) {
-                        return;
-                    }
+                if (oldValue === undefined) {
+                    return value;
+                }
+
+                if (oldValue === value) {
+                    return value;
                 }
 
                 if (this.checkValidity()) {
                     this.invoke('input-change', value);
                 }
-            });
+            }, core);
 
             validity(this);
         },
         ready: function () {
             if (this.type === 'hidden') {
-                this.hide();
+                this.$.styleCb('display', 'none');
             }
         },
         commit: function () {
             var core = this.$core || this['$' + this.tag] || this.$;
+
             var isChinese, vm = this;
 
             core.on("compositionstart", function () {
@@ -378,14 +370,208 @@
         }
     });
 
+    v2.use('input', 'type === "search"', {
+        components: {
+            'dropdown': function (callback) {
+                require(['components/v2.dropdown'], callback);
+            }
+        },
+        input: function () {
+            /** 搜索地址 */
+            this.action = location.href;
+            /** 请求方式 */
+            this.method = "GET";
+        },
+        init: function () {
+            this.base.init();
+        },
+        build: function () {
+            this.$code = this.$.appendChild('span.input-group-btn>button.btn.btn-default[type="button"]>i.glyphicon.glyphicon-star-empty'.htmlCoding().html());
+            this.$icon = this.take('i', this.$code);
+            this.$core = this.$.appendChild('input.form-control'.htmlCoding().html());
+            this.$btn = this.$.appendChild('span.input-group-btn>button.btn.btn-default.dropdown-toggle[type="button"][data-toggle="dropdown"]>span.caret+span.sr-only'.htmlCoding().html());
+
+            this.$dropdown = this.create('dropdown', {
+                $$: this.$btn,
+                view: this.data,
+                methods: {
+                    "select-changed(?input)": function (input) {
+                        var options = this.selectedOptions;
+                        if (options) {
+                            input.text = options.text;
+                            input.code = options.value;
+                        } else {
+                            input.code = "";
+                            input.text = "";
+                        }
+                    }
+                }
+            });
+        },
+        render: function () {
+            this.$.classList.add('input-group');
+        },
+        usb: function () {
+            var valueOld = this.value,
+                core = this.$core;
+
+            this.base.usb();
+
+            this.define('placeholder', core);
+
+            this.define('autocomplete', {
+                get: function () {
+                    return core.autocomplete.toLowerCase() === 'on';
+                },
+                set: function (value) {
+                    core.autocomplete = value ? 'on' : 'off';
+                }
+            });
+
+            this.define('code', function (code) {
+                if (code) {
+                    this.$icon.classList.add('glyphicon-star');
+                    this.$icon.classList.remove('glyphicon-star-empty');
+                } else {
+                    this.$icon.classList.remove('glyphicon-star');
+                    this.$icon.classList.add('glyphicon-star-empty');
+                }
+
+                this.invoke('input-change', code);
+            });
+
+            this.define('value', {
+                get: function () {
+                    return this.code;
+                },
+                set: function (value) {
+                    if (this.trim) {
+
+                        value = value.trim();
+                    }
+
+                    if (valueOld === value) {
+                        return value;
+                    }
+
+                    this.$core.value = valueOld = value;
+
+                    this.code = "";
+
+                    this.$dropdown.selectedIndex = -1;
+
+                    if (this.checkValidity()) {
+                        this.ajax();
+                    }
+                }
+            });
+
+            validity(this);
+        },
+        ajax: function () {
+            var vm = this,
+                value = this.$core.value,
+                ajax = {
+                    url: this.action,
+                    method: this.method,
+                    params: {
+                        keywords: this.trim ? value.trim() : value
+                    },
+                    data: {}
+                };
+
+            if (this.invoke("ajax-ready", ajax) === false) {
+                return;
+            }
+
+            return axios.request(ajax)
+                .then(function (response) {
+                    vm.invoke("ajax-success", response);
+                })
+            ["catch"](function (error) {
+                vm.invoke("ajax-fail", error);
+            });
+        },
+        load: function (data) {
+            if (data === null || data === undefined) {
+                return;
+            }
+
+            if (this.isReady) {
+                this.$dropdown.show();
+                this.$dropdown.build(data);
+            }
+        },
+        ready: function () {
+            var tooltip, that = this;
+
+            this.$core.on('stop.click', function () {
+                return false;
+            });
+
+            this.$code.on('click', function () {
+                var message = that.code ? that.text + "(" + that.code + ")" : "未选中代码!";
+
+                if (tooltip) {
+                    tooltip.content = message;
+                    tooltip.show();
+                } else {
+                    tooltip = that.create('tooltip', {
+                        $$: document.body,
+                        request: that.$core,
+                        duration: 2000,
+                        content: message
+                    });
+                }
+            });
+
+            this.$core.on("keyup", function (e) {
+                var code = e.keyCode || e.which;
+
+                if (code !== 38 && code !== 40) {
+                    return;
+                }
+
+                that.$dropdown.show();
+
+                var
+                    index = that.$dropdown.selectedIndex,
+                    data = that.$dropdown.data;
+
+                if (v2.isEmpty(data)) {
+                    return;
+                }
+
+                var len = data.length;
+
+                if (code === 38) {
+                    index -= 1;
+                } else {
+                    index += 1;
+                }
+
+                if (index < 0) {
+                    do {
+                        index += len;
+                    } while (index < 0);
+                } else if (index >= len) {
+                    index = index % len;
+
+                    if (index === 0) {
+                        index = len;
+                    }
+
+                    index -= 1;
+                }
+
+                that.$dropdown.selectedIndex = index;
+            });
+        }
+    });
+
     var GLOBAL_VARIABLE_CHECK_FOR = 0;
 
     v2.use('input', 'type === "checkbox" || type === "radio"', {
-        components: {
-            'tooltip': function (callback) {
-                require(['components/v2.tooltip'], callback);
-            }
-        },
         input: function () {
             /** ID */
             this.id = "";
@@ -399,7 +585,7 @@
             /** 按钮类型 */
             this.type = "redio";//[redio|checkbox]
 
-            /** 按钮名称 */
+            /** 值 */
             this.value = "";
 
             /** 同行显示 */
@@ -452,6 +638,14 @@
             });
 
             validity(this);
+        },
+        ready: function () {
+            var that = this;
+            var core = this.$core || this['$' + this.tag] || this.$;
+
+            this.$.on('click', function () {
+                that.checked = core.checked;
+            });
         }
     });
 
@@ -496,7 +690,7 @@
             });
         },
         init: function () {
-            if (!this.showIcon || this.isHostlike) {
+            if (!this.showIcon || this.isGrouplike) {
                 this.base.init('input');
             } else {
                 this.base.init();
@@ -507,7 +701,7 @@
                 var html = '.input-group-btn>button.btn.btn-default[type="button"]>i.glyphicon.glyphicon-calendar';
 
                 if (this.isGrouplike) {
-                    this.$icon = this.$.insertBefore(html.htmlCoding().html(), this.$.nextElementSibling);
+                    this.$icon = this.$$.insertBefore(html.htmlCoding().html(), this.$.nextElementSibling);
                 } else {
                     html = 'input.form-control+' + html;
 
@@ -573,10 +767,12 @@
             validity(this);
         },
         ready: function () {
-            var vm = this, deployment = this.$core || this['$' + this.tag] || this.$;
+            var vm = this, deployment;
 
             if (this.showIcon) {
                 deployment = this.$icon;
+            } else {
+                deployment = this.$core || this['$' + this.tag] || this.$;
             }
 
             deployment.on('stop.click', function () {
@@ -602,10 +798,7 @@
                     autoClose: true,
                     format: vm.format,
                     min: vm.invoke("date-min"),
-                    max: vm.invoke("date-max"),
-                    hide: function () {
-                        this.base.hide();
-                    }
+                    max: vm.invoke("date-max")
                 }));
             });
         }
@@ -653,12 +846,13 @@
 
             url += (url.indexOf("?") >= 0 ? "&" : "?") + "r=" + (+new Date());
 
-            var ifr = document.createElement('iframe'); 
+            var ifr = document.createElement('iframe');
 
             ifr.id = ifr.name = id;
 
-            if (isIE)
+            if (isIE) {
                 ifr.src = "javascript:false";
+            }
 
             document.body.appendChild(ifr);
 
@@ -683,7 +877,7 @@
                 callback.call(this);
 
                 setTimeout(function () {
-                    //document.body.removeChild(ifr);
+                    document.body.removeChild(ifr);
                 }, 100);
             }
 
@@ -742,12 +936,12 @@
         },
         build: function (view) {
             if ('previous' in view || 'nexts' in view) {
-                return done(this, view.previous), done(this, view), done(this, view.nexts);
+                return done(this, view.previous), done(this, view.nexts);
             }
 
             return done(this, view);
 
-            function done(context) {
+            function done(context, view) {
                 var type;
 
                 if (view === null || view === undefined)
@@ -760,7 +954,7 @@
                         return context.$.appendChild('span.input-group-addon'.htmlCoding().html())
                             .appendChild(view.html());
                     case 'array':
-                        return v2.each(view, context.lazy(true, context.build));
+                        return v2.each(view, context.lazyFor(context.build));
                     case 'object':
                         if (view.nodeType) {
                             return context.$.appendChild('span.input-group-addon'.htmlCoding().html().appendChild(view));
@@ -787,16 +981,29 @@
         render: function () {
             this.$.classList.add('input-group');
         },
+        valueIs: function (control, value) {
+            return control.value === value;
+        },
         usb: function () {
+
+            var that = this;
 
             this.base.usb();
 
             this.define('value', function (value) {
-                v2.when(this.controls)
+                var isPlainObject = v2.isPlainObject(value);
+
+                this.controls
                     .when(function (vm) { return vm.like('input', 'select'); })
                     .done(function (vm) {
-                        if (vm.type === 'radio' || control.type === 'checkbox') {
-                            vm.checked = vm.value === value;
+                        if (isPlainObject) {
+                            if (vm.type === 'radio' || vm.type === 'checkbox') {
+                                vm.checked = that.valueIs(vm, value[vm.name]);
+                            } else {
+                                vm.value = value[vm.name];
+                            }
+                        } else if (vm.type === 'radio' || vm.type === 'checkbox') {
+                            vm.checked = that.valueIs(vm, value);
                         } else {
                             vm.value = value;
                         }
@@ -804,12 +1011,65 @@
             });
         },
         reportValidity: function () {
-            return v2.all(this.controls, function (vm) {
+            return this.controls.all(function (vm) {
                 if (vm.like('input')) {
                     return vm.reportValidity();
                 }
                 return true;
             });
+        }
+    });
+
+    v2.use('input.static', {
+        init: function () {
+            this.base.init('p');
+        },
+        render: function () {
+            this.$.classList.add('form-control-static');
+
+            if (this.lg || this.sm || this.xs) {
+                this.$.classList.add(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
+            }
+        },
+        usb: function () {
+            var core = this.$core || this['$' + this.tag] || this.$;
+
+            this.define('id name');
+
+            this.define('value', function (value, oldValue) {
+                if (this.trim) {
+                    value = value.trim();
+                }
+
+                if (oldValue === undefined) {
+                    return core.innerHTML = value;
+                }
+
+                if (oldValue === value) {
+                    return value;
+                }
+
+                if (this.checkValidity()) {
+                    core.innerHTML = value;
+
+                    this.invoke('input-change', value);
+                }
+            });
+
+            this.define({
+                validity: function () {
+                    return true;
+                },
+                validationMessage: function () {
+                    return "";
+                }
+            });
+            // 为元素设置自定义有效性消息。如果此消息不是空字符串，则元素将遭受自定义有效性错误，并且不验证。
+            this.setCustomValidity = function () { };
+            // 返回一个布尔值，如果该元素是约束验证的候选项，且不满足其约束，则该布尔值为false。在本例中，它还在元素上触发一个无效事件。如果元素不是约束验证的候选项，或者满足其约束，则返回true。
+            this.checkValidity = this.reportValidity = function () {
+                return true;
+            };
         }
     });
 
@@ -868,7 +1128,6 @@
             if (this.lg || this.sm || this.xs) {
                 this.$.classList.add(this.lg ? 'input-lg' : this.sm ? 'input-sm' : 'input-xs');
             }
-
             if (this.autofocus) {
                 this.focus();
             }
@@ -890,7 +1149,7 @@
                 v2.each(view, function (option) {
                     switch (typeof option) {
                         case 'object':
-                            htmls.push('<option value="{0}">{1}</option>'.format(option.id || option.value, option.name || option.text));
+                            htmls.push('<option value="{0}">{1}</option>'.format((option.id || option.id === 0) ? option.id : (option.value || option.value === 0) ? option.value : "", option.name || option.text));
                             break;
                         case 'array':
                             htmls.push('<option value="{0}">{1}</option>'.format(option));
@@ -904,16 +1163,23 @@
             this.$.empty()
                 .appendChild(htmls.join('').html());
         },
+        valueTo: function (arr) {
+            return arr.join(',');
+        },
+        valueIs: function (option, value) {
+            return (',' + value + ',').indexOf(',' + option.value + ',') > -1;
+        },
         usb: function () {
             this.base.usb();
 
             this.define('multiple');
 
             this.define('selectedIndex', function (index) {
-
-                v2.each(this.$.selectedOptions, function (option, i) {
-                    option.selected = index === i;
-                });
+                if (!this.multiple) {
+                    v2.each(this.$.options, function (option, i) {
+                        option.selected = index === i;
+                    });
+                }
 
                 this.invoke('select-changed', index);
             });
@@ -921,42 +1187,49 @@
             this.define('value', {
                 get: function () {
                     if (this.multiple) {
-                        return v2.map(this.$.selectedOptions, function (option) {
-                            return option.value || option.text;
-                        }).join(',');
+
+                        var arr = v2.map(this.$.selectedOptions, function (option) {
+                            return option.value;
+                        });
+
+                        return this.valueTo(arr);
                     }
 
                     return this.$.value;
                 },
                 set: function (value) {
                     if (this.multiple) {
-                        var arr = !!value && value.split(',');
 
                         v2.each(this.$.options, function (option) {
-                            option.selected = arr && arr.indexOf(option.value || option.text) > -1;
-                        });
+                            option.selected = this.valueIs(option, value);
+                        }, this);
 
                     } else {
-                        v2.each(this.$.options, function (option, index) {
-                            if ((option.value || option.text) === value) {
-                                this.selectedIndex = index;
-                                return false;
-                            }
-                        }, this);
+                        v2.each(this.$.options, function (option) {
+                            option.selected = option.value === value;
+                        });
                     }
+
+                    this.selectedIndex = this.$.selectedIndex;
                 }
             }, true);
+        },
+        commit: function () {
+            var vm = this;
+            this.$.on("change", function (e) {
+                vm.invoke('select-changed', this.selectedIndex);
+            });
         }
     });
 
     //? 路由到【select】插件。
-    v2.route('input', 'type === "select"', 'select');
+    v2.useRoute('input', 'type === "select"', 'select');
 
     //? 路由到【textarea】插件。
-    v2.route('input', 'type === "textarea"', 'textarea');
+    v2.useRoute('input', 'type === "textarea"', 'textarea');
 
     //? 路由到【button】插件。
-    v2.route('input', 'type === "button" || type === "reset" || type === "submit" || type === "image"', 'button');
+    v2.useRoute('input', 'type === "button" || type === "reset" || type === "submit" || type === "image"', 'button');
 
     return function (option) {
         return v2('input', option);

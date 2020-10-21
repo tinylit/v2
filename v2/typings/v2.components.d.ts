@@ -14,7 +14,7 @@ declare namespace Dev {
 /** 可能支持的控件 */
 declare namespace Use {
     /** 插件 */
-    interface V2ControlMap{
+    interface V2ControlMap {
         "input": Input;
         "textarea": Textarea;
         "select": Select;
@@ -30,16 +30,20 @@ declare namespace Use {
         "panel": Panel;
         "list": List;
         "progressbar": ProgressBar;
+        'tree-view': TreeView;
+        "layout": Layout;
     }
 
     /** 基类 */
     interface V2ControlBaseMap {
         "input": InputBase;
+        "select": SelectBase,
         "textarea": InputBase;
         "form": FormBase;
         "date-picker": DatePickerBase;
         "pagingbar": PagingbarBase;
         "table": TableBase;
+        "layout": LayoutBase;
     }
 }
 
@@ -48,12 +52,7 @@ declare namespace Use {
 declare namespace Use {
 
     /** 输入框基类 */
-    interface InputBase {
-        /**
-         * 指定渲染的HTML TAG元素。
-         * @param tag 元素TAG名称。
-         */
-        init(tag?: string): void | false;
+    interface InputBase extends V2EmptyBase {
         /**
         *  自定义验证消息
         * @param message 消息
@@ -65,8 +64,23 @@ declare namespace Use {
         reportValidity(): boolean;
     }
 
+    /** 选择框基类 */
+    interface SelectBase extends V2EmptyBase {
+        /**
+         * 多选时的返回值。
+         * @param arr 选择的节点值数组。
+         */
+        valueTo(arr: Array<string>): boolean | number | string;
+        /**
+         * 多选时，设置节点是否选中。
+         * @param option 节点。
+         * @param value 值。
+         */
+        valueIs(option: HTMLOptionElement, value: string): boolean;
+    }
+
     /** 日期选择框基类 */
-    interface DatePickerBase {
+    interface DatePickerBase extends V2EmptyBase {
         /**
          * 检查日期有效性
          * @param year 年
@@ -143,7 +157,7 @@ declare namespace Use {
     }
 
     /** 表单基类 */
-    interface FormBase {
+    interface FormBase extends V2EmptyBase {
         /**
          * 等待框
          * @param show 显示或隐藏等待框。
@@ -162,7 +176,7 @@ declare namespace Use {
     }
 
     /** 分页条基类 */
-    interface PagingbarBase {
+    interface PagingbarBase extends V2EmptyBase {
         /** 生成分页条 */
         pagination(): void;
         /**
@@ -177,7 +191,7 @@ declare namespace Use {
     }
 
     /** 表格基类 */
-    interface TableBase {
+    interface TableBase extends V2EmptyBase {
         /**
          * 等待框
          * @param toggle 开关
@@ -218,6 +232,12 @@ declare namespace Use {
         getSelections(): PlainObject | null;
         /** 获取所有选中的数据 */
         getAllSelections(): ArrayThen<PlainObject>;
+    }
+
+    /** 架构 */
+    interface LayoutBase extends V2EmptyBase {
+        /** 查询 */
+        query: (this: Layout, keywords: string) => void;
     }
 }
 
@@ -279,7 +299,7 @@ declare namespace Use {
 
     /** 输入框 */
     interface Input extends V2Control<"input"> {
-        readonly $: HTMLInputElement;
+        $: HTMLInputElement;
         /** 小号（添加“input-xs”样式） */
         xs: boolean;
         /** 中号（添加“input-sm”样式） */
@@ -354,7 +374,7 @@ declare namespace Use {
         showIcon: true;
     }
 
-    /** 文件输入框 */
+    /** 搜索框/文件输入框 */
     interface Input {
         /** 接口地址 */
         action: string;
@@ -365,7 +385,7 @@ declare namespace Use {
     /** 多行输入框 */
     interface Textarea extends V2ControlExtend<"textarea", "input"> {
         /** 主元素 */
-        readonly $: HTMLTextAreaElement;
+        $: HTMLTextAreaElement;
         /** 小号（添加“input-xs”样式） */
         xs: boolean;
         /** 中号（添加“input-sm”样式） */
@@ -398,8 +418,6 @@ declare namespace Use {
         id: string;
         /** 名称 */
         name: string;
-        /** 类型 */
-        type: "text" | "number" | "tel" | "email" | "url" | "search" | "hidden" | "password" | "color" | "month" | "week" | "range" | "file";
         /** 值 */
         value: string;
         /** 初始值 */
@@ -471,7 +489,11 @@ declare namespace Use {
         enctype: "application/x-www-form-urlencoded" | "application/json" | "application/xml";
         /** 按钮组 */
         buttons: Array<Button>;
+        /** 快速显示/隐藏控件 */
+        inputs: PlainObject<boolean>;
+        /** 数据 */
         data: any[] | PlainObject<any>;
+        /** 视图 */
         view: PlainObject<Input | Select | Textarea> | Array<Input | Select | Textarea | Array<Input | Select | Textarea>>;
     }
 
@@ -479,6 +501,8 @@ declare namespace Use {
     interface DropdownOption extends PlainObject<boolean | number | string | any> {
         /** 显示文字 */
         text: string;
+        /** 实际值 */
+        value: string;
         /** 跳转地址 */
         href?: string;
         /** 居右显示（添加“pull-right”样式） */
@@ -687,10 +711,10 @@ declare namespace Use {
         /** TAG */
         tag: string;
         /** 头部 */
-        head?: string | PlainObject<string>;
-        body?: string;
+        head?: string | { tagName: string, text: string };
+        body?: string | V2Controllike;
         /** 底部 */
-        foot?: string;
+        foot?: string | V2Controllike;
     }
 
     /** 面板 */
@@ -735,5 +759,119 @@ declare namespace Use {
         active: boolean;
         /** 进度 0~100 */
         data: number;
+    }
+
+    /** 树节点 */
+    interface TreeItem {
+        /** 主键 */
+        id: number | string;
+        /** 名称 */
+        name: string;
+        /** 图标 */
+        icon?: string;
+        /** 是否包含子节点 */
+        hasChild?: boolean;
+        /** 子节点 */
+        view?: Array<TreeItem>;
+    }
+
+    /** 树形结构 */
+    interface TreeView extends V2Control<"tree-view"> {
+        /** 类型 */
+        type: "none" | "radio" | "checkbox" | "radio-by-view" | "checkbox-by-view";
+        /** 是否具备最小话的能力 */
+        miniable: boolean;
+        /** 显示参考线 */
+        indentGuide: boolean;
+        /** 参考线颜色（索引加“一”：即为树结构层级），如:["red","blue"]，标识第一层为红色，第二层为蓝色，其它层级颜色默认 */
+        indentGuideColors: Array<string>,
+        /** 树 */
+        view: Array<TreeItem>;
+        /** 树 */
+        data: Array<TreeItem>;
+    }
+
+    /** 导航项 */
+    interface NavSubItem {
+        /** 标题   */
+        title: string;
+        /** 链接 */
+        src: string;
+    }
+
+    /** 根导航项 */
+    interface NavItem {
+        /** 标题   */
+        title: string;
+        /** 图标 */
+        icon: string;
+        /** 链接 */
+        src: string;
+    }
+
+    /** 导航菜单 */
+    interface NavMenu {
+        /** 标题 */
+        title: string;
+        /** 图标 */
+        icon: string;
+        /** 菜单 */
+        menu: Array<NavSubItem>;
+    }
+
+    /** 导航工具 */
+    interface NavTool {
+        /** 标题   */
+        title: string;
+        /** 图标 */
+        icon: string;
+        /** 链接 */
+        src?: string;
+        /** 点击事件（调用“methods”中的函数） */
+        click?: string;
+    }
+
+    /** 导航消息 */
+    interface NavMsg {
+        /** 标题 */
+        title: string;
+        /** 头像 */
+        avatar: string;
+        /** 点击事件 */
+        click: string;
+        /** 描述 */
+        description: string;
+    }
+
+    /** 导航通知 */
+    interface NavNotify {
+        /** 标题 */
+        title: string;
+        /** 图标 */
+        icon: string;
+        /** 点击事件 */
+        click: string;
+        /** 内容 */
+        content: string;
+    }
+
+    /** 布局 */
+    interface Layout extends V2Control<"layout"> {
+        /** 用户姓名 */
+        userName: string;
+        /** 头像 */
+        userAvatar: string;
+        /** 显示搜索宽 */
+        search: boolean;
+        /** 搜索去除空格框 */
+        trimOnSearch: boolean;
+        /** 导航 */
+        data: Array<NavItem | NavMenu>;
+        /** 工具 */
+        view: Array<NavTool>;
+        /** 消息 */
+        messages: Array<NavMsg>;
+        /** 通知 */
+        notifies: Array<NavNotify>;
     }
 }

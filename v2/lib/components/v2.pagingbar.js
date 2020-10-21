@@ -18,6 +18,20 @@
     var disabledHtml = 'li.disabled>a[href="#"]{...}'.htmlCoding();
 
     v2.use('pagingbar', {
+        components: {
+            input: function (resovle) {
+                require(['components/v2.input'], resovle);
+            },
+            static: function (resovle) {
+                require(['components/v2.input'], resovle);
+            },
+            textarea: function (resovle) {
+                require(['components/v2.input'], resovle);
+            },
+            select: function (resovle) {
+                require(['components/v2.input'], resovle);
+            }
+        },
         pagingbar: function () {
             /** 中号（添加“pagination-sm”样式） */
             this.sm = false;
@@ -72,23 +86,38 @@
             this.totalRows = Math.ceil(this.dataSize / this.pageSize);
 
             this.define({
-                dataSize: function (index) {
+                dataSize: function (size) {
 
-                    var totalRows = Math.ceil(index / this.pageSize);
+                    var totalRows = Math.ceil(size / this.pageSize);
 
                     if (totalRows === this.totalRows) {
                         return;
                     }
 
-                    var index = this.pageIndex;
-
                     this.totalRows = totalRows;
 
-                    if (totalRows <= index) {
-                        this.go(index);
-                    } else {
-                        this.pagination();
+                    this.pagination();
+                },
+                pageIndex: function (index) {
+                    var totalRows = this.totalRows;
+
+                    if (totalRows < 1)
+                        return 0;
+
+                    if (index < 0 || index >= totalRows) {
+
+                        while (index < 0) {
+                            index += totalRows;
+                        }
+
+                        while (index >= totalRows) {
+                            index -= totalRows;
+                        }
                     }
+
+                    this.go(index);
+
+                    return index;
                 },
                 pageSize: function (size) {
                     var totalRows = Math.ceil(this.dataSize / size);
@@ -100,18 +129,11 @@
                         return;
                     }
 
-                    var index = this.pageIndex;
-
                     this.totalRows = totalRows;
 
-                    if (totalRows <= index) {
-                        this.go(index);
-                    } else {
+                    this.pagination();
 
-                        this.pagination(index, totalRows);
-
-                        this.invoke('paging-ajax', index, size);
-                    }
+                    this.invoke('paging-ajax', this.pageIndex, size);
                 }
             }, true);
         },
@@ -121,7 +143,7 @@
                 index = this.pageIndex,
                 totalRows = this.totalRows;
 
-            if (totalRows === 0 && this.independent) {
+            if (totalRows <= 1 && this.independent) {
                 this.hide();
                 this.hideByIndependent = true;
                 return;
@@ -132,7 +154,7 @@
                     a.parentNode.remove();
                 });
 
-            if (totalRows === 0) {
+            if (totalRows <= 1) {
                 if (!this.paginationLoop) {
                     this.$prev.parentNode.classList.add('disabled');
                     this.$next.parentNode.classList.add('disabled');

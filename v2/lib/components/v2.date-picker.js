@@ -524,16 +524,39 @@
 
             this.define({
                 min: function (value) {
-                    this.mins = toArray(value);
+                    if (0 === +value) {
+                        value = new Date(1900, 0, 1);
+                    }
+
+                    var mins = toArray(value);
+
+                    if (this.mins && mins.zipAll(this.mins, function (a, b) { return a == b; })) {
+                        return;
+                    }
+
+                    this.mins = mins;
+
                     if (this.isReady) {
                         this.load();
                     }
                 },
                 max: function (value) {
-                    this.maxs = toArray(value);
+                    if (0 === +value) {
+                        value = new Date(2099, 11, 31, 23, 59, 59, 999);
+                    }
+
+                    var maxs = toArray(value);
+
+                    if (this.maxs && maxs.zipAll(this.maxs, function (a, b) { return a == b; })) {
+                        return;
+                    }
+
+                    this.maxs = maxs;
+
                     if (this.isReady) {
                         this.load();
                     }
+
                     if (this.showTodayBtn) {
                         this.$now.classList[value > new Date() ? 'remove' : 'add']('disabled');
                     }
@@ -590,7 +613,7 @@
             }, 1200);
         },
         load: function (value) {
-            this.ymd = (value || v2.usb(this, "value")).match(/\d+/g);
+            this.ymd = (value || this.value).match(/\d+/g);
             if (this.showHms) {
                 this.timeView(this.ymd[3], this.ymd[4], this.ymd[5]);
             }
@@ -654,7 +677,7 @@
                 });
 
                 this.$header.on('stop.click', '[y]', function () {
-                    if (this.classList.contains('.disabled')) {
+                    if (this.classList.contains('disabled')) {
                         return;
                     }
 
@@ -664,7 +687,7 @@
                 });
 
                 this.$header.on('stop.click', '[m]', function () {
-                    if (this.classList.contains('.disabled')) {
+                    if (this.classList.contains('disabled')) {
                         return;
                     }
                     vm.hidePicker();
@@ -672,7 +695,7 @@
                 });
 
                 this.$.on('stop.click', '[d]', function () {
-                    if (this.classList.contains('.disabled')) {
+                    if (this.classList.contains('disabled')) {
                         return;
                     }
                     vm.hidePicker();
@@ -701,7 +724,7 @@
                         return vm.timePicker(0);
                     });
                     this.$hourPicker.on('stop.click', 'a', function () {
-                        if (this.classList.contains('.disabled')) {
+                        if (this.classList.contains('disabled')) {
                             return;
                         }
                         return hmsCallback(this, 0);
@@ -714,7 +737,7 @@
                     });
 
                     this.$minutePicker.on('stop.click', 'a', function () {
-                        if (this.classList.contains('.disabled')) {
+                        if (this.classList.contains('disabled')) {
                             return;
                         }
                         return hmsCallback(this, 1);
@@ -726,7 +749,7 @@
                         return vm.timePicker(2);
                     });
                     this.$secPicker.on('stop.click', 'a', function () {
-                        if (this.classList.contains('.disabled')) {
+                        if (this.classList.contains('disabled')) {
                             return;
                         }
                         return hmsCallback(this, 2);
@@ -751,6 +774,11 @@
 
                 if (this.showTodayBtn) {
                     this.$now.on('stop.click', function () {
+
+                        if (this.classList.contains('disabled')) {
+                            return;
+                        }
+
                         valueSet(toArray(new Date()));
 
                         if (vm.dialog) {
@@ -761,6 +789,11 @@
 
                 if (this.showOkBtn) {
                     this.$ok.on('stop.click', function () {
+
+                        if (this.classList.contains('disabled')) {
+                            return;
+                        }
+
                         valueSet(vm.ymd[0], vm.ymd[1], vm.ymd[2], vm.hms[0], vm.hms[1], vm.hms[2]);
 
                         if (vm.dialog) {
@@ -813,9 +846,12 @@
     v2.subscribe(document, 'click', function (e) {
         var elem = e.target || e.srcElement;
         v2.each(v2.GDir('date-picker'), function (vm) {
-            var touch = vm.host && vm.host.$ || vm.deployment;
 
             if (!vm.visible) return;
+
+            var
+                host,
+                touch = vm.deployment || (host = vm.host) && vm.independent && (host.$core || host['$' + host.tag] || host.$);
 
             if (!touch || !vm.dialog || elem === touch || v2.contains(touch, elem)) {
                 vm.hidePicker();

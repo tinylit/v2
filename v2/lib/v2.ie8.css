@@ -1,0 +1,149 @@
+﻿
+.visible-lg,
+.visible-lg-block
+{
+    display: block !important;
+}
+
+table.visible-lg {
+    display: table !important;
+}
+
+tr.visible-lg {
+    display: table-row !important;
+}
+
+td.visible-lg {
+    display: table-cell !important;
+}
+
+.visible-lg-inline {
+    display: inline !important;
+}
+
+.visible-lg-inline-block {
+    display: inline-block !important;
+}
+
+
+.lyt.sidebar-icon-only .navbar .navbar-brand-wrapper {
+    width: 70px;
+}
+
+    .lyt.sidebar-icon-only .navbar .navbar-brand-wrapper .navbar-brand-inner-wrapper .brand-logo {
+        display: none;
+    }
+
+    .lyt.sidebar-icon-only .navbar .navbar-brand-wrapper .navbar-brand-inner-wrapper .brand-logo-mini {
+        display: none;
+    }
+
+.lyt.sidebar-icon-only .navbar .navbar-menu-wrapper {
+    margin-left: -70px;
+}
+
+    .lyt.sidebar-icon-only .navbar .navbar-menu-wrapper .nav-wrapper {
+        margin-left: 70px;
+    }
+
+.lyt.sidebar-icon-only .sidebar {
+    width: 70px;
+}
+
+    .lyt.sidebar-icon-only .sidebar .nav {
+        overflow: visible;
+    }
+
+        .lyt.sidebar-icon-only .sidebar .nav .nav-item {
+            position: relative;
+        }
+
+            .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link {
+                display: block;
+                padding-left: 5px;
+                padding-right: 5px;
+                text-align: center;
+            }
+
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link .menu-title,
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link .badge,
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link .menu-sub-title {
+                    display: none;
+                }
+
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link .menu-title {
+                    border-radius: 0 5px 5px 0px;
+                }
+
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link i.menu-icon {
+                    margin-right: 0;
+                    margin-left: 0;
+                    margin-bottom: 0;
+                }
+
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link i.menu-arrow {
+                    display: none;
+                }
+
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item .nav-link[aria-expanded] .menu-title {
+                    border-radius: 0 5px 0 0px;
+                }
+
+            .lyt.sidebar-icon-only .sidebar .nav .nav-item .collapse {
+                display: none;
+            }
+
+            .lyt.sidebar-icon-only .sidebar .nav .nav-item.hover-open .nav-link .menu-title {
+                display: -webkit-flex;
+                display: flex;
+                -webkit-align-items: center;
+                align-items: center;
+                background: #ffffff;
+                padding: 0.5rem 1.4rem;
+                left: 70px;
+                position: absolute;
+                text-align: left;
+                top: 0;
+                bottom: 0;
+                width: 190px;
+                z-index: 1;
+                line-height: 1.8;
+                box-shadow: 4px 0px 7px 0px rgba(182, 185, 189, 0.25);
+            }
+
+                .lyt.sidebar-icon-only .sidebar .nav .nav-item.hover-open .nav-link .menu-title:after {
+                    display: none;
+                }
+
+            .lyt.sidebar-icon-only .sidebar .nav .nav-item.hover-open .nav-link:hover .menu-title {
+                background: #ffffff;
+            }
+
+            .lyt.sidebar-icon-only .sidebar .nav .nav-item.hover-open .collapse,
+            .lyt.sidebar-icon-only .sidebar .nav .nav-item.hover-open .collapsing {
+                display: block;
+                padding: .5rem 0;
+                background: #ffffff;
+                border-radius: 0 0 5px 0;
+                position: absolute;
+                left: 70px;
+                width: 190px;
+                box-shadow: 4px 4px 7px 0px rgba(182, 185, 189, 0.25);
+            }
+
+        .lyt.sidebar-icon-only .sidebar .nav.sub-menu {
+            padding: 0 0 0 1.5rem;
+        }
+
+            .lyt.sidebar-icon-only .sidebar .nav.sub-menu .nav-item .nav-link {
+                text-align: left;
+                padding-left: 20px;
+            }
+
+.lyt.sidebar-icon-only .main-panel {
+    margin-left: -70px;
+}
+
+.lyt.sidebar-icon-only .content-wrapper {
+    margin-left: 70px;
+}

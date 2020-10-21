@@ -20,6 +20,15 @@
         components: {
             input: function (resovle) {
                 require(['components/v2.input'], resovle);
+            },
+            static: function (resovle) {
+                require(['components/v2.input'], resovle);
+            },
+            textarea: function (resovle) {
+                require(['components/v2.input'], resovle);
+            },
+            select: function (resovle) {
+                require(['components/v2.input'], resovle);
             }
         },
         form: function () {
@@ -51,7 +60,7 @@
             this.withCredentials = true;
 
             /** 请求方式 */
-            this.method = "GET";
+            this.method = "POST";
 
             /** 请求地址 */
             this.action = location.href;
@@ -61,6 +70,10 @@
 
             /** 按钮组 */
             this.buttons = [];
+        },
+        design: function () {
+            this.inputs = {};
+            this.formControls = [];
         },
         init: function () {
             this.base.init('form');
@@ -91,20 +104,26 @@
             if (view === undefined || view === null)
                 return;
 
-            var elem,
-                vm = this,
-                group = this.lg ? '.form-group-lg.clearfix' : this.sm ? '.form-group-sm.clearfix' : this.xs ? '.form-group-xs.clearfix' : '.form-group.clearfix',
-                type = v2.type(view);
+            var vm = this,
+                type = v2.type(view),
+                options = {
+                    xs: this.xs,
+                    sm: this.sm,
+                    lg: this.lg,
+                    host: this,
+                    readonly2span: this.readonly2span,
+                    components: this.components
+                };
 
             switch (type) {
                 case 'array':
-                    v2.each(view, this.lazy(done));
+                    v2.each(view, this.lazyFor(done));
                     break;
                 case 'object':
                     if ('tag' in view) {
                         this.lazy(done, view);
                     } else {
-                        v2.each(view, this.lazy(true, function (option, name) {
+                        v2.each(view, this.lazyFor(function (option, name) {
                             option.name = option.name || name;
                             return done(option);
                         }));
@@ -115,51 +134,48 @@
                     break;
             }
 
-            v2.each(this.buttons, this.lazy(true, function (button) {
+            v2.each(this.buttons, this.lazyFor(function (button) {
                 vm.create('button', button);
             }));
+
+            vm.lazy(function () {
+                this.$.appendChild('.clearfix'.htmlCoding().html());
+            });
 
             function done(option) {
                 if (v2.isArraylike(option)) {
                     var index = 12 / option.length;
-                    var col = '.col-xs-12.col-sm-{0}.col-lg-{1}'.format(index < 6 ? index * 2 : index, index);
-                    return v2.each(option, vm.lazy(true, function (config) {
-                        elem = vm.$.appendChild(col.htmlCoding().html())
-                            .appendChild(group.htmlCoding().html());
 
-                        if (vm.label && config.label !== false) {
-                            if (config.required) {
-                                elem.appendChild('label.control-label.required{{0}}'.format(config.title || config.name).htmlCoding().html());
-                            } else {
-                                elem.appendChild('label.control-label{{0}}'.format(config.title || config.name).htmlCoding().html());
-                            }
+                    v2.each(option, vm.lazyFor(function (config) {
+                        if (config.name) {
+                            vm.inputs[config.name] = true;
                         }
 
-                        vm.create(option.tag || 'input', v2.improve({ $$: elem }, config));
+                        vm.formControls.push(v2('form-control', v2.extend({
+                            cols: index,
+                            title: config.title,
+                            view: config,
+                            label: config.label || vm.label && config.label !== false,
+                            name: config.name,
+                            value: config.value,
+                            required: !!config.required
+                        }, options)));
                     }));
-                }
 
-                elem = vm.$.appendChild(group.htmlCoding().html());
-
-                if (vm.label && option.label !== false) {
-                    if (option.required) {
-                        elem.appendChild('label.control-label.required{{0}}'.format(option.title || config.name).htmlCoding().html());
-                    } else {
-                        elem.appendChild('label.control-label{{0}}'.format(option.title || option.name).htmlCoding().html());
+                } else if (option.type === 'hidden') {
+                    vm.lazy(vm.create, 'input', option);
+                } else {
+                    if (option.name) {
+                        vm.inputs[option.name] = true;
                     }
-                }
-
-                vm.create(option.tag || 'input', v2.improve({ $$: elem }, option));
-            }
-        },
-        wait: function (show) {
-            if (show || this.__wait_) {
-                if (this.__wait_) {
-                    return show ? this.__wait_.show() : this.__wait_.hide();
-                }
-
-                if (show) {
-                    this.__wait_ = v2('wait', { style: 2 });
+                    vm.formControls.push(v2('form-control', v2.extend({
+                        title: option.title,
+                        view: option,
+                        label: option.label || vm.label && option.label !== false,
+                        name: option.name,
+                        value: option.value,
+                        required: !!option.required
+                    }, options)));
                 }
             }
         },
@@ -176,45 +192,150 @@
                 return;
             }
 
-            this.wait(true);
-
             return axios.request(ajax)
                 .then(function (response) {
                     vm.invoke("ajax-success", response);
                 })
             ["catch"](function (error) {
                 vm.invoke("ajax-fail", error);
-            })
-            ["finally"](function () {
-                vm.wait();
             });
         },
         load: function (data) {
-            var
+            var that = this,
                 controls = this.controls,
                 isArraylike = v2.isArraylike(data);
 
-            v2.each(data, function (value, key) {
-                var control = isArraylike ? controls.eq(key) : controls.first(function (vm) { return vm.name == key; });
+            v2.each(data, isArraylike ? function (value, index) {
+                var control = controls.eq(index);
+
+                if (!control) return;
+
+                if (control.like('form-control')) {
+                    control = control.$input;
+                }
 
                 if (!control) return;
 
                 if (control.like('input', 'textarea', 'select')) {
                     if (control.type == 'radio' || control.type == 'checkbox') {
-                        control.checked = control.value == value;
+                        control.checked = that.valueIs(control, value);
                     } else {
                         control.value = value;
                     }
                 }
+            } : function (value, name) {
+                controls.when(function (vm) {
+                    return vm.name == name;
+                }).map(function (vm) {
+                    if (vm.like('form-control')) {
+                        return vm.$input;
+                    }
+                    return vm;
+                }).done(function (vm) {
+                    if (vm.like('input', 'textarea', 'select')) {
+                        if (vm.type == 'radio' || vm.type == 'checkbox') {
+                            vm.checked = that.valueIs(vm, value);
+                        } else {
+                            vm.value = value;
+                        }
+                    }
+                });
+            });
+        },
+        valueIs: function (control, value) {
+            return control.value == value;
+        },
+        valueTo: function (control, value) {
+            return value + ',' + control.value;
+        },
+        usb: function () {
+            var that = this;
+
+            this.base.usb();
+
+            v2.each(this.inputs, function (_, name) {
+                v2.define(that.inputs, name, function (value) {
+                    that.formControls.forEach(function (control) {
+                        if (control.name === name) {
+                            if (typeof value === 'boolean') {
+                                control.visible = value;
+                            } else {
+                                if ((value & 1) === 1) {
+                                    control.visible = true;
+                                } else {
+                                    control.visible = false;
+                                }
+
+                                if ((value & 2) === 2) {
+                                    control.required = true;
+                                } else {
+                                    control.required = false;
+                                }
+
+                                if ((value & 4) === 4) {
+                                    control.disabled = true;
+                                } else {
+                                    control.disabled = false;
+                                }
+
+                                if ((value & 8) === 8) {
+                                    control.disabled = true;
+                                } else {
+                                    control.disabled = false;
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+
+            function getValue(control) {
+                var value = control.value;
+
+                if (that.trim && v2.isString(value)) {
+                    return value.trim();
+                }
+
+                return value;
+            }
+
+            function done(vm, data) {
+                vm.controls.done(function (control) {
+                    if (control.visible && control.name && control.host.visible && control.like('input', 'select') && !that.formControls.some(function (ctrl) {
+                        return !ctrl.visible && ctrl.name == vm.name;
+                    })) {
+                        if (control.type == 'radio' || control.type == 'checkbox') {
+                            if (control.checked) {
+                                if (control.name in data) {
+                                    data[control.name] = vm.valueTo(control, data[control.name]);
+                                } else {
+                                    data[control.name] = getValue(control);
+                                }
+                            }
+                        } else if (control.type == 'group') {
+                            done(control, data);
+                        } else {
+                            data[control.name] = getValue(control);
+                        }
+                    }
+                });
+
+                return data;
+            }
+
+            this.define("value", {
+                get: function () {
+                    return done(this, {});
+                },
+                set: this.load
             });
         },
         checkValidity: function () {
             var that = this;
-            return v2.all(this.controls, function (vm) {
-                if (vm.like('input')) {
-                    if (that.trim) {
-                        vm.value = vm.value.trim();
-                    }
+            return this.controls.all(function (vm) {
+                if (vm.visible && vm.like('input', 'form-control') && !that.formControls.some(function (ctrl) {
+                    return !ctrl.visible && ctrl.name == vm.name;
+                })) {
                     return vm.checkValidity();
                 }
                 return true;
@@ -222,20 +343,27 @@
         },
         reportValidity: function () {
             var that = this;
-            return v2.all(this.controls, function (vm) {
-                if (vm.like('input')) {
-
-                    if (that.trim) {
-                        vm.value = vm.value.trim();
-                    }
-
+            return this.controls.all(function (vm) {
+                if (vm.visible && vm.like('input', 'form-control') && !that.formControls.some(function (ctrl) {
+                    return !ctrl.visible && ctrl.name == vm.name;
+                })) {
                     return vm.reportValidity();
                 }
                 return true;
             });
         },
         reset: function () {
-            v2.each(this.controls, function (control) {
+
+            if (this.data) {
+                return this.load(this.data);
+            }
+
+            this.controls.map(function (vm) {
+                if (vm.like('form-control')) {
+                    return vm.$input;
+                }
+                return vm;
+            }).done(function (control) {
                 if (control.like('input', 'select')) {
                     if (control.type == 'radio' || control.type == 'checkbox') {
                         control.checked = control.defaultChecked;
@@ -250,34 +378,15 @@
                 return;
 
             var vm = this,
-                data = {},
                 ajax = {
                     url: this.action,
                     method: this.method,
-                    data: data
+                    data: this.value
                 };
-
-            (function done(vm) {
-                v2.each(vm.controls, function (control) {
-                    if (control.like('input', 'select')) {
-                        if (control.type == 'radio' || control.type == 'checkbox') {
-                            if (control.checked) {
-                                data[control.name] = control.value;
-                            }
-                        } else if (control.type == 'group') {
-                            done(control);
-                        } else {
-                            data[control.name] = control.value;
-                        }
-                    }
-                });
-            })(this);
 
             if (this.invoke("submit-ready", ajax) === false) {
                 return;
             }
-
-            this.wait(true);
 
             return axios.request(ajax)
                 .then(function (response) {
@@ -285,9 +394,6 @@
                 })
             ["catch"](function (error) {
                 vm.invoke("submit-fail", error);
-            })
-            ["finally"](function () {
-                vm.wait();
             });
         },
         ready: function () {
@@ -295,14 +401,14 @@
             this.$.on('stop.prev.submit', function () {
                 try {
                     vm.submit();
-                } catch (_) { }
+                } catch (e) { console.error(e); }
 
                 return false;
             });
             this.$.on('stop.prev.reset', function () {
                 try {
                     vm.reset();
-                } catch (_) { }
+                } catch (e) { console.error(e); }
 
                 return false;
             });
@@ -315,6 +421,88 @@
                     vm.invoke("keyboard-enter");
                 }
             });
+        }
+    });
+
+    v2.use('form-control', {
+        "form-control": function () {
+            /** 标题 */
+            this.title = "";
+
+            /** 超小按钮 */
+            this.xs = false;
+
+            /** 小按钮 */
+            this.sm = false;
+
+            /** 大按钮 */
+            this.lg = false;
+
+            /** 显示输入框名称 */
+            this.label = true;
+
+            /** 名称 */
+            this.name = "";
+
+            /** 值 */
+            this.value = "";
+
+            /** 列 */
+            this.cols = 12;
+
+            /** 只读内容文本显示 */
+            this.readonly2span = true;
+
+            /** 必填 */
+            this.required = false;
+        },
+        render: function () {
+
+            this.$.classList.add(this.lg ? 'form-group-lg' : this.sm ? 'form-group-sm' : this.xs ? 'form-group-xs' : 'form-group');
+
+            if (this.host.inline && this.cols === 12) {
+                return;
+            }
+
+            this.$.classList.add('col-xs-12');
+
+            if (this.cols < 12) {
+                this.$.classList.add('col-sm-' + this.cols);
+            }
+        },
+        build: function (view) {
+            if (this.label) {
+                this.$label = this.$.appendChild('label.control-label'.htmlCoding().html());
+            }
+
+            view.$$ = this.$;
+
+            this.$input = this.host.create(view.tag || (this.readonly2span && view.readonly ? 'static' : 'input'), view);
+        },
+        usb: function () {
+            if (this.label) {
+                this.define('title', function (value) {
+                    this.$label.innerHTML = value;
+                }, false);
+            }
+
+            this.define('required', function (value) {
+                this.$input.required = !!value;
+
+                if (this.label) {
+                    this.$label.classList.toggle('required', !!value);
+                }
+            });
+
+            this.define('value', {
+                get: function () {
+                    return this.$input.value;
+                },
+                set: function (value) {
+                    this.$input.value = value;
+                }
+            });
+
         }
     });
 

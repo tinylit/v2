@@ -28,135 +28,64 @@
         pushStack(callback: Function): V2Stack;
     }
 
-    /** 普通组件(key是“{TAG}”) */
-    interface PlainComponents extends PlainObject, V2ControlStandard { }
-
     /** 同步方法组件(key是“{TAG}”) */
     interface FunctionComponents extends PlainObject<(resolve: () => void) => void> { }
 
     /** 空基类 */
     interface V2EmptyBase { }
 
+    /** 类似控件 */
+    interface V2Controllike {
+        /** TAG */
+        tag: string;
+    }
+
     /** 控件基类 */
     interface V2ControlBase {
-		/**
-         * 初始化控件（查询或 生产主元素）
-         * @param tag 控件元素TAG，默认：div
-         */
-        init(tag?: string | RegExp | Array<string> | PlainObject<boolean> | ((nodeName: string) => boolean), tagName?: string): void;
         /**
-        *  构建 HTML 代码。
-        *  @param view 视图。
+        * 初始化控件（查询或 生产主元素）
         */
-        build(view?: any): void;
+        init(): void | false;
+        /**
+        * 初始化控件（查询或 生产主元素）
+        * @param nodeName 节点名称。
+        */
+        init(nodeName: string): void | false;
+        /**
+        * 初始化控件（查询或 生产主元素）
+        * @param surports 支持的节点名称集合。
+        * @param nodeName 节点名称。
+        */
+        init(surports: Array<string>, nodeName: string): void | false;
+        /**
+        * 初始化控件（查询或 生产主元素）
+        * @param check 检查是否支持当前的节点名称。
+        * @param nodeName 节点名称。
+        */
+        init(check: RegExp, nodeName: string): void | false;
+        /**
+        * 初始化控件（查询或 生产主元素）
+        * @param check 检查是否支持当前的节点名称。
+        * @param nodeName 节点名称。
+        */
+        init(check: (nodeName: string) => boolean, nodeName: string): void | false;
+        /**
+        * 初始化控件（查询或 生产主元素）
+        * @param surports 支持的节点名称对象。
+        * @param nodeName 节点名称。
+        */
+        init(surports: PlainObject<boolean>, nodeName: string): void | false;
         /**
         * 建立属性监听。
         * @param watch 督查
         */
-        usb(watch?: any): void;
+        usb(watch?: any): void | false;
         /**
-        * 渲染子控件
-        * @param tag TAG
-        * @param options 配置信息
-        */
-        create<K extends keyof V2ControlMap>(tag: K, options?: V2ControlMap[K]): V2ControlMap[K];
-        /**
-         * 渲染子控件
-         * @param tag TAG
-         * @param options 配置信息
+         * 构建 
+         * @param view 视图
+         * @param 节点
          */
-        create<K extends string>(tag: K, options?: ToDevelop<K>): ToDevelop<K>;
-        /**
-         * 渲染子控件
-         * @param tag TAG
-         * @param options 配置信息
-         */
-        create(options: PlainObject): V2ControlStandard;
-        /**
-         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
-         * @param callback 回调函数
-         */
-        lazy<T extends Function>(callback: T): T;
-        /**
-         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
-         * @param loop 为真时返回回调函数，否则返回函数返回值或堆载队列。
-         * @param callback 回调函数
-         */
-        lazy<T>(loop: boolean, callback: (...args: any[]) => T, ...args: any[]): (...args: any[]) => T | T | V2Stack;
-        /**
-         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
-         * @param context 指定回调函数调用时的上下文对象。
-         * @param callback 回调函数
-         */
-        lazy<T, TContext extends Object>(context: TContext, callback: (this: TContext, ...args: any[]) => T, ...args: any[]): (this: TContext, ...args: any[]) => T | T | V2Stack;
-        /**
-         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
-         * @param loop 为真时返回回调函数，否则返回函数返回值或堆载队列。
-         * @param context 指定回调函数调用时的上下文对象。
-         * @param callback 回调函数
-         */
-        lazy<T, TContext extends Object>(loop: boolean, context: TContext, callback: (this: TContext, ...args: any[]) => T, ...args: any[]): (this: TContext, ...args: any[]) => T | T | V2Stack;
-		/**
-         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
-         * @param callback 回调函数
-         */
-        lazy<T>(callback: () => T, arg: any, ...args: any[]): (arg: any, ...args: any[]) => T;
-        /**
-         * 调用控件“methods”属性中，指定属性名称为“name”的方法。
-         * @param name 控件“methods”中属性名称为“name”的方法。
-         * @param args 函数执行的参数。
-         */
-        invoke(name: string, ...args: any[]): any;
-        /**
-         * 调用指定方法。
-         * @param fn 方法。
-         * @param args 函数执行的参数。
-         */
-        invoke<T>(fn: (...args: any[]) => T, ...args: any[]): T;
-        /**
-         * 在当前控件主元素下查找满足选择器的第一个元素。
-         * @param selectors 选择器
-         */
-        take(selectors: string): Element;
-        /**
-         * 在指定上下文中下查找满足选择器的第一个元素。
-         * @param context 上下文
-         * @param selectors 选择器
-         */
-        take(selectors: string, context: Element): Element;
-        /**
-         * 在指定上下文中下查找满足选择器的所有元素。
-         * @param context 上下文
-         * @param selectors 选择器
-         * @param all 查找所有
-         */
-        take(selectors: string, context: Element, all: true): Element;
-        /**
-         * 返回只包含当前主元素的集合。
-         */
-        when(): ArrayThen<Element>;
-        /**
-         * 在当前控件主元素下查找满足选择器的所有元素。
-         * @param selectors 选择器
-         */
-        when(selectors: string): ArrayThen<Element>;
-        /**
-         * 在指定上下文中下查找满足选择器的所有元素。
-         * @param selectors 选择器
-         * @param context 上下文
-         */
-        when(selectors: string, context: Element): ArrayThen<Element>;
-        /**
-         * 返回包含所有参数的集合。
-         * @param elem 元素
-         */
-        when(...args: Element[]): ArrayThen<Element>;
-        /**
-         * 在指定上下文中下查找满足选择器的所有元素。
-         * @param selectors 选择器
-         * @param context 上下文
-         */
-        when(selectors: string, context: Element): ArrayThen<Element>;
+        build(view?: any, node?: Element): void | false;
         /** 使控件获取焦点 */
         focus(): void;
         /** 显示控件 */
@@ -172,11 +101,6 @@
         toggle(toggle: boolean): boolean;
     }
 
-    /** 类似控件 */
-    interface V2Controllike extends PlainObject {
-        tag?: string;
-    }
-
     /** 属性 */
     interface V2PropertyDescriptor<T> {
         configurable?: boolean;
@@ -188,7 +112,7 @@
     }
 
     /** 控件标准 */
-    interface V2ControlStandard extends V2ControlBase {
+    interface V2ControlStandard {
         /** 唯一身份标识 */
         readonly identity: number;
         /** 版本号 */
@@ -197,6 +121,10 @@
         readonly namespace: string;
         /** 控件是否就绪 */
         readonly isReady: boolean;
+        /** 代表主节点是否是动态生成的 */
+        readonly dynamicElement: boolean;
+        /** 名称 */
+        readonly name: string;
         /** 已完成执行的流程状态 */
         readyState: number;
         /** 限制高宽（采用“min-”方式） */
@@ -234,7 +162,7 @@
         /** 监视器 */
         watch: PlainObject<Function>;
         /** 组件集合 */
-        components: FunctionComponents | PlainComponents;
+        components: PlainObject<FunctionComponents | PlainObject>;
         /** 流程图 */
         readonly flowGraph: PlainObject<number>;
         /** 宿主插件 */
@@ -245,51 +173,6 @@
         readonly previousSibling: V2Control;
         /** 下一个控件 */
         readonly nextSibling: V2Control;
-    }
-
-    /** 通配符 */
-    interface WildCard<T extends V2ControlStandard = V2ControlStandard> {
-        /** 支持的类型，同时支持多种类型时，以“|”分隔。 */
-        type: "*" | "string" | "boolean" | "number" | "date" | "array" | "regexp" | "function" | "object";
-        /** 执行的别名 */
-        hooks?: string;
-        /**
-         * 当值类型满足 “支持的类型” 时，执行此方法。
-         * @param control 控件
-         * @param key 属性名称
-         * @param value 值
-         */
-        exec(control: T, key: string, value: any): any;
-    }
-
-    /** 控件组 */
-    interface V2ControlCollection extends ArrayThen<V2ControlStandard> {
-        <T extends V2ControlStandard>(...args: T[]): V2ControlCollection;
-        /** 摧毁当前控件组中所有控件 */
-        destroy(): number;
-        /**
-         * 获取基于【control】偏移【offset】索引次的控件。
-         * @param control 控件。
-         * @param offset 偏移量。
-         */
-        offset(control: V2Control, offset: number): V2Control;
-    }
-
-    /** 组件扩展 */
-    // @ts-ignore
-    interface V2ComponentExtention<TContext extends V2ControlStandard, T extends V2EmptyBase, TFlowGraph extends FlowGraph<TContext>> extends T, TFlowGraph { }
-
-    /** 扩展组件 */
-    interface V2ComponentExtend<K extends string, TContext extends V2ControlStandard> extends V2ComponentExtention<TContext, V2ControlBaseMap[K], FlowGraphMap<TContext>[K]>, V2ControlStandard { }
-
-    /** 组件 */
-    interface V2Component<T extends V2ControlStandard> {
-        /** 事件集合 */
-        events: PlainObject<(this: T, e: Event) => any>;
-        /** 方法集合 */
-        methods: PlainObject<(this: T, ...args: any[]) => any>;
-        /** 通配符 */
-        wildcards: PlainObject<WildCard>,
         /**
          * 判断当前控件是否类似于指定TAG名称（即当前控件继承TAG对应的控件）。
          * @param tag 名称
@@ -316,61 +199,279 @@
          * @param falseStop 状态对应方法返回 false 时，是否终止执行。
          */
         flow(state?: number, falseStop?: true): void;
-        /** 启动 */
-        startup(): void;
-        /** 编译控件（属性继承和方法继承） */
-        compile(): void;
         /**
          * 释放插件。
          * @param deep 是否深度释放插件。深度释放时，插件内属性以及属性对象包含的属性都会被释放。
          */
         destroy(deep?: false): void;
         /**
+         * 渲染子控件
+         * @param tag TAG
+         * @param options 配置信息
+         */
+        create<K extends keyof V2ControlMap>(tag: K, options?: Develop<K>): V2ControlMap[K];
+        /**
+         * 渲染子控件
+         * @param tag TAG
+         * @param options 配置信息
+         */
+        create<K extends string>(tag: K, options?: ToDevelop<K>): ToDevelop<K>;
+        /**
+         * 渲染子控件
+         * @param tag TAG
+         * @param options 配置信息
+         */
+        create(options: PlainObject): V2ControlStandard;
+        /**
+         * 等待控件加载完成时执行。
+         * @param callback 回调函数。
+         * @param args 参数。
+         */
+        todo(callback: () => any): void;
+        /**
+         * 等待控件加载完成时执行。
+         * @param callback 回调函数。
+         * @param args 参数。
+         */
+        todo(callback: (...args: any[]) => any, ...args: any[]): void;
+        /**
+         * 等待控件加载完成时执行。
+         * @param callback 回调函数。
+         * @param args 参数。
+         */
+        todo<TContext extends Object>(context: TContext, callback: (this: TContext) => any): void;
+        /**
+         * 等待控件加载完成时执行。
+         * @param callback 回调函数。
+         * @param args 参数。
+         */
+        todo<TContext extends Object>(context: TContext, callback: (this: TContext, ...args: any[]) => any, ...args: any[]): void;
+        /**
+         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
+         * @param callback 回调函数
+         */
+        lazy<T>(callback: () => T): () => T | V2Stack;
+		/**
+         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
+         * @param callback 回调函数
+         */
+        lazy<T>(callback: (...args: any[]) => T, ...args: any[]): (...args: any[]) => T | V2Stack;
+        /**
+         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
+         * @param context 指定回调函数调用时的上下文对象。
+         * @param callback 回调函数
+         */
+        lazy<T, TContext extends Object>(context: TContext, callback: (this: TContext) => T): (this: TContext) => T | T | V2Stack;
+
+        /**
+         * 控件堆栈（控件会按照堆载顺序执行，当遇到异步加载的控件时，方法会被暂停，等待异步加载完成后继续执行。）
+         * @param context 指定回调函数调用时的上下文对象。
+         * @param callback 回调函数
+         */
+        lazy<T, TContext extends Object>(context: TContext, callback: (this: TContext, ...args: any[]) => T, ...args: any[]): (this: TContext, ...args: any[]) => T | T | V2Stack;
+        /**
+         * 用于迭代的懒加载函数。
+         * @param callback 函数。
+         */
+        lazyFor<T>(callback: () => T): () => T;
+        /**
+         * 用于迭代的懒加载函数。
+         * @param callback 函数。
+         */
+        lazyFor<T>(callback: (...args: any[]) => T): (...args: any[]) => T;
+        /**
+         * 用于迭代的懒加载函数。
+         * @param callback 函数。
+         */
+        lazyFor<T, TContext extends Object>(context: TContext, callback: (this: TContext) => T): (this: TContext) => T;
+        /**
+         * 用于迭代的懒加载函数。
+         * @param callback 函数。
+         */
+        lazyFor<T, TContext extends Object>(context: TContext, callback: (this: TContext, ...args: any[]) => T): (this: TContext, ...args: any[]) => T;
+        /**
+         * 调用控件“methods”属性中，指定属性名称为“name”的方法。
+         * @param name 控件“methods”中属性名称为“name”的方法。
+         * @param args 函数执行的参数。
+         */
+        invoke(name: string): any;
+        /**
+         * 调用控件“methods”属性中，指定属性名称为“name”的方法。
+         * @param name 控件“methods”中属性名称为“name”的方法。
+         * @param args 函数执行的参数。
+         */
+        invoke(name: string, ...args: any[]): any;
+        /**
+         * 调用指定方法。
+         * @param fn 方法。
+         * @param args 函数执行的参数。
+         */
+        invoke<T>(fn: () => T): T;
+        /**
+         * 调用指定方法。
+         * @param fn 方法。
+         * @param args 函数执行的参数。
+         */
+        invoke<T>(fn: (...args: any[]) => T, ...args: any[]): T;
+        /**
+         * 在当前控件主元素下查找满足选择器的第一个元素。
+         * @param selectors 选择器
+         */
+        take(selectors: string): Element;
+        /**
+         * 在指定上下文中下查找满足选择器的第一个元素。
+         * @param context 上下文
+         * @param selectors 选择器
+         */
+        take(selectors: string, context: Element): Element;
+        /**
+         * 在指定上下文中下查找满足选择器的所有元素。
+         * @param context 上下文
+         * @param selectors 选择器
+         * @param all 查找所有
+         */
+        take(selectors: string, context: Element, all: true): NodeListOf<Element>;
+        /**
+         * 返回只包含当前主元素的集合。
+         */
+        when(): ArrayThen<Element>;
+        /**
+         * 在当前控件主元素下查找满足选择器的所有元素。
+         * @param selectors 选择器
+         */
+        when(selectors: string): ArrayThen<Element>;
+        /**
+         * 在指定上下文中下查找满足选择器的所有元素。
+         * @param selectors 选择器
+         * @param context 上下文
+         */
+        when(selectors: string, context: Element): ArrayThen<Element>;
+        /**
+         * 返回包含所有参数的集合。
+         * @param elem 元素
+         */
+        when(...args: Element[]): ArrayThen<Element>;
+        /**
+         * 在指定上下文中下查找满足选择器的所有元素。
+         * @param selectors 选择器
+         * @param context 上下文
+         */
+        when(selectors: string, context: Element): ArrayThen<Element>;
+    }
+
+    /** 通配符 */
+    interface WildCard<T extends V2ControlStandard = V2ControlStandard> {
+        /** 支持的类型，同时支持多种类型时，以“|”分隔。 */
+        type: "*" | "string" | "boolean" | "number" | "date" | "array" | "regexp" | "function" | "object";
+        /** 执行的别名 */
+        hooks?: string;
+        /**
+         * 当值类型满足 “支持的类型” 时，执行此方法。
+         * @param control 控件
+         * @param key 属性名称
+         * @param value 值
+         */
+        exec(control: T, key: string, value: any): any;
+    }
+
+    /** 控件组 */
+    interface V2ControlCollection<T extends V2ControlStandard = V2ControlStandard> extends ArrayThen<T> {
+        <T extends V2ControlStandard>(...args: T[]): V2ControlCollection<T>;
+        /** 摧毁当前控件组中所有控件 */
+        destroy(): number;
+        /**
+         * 获取基于【control】偏移【offset】索引次的控件。
+         * @param control 控件。
+         * @param offset 偏移量。
+         */
+        offset(control: V2Control, offset: number): V2Control;
+    }
+
+    /** 组件扩展 */
+    // @ts-ignore
+    interface V2ComponentExtention<T extends V2EmptyBase> extends T { }
+
+    /** 组件扩展 */
+    // @ts-ignore
+    interface V2ComponentFlowGrap<TContext extends V2ControlStandard, TFlowGraph extends FlowGraph<TContext>> extends TFlowGraph { }
+
+    /** 扩展组件 */
+    // @ts-ignore
+    interface V2ComponentExtend<K extends string | number, TContext extends V2ControlStandard> extends V2ComponentExtention<V2ControlBaseMap[K]>, V2ComponentFlowGrap<TContext, FlowGraphMap<TContext>[K]> { }
+
+    /** 组件 */
+    interface V2Component<T extends V2ControlStandard> {
+        /** 事件集合 */
+        events: PlainObject<(this: T, e: Event) => any>;
+        /** 方法集合 */
+        methods: PlainObject<(this: T, ...args: any[]) => any>;
+        /** 通配符 */
+        wildcards: PlainObject<WildCard>,
+        /** 启动 */
+        startup(): void;
+        /** 编译控件（属性继承和方法继承） */
+        compile(): void;
+        /**
          * 定义属性(无参函数表示定义只读属性，且必须有返回值)
          * @param prop 属性名称。
          * @param descriptor 设置属性值的方法。
          * @param defineOnly 仅定义，不触发函数。
          */
-        define<K extends keyof T>(prop: K, descriptor: (this: T, value?: T[K], oldValue?: T[K]) => T[K] | void, defineOnly?: true): T;
+        define<K extends keyof T>(prop: K, descriptor: (this: T, value?: T[K], oldValue?: T[K]) => T[K] | void, defineOnly?: false): T;
         /**
          * 定义多个属性
          * @param map 属性对象
          */
-        define(map: PlainObject<(this: T, ...args: any[]) => any>, defineOnly?: true): T;
+        define(map: PlainObject<(this: T) => any>, defineOnly?: false): T;
+        /**
+         * 定义多个属性
+         * @param map 属性对象
+         */
+        define(map: PlainObject<(this: T, ...args: any[]) => any>, defineOnly?: false): T;
         /**
          * 定义属性
          * @param prop 属性名称
          * @param descriptor 属性描述
          * @param defineOnly 仅定义，不触发函数。
          */
-        define(prop: string, descriptor: V2PropertyDescriptor<T>, defineOnly?: true): T;
+        define(prop: string, descriptor: V2PropertyDescriptor<T>, defineOnly?: false): T;
         /**
          * 定义多个属性
          * @param map 属性对象
          * @param defineOnly 仅定义，不触发函数。
          */
-        define(map: PlainObject<V2PropertyDescriptor<T>>, defineOnly?: true): T;
+        define(map: PlainObject<V2PropertyDescriptor<T>>, defineOnly?: false): T;
         /**
          * 定义属性
          * @param props 多个名称用空格分开。
          * @param defineOnly 仅定义，不触发函数。
          */
-        define(props: string, defineOnly?: true): T;
+        define(props: string, defineOnly?: false): T;
     }
 
     /** 拓展 */
-    interface V2Extend<K extends string, T extends V2ControlStandard> {
+    interface V2Extend<K extends string | number, T extends V2ControlStandard> {
         /** TAG */
         readonly tag: K;
         /** 基础 */
         readonly base: V2ComponentExtend<K, T>;
     }
 
+    /** 开发模式基类 */
+    interface DevelopBase<K extends string | number, TContext extends V2ControlStandard> extends V2ComponentExtention<V2ControlBaseMap[K]>, V2ControlBase {
+
+    }
+
     /** 待开发控件扩展 */
-    interface ToDevelopExtend<K extends string = "*", TContext extends V2ControlStandard = V2ControlMap[K]> extends V2Component<TContext>, V2ComponentExtention<TContext, V2EmptyBase, DefaultFlowGraph<TContext>> { }
+    interface ToDevelopExtend<K extends string = "*", TContext extends V2ControlStandard = V2ControlMap[K]> extends V2Component<TContext>, V2ComponentExtention<V2EmptyBase>, V2ComponentFlowGrap<TContext, DefaultFlowGraph<TContext>> { }
 
     /** 已开发组件 */
-    interface Develop<K extends string, TContext extends V2ControlStandard = V2ControlMap[K]> extends V2ControlExtend<K, K, TContext, TContext> { }
+    interface Develop<K extends string | number, TContext extends V2ControlStandard = V2ControlMap[K]> extends V2ControlExtend<K, K, TContext, TContext> {
+        /** TAG */
+        readonly tag: K;
+        /** 基础 */
+        readonly base: DevelopBase<K, TContext>;
+    }
 
     /** 待开发的组件 */
     interface ToDevelop<K extends string = "*"> extends ToDevelopExtend<K> {
@@ -381,7 +482,7 @@
     }
 
     /** 组件 */
-    interface V2Control<K extends string = "*", TContext extends V2ControlStandard = V2ControlMap[K]> extends V2Component<TContext>, V2ComponentExtend<K, TContext>, V2ControlStandard {
+    interface V2Control<K extends string | number = "*", TContext extends V2ControlStandard = V2ControlMap[K]> extends V2Component<TContext>, V2ComponentExtend<K, TContext>, V2ControlStandard {
         /** TAG */
         readonly tag: K;
         /** 基础 */
@@ -389,25 +490,26 @@
     }
 
     /** 有继承关系的组件【K】：当前控件TAG，【P】：父控件“TAG” */
-    // @ts-ignore
-    interface V2ControlExtend<K extends string, P extends string = K, TContext extends V2ControlStandard = V2ControlMap[K], THost extends V2ControlStandard = V2ControlMap[P]> extends V2Component<TContext>, V2Extend<K, THost>, V2ComponentExtend<K, TContext>, THost { }    // @ts-ignore
+    interface V2ControlExtend<K extends string | number, P extends string | number, TContext extends V2ControlStandard = V2ControlMap[K], THost extends V2ControlStandard = V2ControlMap[P]> extends V2Component<TContext>, V2Extend<K, THost>, V2ComponentExtend<K, TContext>, V2ComponentExtention<V2ControlBaseMap[P]>, V2ControlStandard {
+
+    }
 
     /** 流程 */
     interface FlowGraph<T> { }
 
     /** 流程 */
     interface DefaultFlowGraph<T extends V2ControlStandard = V2ControlStandard> extends FlowGraph<T> {
-        /** 设计 */
-        design?: () => void | false;
         /**
         * 初始化控件（查询或 生产主元素）
         */
         init(): void | false;
+        /** 设计 */
+        design?(): void | false;
         /** 
          *  构建 HTML 代码。
          *  @param view 视图。
          */
-        build?: (view?: T["view"]) => void | false;
+        build: (view?: T["view"]) => void | false;
         /**
          * 渲染控件
          * @param variable 控件全局变量
@@ -417,7 +519,7 @@
          * 建立属性监听。
          * @param watch 督查
          */
-        usb?: (watch?: T["watch"]) => void | false;
+        usb: (watch?: T["watch"]) => void | false;
         /** 就绪 */
         ready?: () => void | false;
         /** 取数（仅 access 为真时，会自动调用） */
@@ -441,7 +543,7 @@ declare namespace Use {
     /** 控件或基础方法 */
     interface V2 {
         /** 渲染控件 */
-        <K extends keyof V2ControlMap>(tag: K, options?: V2ControlMap[K]): V2ControlMap[K];
+        <K extends keyof V2ControlMap>(tag: K, options?: Develop<K>): V2ControlMap[K];
         /** 渲染控件 */
         <K extends string>(tag: K, options?: ToDevelop<K>): ToDevelop<K>;
         /** 控件原型 */
@@ -1227,6 +1329,18 @@ declare namespace Use {
          */
         use<K extends string>(tag: K, when: string, option: ToDevelop<K>): void;
         /**
+         * 为控件指定流程。
+         * @param tag TAG
+         * @param flowGraph 函数执行流程
+         */
+        useMap<K extends keyof Dev.V2ControlMap>(tag: K, flowGraph: PlainObject<number>): void;
+        /**
+         * 为控件指定流程。
+         * @param tag TAG
+         * @param flowGraph 函数执行流程
+         */
+        useMap(tag: string, flowGraph: PlainObject<number>): void;
+        /**
          * 注册 TAG 组件之前或之后处理一些事情。
          * @param tag TAG
          * @param resolve 解决方案
@@ -1244,28 +1358,28 @@ declare namespace Use {
          * @param when 条件过滤函数
          * @param route 新的控件TAG
          */
-        route<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, route: string): void;
+        useRoute<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, route: string): void;
         /**
          * 控件路由
          * @param tag 当前控件TAG
          * @param when 条件过滤函数
          * @param route 路由配置。
          */
-        route<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, route: (option: Dev.V2ControlMap[K]) => void): void;
+        useRoute<K extends keyof Dev.V2ControlMap>(tag: K, when: (option: Dev.V2ControlMap[K]) => boolean, route: (option: Dev.V2ControlMap[K]) => void): void;
         /**
          * 控件路由
          * @param tag 当前控件TAG
          * @param when 条件过滤函数
          * @param route 新的控件TAG
          */
-        route<K extends string>(tag: K, when: (option: ToDevelop<K>) => boolean, route: string): void;
+        useRoute<K extends string>(tag: K, when: (option: ToDevelop<K>) => boolean, route: string): void;
         /**
          * 控件路由
          * @param tag 当前控件TAG
          * @param when 条件过滤函数
          * @param route 路由配置。
          */
-        route<K extends string>(tag: K, when: (option: ToDevelop<K>) => boolean, route: (option: ToDevelop<K>) => void): void;
+        useRoute<K extends string>(tag: K, when: (option: ToDevelop<K>) => boolean, route: (option: ToDevelop<K>) => void): void;
     }
 
     /** 命名空间函数 */
@@ -1275,6 +1389,12 @@ declare namespace Use {
          * @param name 类名
          */
         (name: string): T;
+        /**
+         * 设置命名空间缓存
+         * @param namespace 命名空间
+         * @param option 配置信息
+         */
+        (namespace: string, option: TOption): void;
         /**
          * 设置命名空间缓存
          * @param namespace 命名空间
@@ -1296,6 +1416,12 @@ declare namespace Use {
          * @param ignoreCase 是否忽略大小写
          */
         makeMap(content: string, ignoreCase?: boolean): (name: string) => boolean;
+        /**
+         * 生成缓存（当 name 不在缓存中时，调用函数工厂生成，否则直接返回缓存数据。）
+         * @param factory 函数工厂
+         * @param ignoreCase 是否忽略大小写
+         */
+        makeCache<T>(factory: (name: string) => T, ignoreCase?: boolean): (name: string) => T;
         /**
          * 生成缓存（当 name 不在缓存中时，调用函数工厂生成，否则直接返回缓存数据。）
          * @param factory 函数工厂
@@ -1355,7 +1481,6 @@ declare namespace Use {
          * @param callback 函数
          */
         typeCb<T extends PlainObject<number>, K extends keyof T>(typeCb: T, type: number, callback: (name: K, type: T[K]) => any): any;
-
         /**
          * 记录日志
          * @param message 消息
@@ -1370,6 +1495,30 @@ declare namespace Use {
          *   };
          */
         log(message: any, type: number, logAll?: boolean): void;
+        /**
+         * 成功提示信息。
+         * @param message 消息内容
+         * @param delay 延时关闭时间。
+         */
+        ok(message?: string, delay?: number): Message;
+        /**
+        * 提醒提示信息。
+        * @param message 消息内容
+        * @param delay 延时关闭时间。
+        */
+        alert(message: string, delay?: number): Message;
+        /**
+         * 警告提示信息。
+         * @param message 消息内容
+         * @param delay 延时关闭时间。
+         */
+        warn(message: string, delay?: number): Message;
+        /**
+         * 失败提示信息。
+         * @param message 消息内容
+         * @param delay 延时关闭时间。
+         */
+        fail(message: string, delay?: number): Message;
         /**
          * 获取对象属性的值（兼容处理）。
          * @param obj 对象
@@ -1386,7 +1535,7 @@ declare namespace Use {
     }
 }
 
-/** 日期 */
+/** 日期、地址 */
 declare namespace Use {
     interface V2 {
         /**
@@ -1396,6 +1545,15 @@ declare namespace Use {
         isDate(obj: any): obj is Date;
         /** 日期助手 */
         date: DateAssistant;
+        /**
+         * 地址助手
+         * @param url 地址，默认当前浏览器地址。
+         */
+        uri(url?: string): UriAssistant;
+        /** 存储助手，不支持【sessionStorage】时，字段使用cookie。 */
+        storage: StorageAssistant;
+        /** cookie 助手 */
+        cookie: CookieAssistant;
     }
 
     /** 日期助手 */
@@ -1478,6 +1636,154 @@ declare namespace Use {
          * @param fmt 格式化日期字符串，默认:yyyy-MM-dd。y:年，M:月，d:日，H:24小时制的时，h:12小时制的时，m:分，s:秒，f:毫秒。
          */
         format(dateLike?: Date | number | string | unknown, fmt?: string): string;
+    }
+
+    /** 地址助手 */
+    interface UriAssistant {
+        /** 哈希 */
+        hash: string;
+        /** 域名及端口号 */
+        host: string;
+        /** 域名 */
+        hostname: string;
+        /** 地址 */
+        href: string;
+        /** 协议、域名、端口号 */
+        origin: string;
+        /** 文件地址 */
+        path: string;
+        /** 端口号 */
+        port: string;
+        /** 协议 */
+        protocol: string;
+        /** 参数 */
+        search: string;
+        /**
+        * 获取所有参数值。
+        * @param same 是否保留原样输出。不传或为假时，会尝试转换类型。默认：false。
+        */
+        get(same?: boolean): PlainObject<boolean | number | string | Array<any> | PlainObject>;
+        /**
+         * 获取参数值。
+         * @param name 参数名称。
+         * @param same 是否保留原样输出。不传或为假时，会尝试转换类型。默认：false。
+         */
+        get(name: string, same?: boolean): boolean | number | string | Array<any> | PlainObject;
+        /** 转JSON */
+        toJSON(): string;
+        /** 转字符串 */
+        toString(): string;
+        /**
+         * 对象转为当前链接的参数。
+         * @param obj 对象。
+         * @param traditional 是否按照传统的方式构造。
+         */
+        toQueryString(obj: PlainObject | Array<any>, traditional?: boolean): string;
+    }
+
+    /** 储存助手 */
+    interface StorageAssistant {
+        /**
+         * 设置缓存。
+         * @param key 键值。
+         * @param value 值。
+         */
+        set(key: string, value: any): string;
+        /**
+         * 获取缓存值。
+         * @param name 键值。
+         * @param same 是否保留原样输出。不传或为假时，会尝试转换类型。默认：false。
+         */
+        get(name: string, same?: boolean): boolean | number | string | Array<any> | PlainObject;
+        /**
+         * 移除缓存值。
+         * @param name 键值。
+         */
+        remove(name: string): void;
+    }
+
+    /** cookie 转换器 */
+    interface CookieConverter {
+        /**
+        * 获取存入cookie的键值。
+        * @param key 键值。
+        * @returns 返回新的键值。
+        */
+        read(key: string): string;
+        /**
+         * 获取存入cookie的值。
+         * @param value 原值。
+         * @param key 键值。
+         * @returns 返回新的值。
+         */
+        read(value: string, key: string): string;
+        /**
+         * 获取写入cookie的键值。
+         * @param key 键值。
+         * @returns 返回新的键值。
+         */
+        write(key: string): string;
+        /**
+         * 获取写入cookie的值。
+         * @param value 原值。
+         * @param key 键值。
+         * @returns 返回新的值。
+         */
+        write(value: string, key: string): string;
+    }
+
+    /** cookie 属性 */
+    interface CookieAttributes {
+        /** 过期时间 */
+        expires?: number | Date;
+        /** 设置过期时间，单位：秒。为负数时关闭浏览器cookie值失效。 */
+        "max-age"?: number;
+        /** 可获取的路径（只能在该路径及其子路径的访问内可获取）。 */
+        path?: string;
+        /** 设置同域共享的cookie。 */
+        domain?: string;
+        /** 指定如何传输cookie。默认：http传输。 */
+        secure?: boolean;
+    }
+
+    /** cookie 助手 */
+    interface CookieAssistant {
+        /** 创建新的cookie助手 */
+        (converter?: CookieConverter, attributes?: CookieAttributes): CookieAssistant;
+        /**
+         * 设置缓存。
+         * @param key 键值。
+         * @param value 值。
+         * @param attributes cookie 属性，会从生成助手时的默认属性中弥补缺失的属性。
+         */
+        set(key: string, value: any, attributes?: CookieAttributes): string;
+        /**
+        * 获取所有cookie值。
+        * @param same 是否保留原样输出。不传或为假时，会尝试转换类型。默认：false。
+        */
+        get(same?: boolean): PlainObject<boolean | number | string | Array<any> | PlainObject>;
+        /**
+         * 获取cookie值。
+         * @param name 键值。
+         * @param same 是否保留原样输出。不传或为假时，会尝试转换类型。默认：false。
+         */
+        get(name: string, same?: boolean): boolean | number | string | Array<any> | PlainObject;
+        /**
+         * 移除cookie值。
+         * @param name 键值。
+         * @param attributes 属性。
+         */
+        remove(name: string, attributes?: CookieAttributes): void;
+        /**
+         * 基于当前配置，获取继承转换器的新助手。
+         * @param converter 转换器。
+         */
+        withConverter(converter: CookieConverter): CookieAssistant;
+        /**
+         * 基于当前配置，获取继承属性的新助手。
+         * @param attributes 属性。
+         */
+        withAttributes(attributes: CookieAttributes): CookieAssistant;
     }
 }
 
@@ -1584,13 +1890,13 @@ interface Element {
      * 返回style属性值
      * @param name 属性名称
      */
-    styleCb(name: string): string;
+    styleCb<K extends keyof CSSStyleDeclaration>(name: K): CSSStyleDeclaration[K];
     /**
      * 设置style属性值
      * @param name 属性名称
      * @param value 属性值
      */
-    styleCb(name: string, value: any): void;
+    styleCb<K extends keyof CSSStyleDeclaration>(name: K, value: CSSStyleDeclaration[K]): void;
     /**
      * 设置style属性值
      * @param nameMap 属性对象
@@ -1629,6 +1935,13 @@ interface Element {
      * @param callback 回调函数。
      * @param args 回调函数的参数。
      */
+    swap<T>(options: Use.PlainObject, callback: (this: Element) => T): T;
+    /**
+     * 获取指定环境配置下，调用回调函数返回的值。
+     * @param options 环境配置（在“style”属性中体现）。
+     * @param callback 回调函数。
+     * @param args 回调函数的参数。
+     */
     swap<T>(options: Use.PlainObject, callback: (this: Element, ...args: any[]) => T, ...args: any[]): T;
 }
 
@@ -1647,16 +1960,23 @@ declare namespace Use {
 
     /** 组件（可定义指定“tag”的提示控件） */
     interface V2ControlMap {
-        [key: string]: any;
+        [key: string]: V2ControlStandard;
     }
 }
 
 declare namespace Use {
+    
+    /** 组件基类（可定义指定“tag”的“base”属性类型） */
+    interface V2ControlBaseMap {
+        "modal": ModalBase;
+    }
+
     /** 组件 */
     interface V2ControlMap {
         "button": Button;
         "wait": Wait;
         "modal": Modal;
+        "message": Message;
     }
 
     /** 等待框 */
@@ -1673,12 +1993,20 @@ declare namespace Use {
         sm: boolean;
         /** 大号（添加“btn-lg”样式）*/
         lg: boolean;
+        /** 名称 */
+        name: string;
         /** 类型 */
         type: 'button' | 'submit' | 'reset';
         /** 按钮文字 */
         text: string;
         /** 内容 */
         html: string;
+    }
+
+    /** 模态框基类 */
+    interface ModalBase extends V2EmptyBase {
+        /** 关闭 */
+        close(): void;
     }
 
     /** 模态框 */
@@ -1707,6 +2035,24 @@ declare namespace Use {
         singleUse: boolean;
         /** 按钮组 */
         buttons: Array<Button>;
+    }
+
+    /** 消息框 */
+    interface Message extends V2Control<"message"> {
+        /** 消息类型 */
+        type: "success" | "danger" | "info" | "warning";
+        /** 
+         *  是否显示关闭按钮
+         * @default false 
+         */
+        showClose: boolean;
+        /**
+         * 提示框显示时间，超时自动关闭并摧毁（“0”表示不自动摧毁），单位：毫秒。
+         * @default 2000
+         * */
+        delayed: number;
+        /** 消息 */
+        msg: string;
     }
 }
 

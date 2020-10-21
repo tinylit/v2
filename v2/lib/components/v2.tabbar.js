@@ -32,8 +32,9 @@
             this.$.classList.add('tabbar');
         },
         build: function (view) {
-            if (view === undefined || view === null)
+            if (view === undefined || view === null) {
                 return;
+            }
 
             var vm = this;
 
@@ -68,7 +69,7 @@
                 vm.viewports.add(viewport);
             });
 
-            this.nav = this.create('nav', {
+            this.$nav = this.create('nav', {
                 $$: this.$,
                 $: this.$bar,
                 type: "tab",
@@ -117,7 +118,7 @@
 
             this.define('selectedIndex', function (index) {
 
-                v2.usb(this.nav, 'selectedIndex', index);
+                v2.usb(this.$nav, 'selectedIndex', index);
 
                 this.viewports.done(function (viewport, i) {
                     if (index === i) {
@@ -138,7 +139,9 @@
 
                 this.invoke('select-changed', index);
 
-            }).define("selectedOptions", function () {
+            }, false);
+
+            this.define("selectedOptions", function () {
                 return v2.usb(this.nav, "selectedOptions");
             });
         }

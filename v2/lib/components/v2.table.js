@@ -19,6 +19,7 @@
         isIE = /msie|trident/.test(userAgent),
         isIE8 = /msie\s+8/.test(userAgent),
         isIE9 = /msie\s+9/.test(userAgent),
+        rnumber = /((\d+\.)?\d+)%$/,
         GLOBAL_ROWS_UNIQUNEID = 0;
 
     v2.use('table', {
@@ -93,29 +94,32 @@
 
             if (this.pagination) {
                 this.$pagination = this.take('.table-pagination', this.$viewport);
-                this.create('pagingbar', {
+                this.$pagingbar = this.create('pagingbar', {
                     $$: this.$pagination,
                     pageIndex: this.pageIndex,
                     pageSize: this.pageSize,
                     paginationLoop: this.paginationLoop,
                     methods: {
-                        "paging-ajax": function (index, size) {
-                            vm.pageIndex = index;
-                            vm.pageSize = size;
+                        "paging-ajax": function () {
                             vm.ajax();
                         }
+                    },
+                    render: function () {
+                        this.base.render();
+
+                        this.$$.appendChild('.clearfix'.htmlCoding().html());
                     },
                     show: function () {
                         this.base.show();
 
-                        if (vm.have_been_set_height) {
+                        if (vm.useHeight) {
                             vm.setHeight(vm.height);
                         }
                     },
                     hide: function () {
                         this.base.hide();
 
-                        if (vm.have_been_set_height) {
+                        if (vm.useHeight) {
                             vm.setHeight(vm.height);
                         }
                     }
@@ -166,11 +170,15 @@
                     if (index === 0) {
                         var lines = v2.take('th', reference, true);
 
-                        v2.each(lines, function (th) {
+                        v2.each(lines, function (th, cellIndex) {
 
-                            var lineSpan = +th.getAttribute("linespan");
+                            var lineSpan = th.getAttribute("linespan");
 
-                            if (lockCols > (lineSpan + th.colSpan)) {
+                            if (lineSpan === null) {
+                                if (lockCols >= (cellIndex + th.colSpan)) {
+                                    th.classList.add('layout-show');
+                                }
+                            } else if (lockCols > (+lineSpan + th.colSpan)) {
                                 th.classList.add('layout-show');
                             }
                         });
@@ -398,6 +406,9 @@
             }
         },
         setHeight: function (value) {
+
+            this.useHeight = true;
+
             if (this.lockHead || this.pagination) {
                 if (this.lockHead) {
                     value -= this.$header.css('height');
@@ -412,34 +423,73 @@
 
             return false;
         },
-        setWidth: function (value) {
-            var vm = this;
-            if (this.lockHead) {
+        setTableWidth: function (value) {
+            var vm = this,
+                lockCols = this.lockCols;
+
+            if (this.lockHead || this.lockCols > 0) {
                 setTimeout(function () {
-                    var width = vm.$screen.css('width');
+                    var width = vm.$table.swap({
+                        'table-layout': 'auto',
+                        'width': 'auto'
+                    }, function () {
+                        return this.offsetWidth;
+                    });
+
+                    var screenWidth = vm.$screen.offsetWidth;
+
                     if (width < value) {
-                        vm.$header.styleCb('max-width', width);
+                        width = screenWidth;
                     }
+
+                    vm.$header.styleCb('max-width', screenWidth);
+
+                    width += 'px';
+
+                    vm.tables.done(function (table) {
+                        table.style.width = width;
+                    });
+
+                    if (lockCols > 0) {
+                        var lockWidth = vm.border ? 1 : 0,
+                            tr = vm.take('tr', vm.$body);
+
+                        if (tr) {
+                            if (!vm.checkbox) {
+                                lockCols -= 1;
+                            }
+
+                            v2.each(tr.childNodes, function (td, index) {
+                                if (index > lockCols) {
+                                    return false;
+                                }
+
+                                lockWidth += td.offsetWidth;
+                            });
+
+                            vm.$reference
+                                .parentNode
+                                .styleCb({ width: lockWidth });
+                        }
+
+                        vm.references.done(function (table) {
+                            table.styleCb({
+                                display: "",
+                                width: width
+                            });
+                        });
+                    }
+
                 }, 5);
             }
+        },
+        setWidth: function (value) {
+            if (rnumber.test(value)) {
+                value = this.$.offsetWidth * RegExp.$1;
+            }
 
-            if (this.lockCols > 0) {
-                setTimeout(function () {
-                    var width = vm.$table.offsetWidth;
-
-                    if (width > value) {
-                        width += 'px';
-                        vm.tables.done(function (table) {
-                            table.style.width = width;
-                        });
-
-                        if (vm.lockCols > 0) {
-                            vm.references.done(function (table) {
-                                table.style.width = width;
-                            });
-                        }
-                    }
-                }, 5);
+            if (this.lockHead || this.lockCols > 0) {
+                this.setTableWidth(value);
             }
 
             return false;
@@ -451,7 +501,7 @@
                 }
 
                 if (show) {
-                    this.__wait_ = v2('wait', { style: 2 });
+                    this.__wait_ = v2('wait', { $$: this.$, style: 2 });
                 }
             }
         },
@@ -469,23 +519,18 @@
                 return;
             }
 
-            this.wait(true);
-
             return axios.request(ajax)
                 .then(function (response) {
                     vm.invoke("ajax-success", response);
                 })
             ["catch"](function (error) {
                 vm.invoke("ajax-fail", error);
-            })
-            ["finally"](function () {
-                vm.wait();
             });
         },
         load: function (data) {
             var vm = this;
             var rows_id = ++GLOBAL_ROWS_UNIQUNEID;
-            var hasFormat = v2.any(this.cols, function (col) { return 'format' in col; });
+            var hasNeedTdFormat = v2.any(this.cols, function (col) { return ('format' in col) && v2.isFunction(col.format) && col.format.length > 3; });
 
             this.$body
                 .empty();
@@ -528,8 +573,8 @@
                     });
                 }
 
-                if (hasFormat) {
-                    if (vm.checkbox) {
+                if (hasNeedTdFormat) {
+                    if (isCheckbox) {
                         if (isIE8 || isIE9) {
                             var td = document.createElement('td');
 
@@ -557,6 +602,14 @@
                             td.styleCb('text-align', 'center');
                         }
 
+                        if ('valign' in col) {
+                            td.styleCb('vertical-align', col.valign);
+                        } else {
+                            td.styleCb('vertical-align', 'middle');
+                        }
+
+                        tr.appendChild(td);
+
                         if ('format' in col) {
 
                             value = col.format(data[col.field], rowIndex, data, td);
@@ -567,9 +620,9 @@
 
                         } else if (col.field in data) {
                             td.innerHTML = data[col.field];
+                        } else if (col.field === '#') {
+                            td.innerHTML = rowIndex + 1;
                         }
-
-                        tr.appendChild(td);
                     });
                 } else {
                     cels = [];
@@ -591,8 +644,18 @@
 
                         cels.push('">');
 
-                        if (col.field in data) {
+                        if ('format' in col) {
+
+                            var value = col.format(data[col.field], rowIndex, data);
+
+                            if (value) {
+                                cels.push(value);
+                            }
+
+                        } else if (col.field in data) {
                             cels.push(data[col.field]);
+                        } else if (col.field === '#') {
+                            cels.push(rowIndex + 1);
                         } else {
                             cels.push('-');
                         }
@@ -617,40 +680,6 @@
                 }
             });
 
-            if (lockCols > 0) {
-                var width = this.border ? 1 : 0,
-                    tr = this.take('tr', this.$body);
-
-                if (!isCheckbox) {
-                    lockCols -= 1;
-                }
-                v2.each(tr.childNodes, function (td, index) {
-                    if (index > lockCols) {
-                        return false;
-                    }
-
-                    width += td.offsetWidth;
-                });
-
-                this.$reference
-                    .parentNode
-                    .styleCb({ width: width });
-
-                this.$reference.styleCb({
-                    width: this.$table.offsetWidth
-                });
-            }
-
-            if (this.lockHead) {
-                if (isIE) {
-                    setTimeout(function () {
-                        vm.$header.styleCb('max-width', vm.$screen.offsetWidth);
-                    });
-                } else {
-                    this.$header.styleCb('max-width', this.$screen.offsetWidth);
-                }
-            }
-
             if (this.checkbox && this.multipleSelect && this.isReady) {
                 this.when('input[data-role="head"]').done(function (input) {
                     input.checked = false;
@@ -672,6 +701,8 @@
             if (this.dataSize == 0) {
                 this.dataSize = data.length;
             }
+
+            this.setTableWidth(vm.$$.offsetWidth);
         },
         check: function (rowIndex) {
             if (!this.checkbox || !this.multipleSelect) return;
@@ -757,13 +788,45 @@
         usb: function () {
             this.base.usb();
 
-            this.define('dataSize', function (size) {
-                this.controls.when(function (vm) {
-                    return vm.like('pagingbar');
-                }).done(function (vm) {
-                    vm.dataSize = size;
+            if (this.pagination) {
+                this.define('dataSize', {
+                    get: function () {
+                        return this.$pagingbar.dataSize;
+                    },
+                    set: function (size) {
+                        this.$pagingbar.dataSize = size;
+                    }
+                }, true);
+
+                this.define('pageIndex', {
+                    get: function () {
+                        return this.$pagingbar.pageIndex;
+                    },
+                    set: function (index) {
+                        this.$pagingbar.pageIndex = index;
+                    }
+                }, true);
+
+                this.define('pageSize', {
+                    get: function () {
+                        return this.$pagingbar.pageSize;
+                    },
+                    set: function (size) {
+                        this.$pagingbar.pageSize = size;
+                    }
+                }, true);
+            }
+        },
+        ready: function () {
+            var vm = this;
+
+            if (this.lockHead || this.lockCols > 0) {
+                v2.subscribe(window, 'resize', function () {
+                    vm.setTableWidth(vm.$$.offsetWidth);
                 });
-            });
+
+                this.setTableWidth(this.$$.offsetWidth);
+            }
         },
         commit: function () {
             var vm = this;
@@ -788,7 +851,7 @@
                 });
             }
 
-            if (this.lockCols > 0) {
+            if (this.lockHead || this.lockCols > 0) {
                 var _delta = 0;
                 this.$container.on('scroll', function () {
                     var delta = vm.$container.scrollLeft;
@@ -796,46 +859,44 @@
                         vm.$header.scrollLeft = delta;
                     }
 
-                    var node = vm.$reference.parentNode;
-                    var width = node.offsetWidth;
+                    if (vm.lockCols > 0) {
 
-                    node.styleCb("width", width + delta - _delta);
+                        var node = vm.$reference.parentNode;
+                        var width = node.offsetWidth;
 
-                    vm.references.done(function (table) {
-                        table.style.marginLeft = delta + 'px';
-                    });
+                        node.styleCb("width", width + delta - _delta);
+
+                        vm.references.done(function (table) {
+                            table.style.marginLeft = delta + 'px';
+                        });
+                    }
 
                     _delta = delta;
                 });
+            }
 
-                if (this.hover) {
+            if (this.lockCols > 0 && this.hover) {
 
-                    var hover = function (body, toggle) {
-                        return function () {
-                            var rowIndex = this.rowIndex;
+                var hover = function (body, toggle) {
+                    return function () {
+                        var rowIndex = this.rowIndex;
 
-                            v2.each(body.childNodes, function (tr) {
-                                if (tr.rowIndex === rowIndex) {
-                                    tr.classList.toggle('hover', toggle);
-                                    return false;
-                                }
-                            });
-                        };
-                    }
-
-                    this.$body.on('mouseover', 'tr', hover(this.$referenceBody, true));
-                    this.$body.on('mouseout', 'tr', hover(this.$referenceBody, false));
-
-                    this.$referenceBody.on('mouseover', 'tr', hover(this.$body, true));
-                    this.$referenceBody.on('mouseout', 'tr', hover(this.$body, false));
+                        v2.each(body.childNodes, function (tr) {
+                            if (tr.rowIndex === rowIndex) {
+                                tr.classList.toggle('hover', toggle);
+                                return false;
+                            }
+                        });
+                    };
                 }
+
+                this.$body.on('mouseover', 'tr', hover(this.$referenceBody, true));
+                this.$body.on('mouseout', 'tr', hover(this.$referenceBody, false));
+
+                this.$referenceBody.on('mouseover', 'tr', hover(this.$body, true));
+                this.$referenceBody.on('mouseout', 'tr', hover(this.$body, false));
             }
 
-            if (this.lockHead || this.lockCols > 0) {
-                v2.subscribe(window, 'resize', function () {
-                    vm.setWidth(vm.width);
-                });
-            }
         }
     });
 
